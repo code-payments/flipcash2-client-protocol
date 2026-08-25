@@ -13,6 +13,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  contract:
+    name: Contract pin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # `scripts/sync-protos.sh --local` writes `commit: LOCAL` so the contract can be
+      # iterated on without pushing it. proto/ then reflects somebody's working tree, which
+      # no other checkout can reproduce, so it must not reach main.
+      - name: Reject a local contract sync
+        run: |
+          set -euo pipefail
+          if grep -q '^commit: LOCAL' flipcash2.lock; then
+            echo "::error::flipcash2.lock records a local sync. Push the contract change to flipcash2-protobuf-api, then re-run scripts/sync-protos.sh <sha>."
+            cat flipcash2.lock
+            exit 1
+          fi
+          echo "Pinned at $(awk '/^commit:/ {print $2}' flipcash2.lock)."
+
   kotlin:
     name: Kotlin codegen
     runs-on: ubuntu-latest
