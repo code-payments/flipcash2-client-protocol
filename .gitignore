@@ -3,3 +3,6 @@ build/
 .build/
 .swiftpm/
 local.properties
+
+# Pinned codegen toolchain, installed by scripts/install-swift-toolchain.sh.
+.tools/

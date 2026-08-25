@@ -61,8 +61,17 @@ jobs:
       - name: Build the package
         run: swift build
 
-      - name: Install the Swift protoc plugins
-        run: brew install protobuf swift-protobuf protoc-gen-grpc-swift
+      # Pinned, not brew: the generators are what decide the bytes in Sources/, and the
+      # gRPC stub text tracks the transitive grpc-swift-2 version as well as the plugin's.
+      # The cache key is the pin file, so a bump rebuilds and nothing else does.
+      - name: Cache the pinned codegen toolchain
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: swift-codegen-${{ runner.os }}-${{ hashFiles('scripts/toolchain.env') }}
+
+      - name: Install the pinned codegen toolchain
+        run: scripts/install-swift-toolchain.sh
 
       # Sources/ is committed because SPM ships plain source. That makes it possible for
       # someone to change a .proto and forget to regenerate, so re-run codegen and fail if
@@ -75,13 +84,11 @@ jobs:
             echo "Sources/ matches the protos."
             exit 0
           fi
-          # Two different causes land here and the fix differs. Print the toolchain so the
-          # version-skew case is obvious rather than looking like a stale commit.
+          # The generators are pinned, so the honest reading is "a .proto changed and
+          # Sources/ did not". Print the pins anyway: a stale cache or a hand-edited
+          # toolchain.env produces the same diff and wants a different fix.
           echo "::error::Sources/ does not match what codegen produces."
-          echo "Either the protos changed without regenerating, or these generators differ"
-          echo "from the ones that produced the committed output:"
-          protoc --version
-          echo "protoc-gen-swift $(protoc-gen-swift --version 2>&1 | tail -1)"
-          brew list --versions protoc-gen-grpc-swift
+          echo "Run scripts/generate-swift.sh and commit the result. Pinned toolchain:"
+          cat scripts/toolchain.env | grep -v '^#'
           git --no-pager diff --stat -- Sources
           exit 1

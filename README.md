@@ -51,6 +51,8 @@ Sources/Flipcash2ClientProtocol/  generated Swift, committed (SPM ships source)
 build.gradle.kts                  Kotlin generation + publishing
 scripts/
   sync-protos.sh                  pull upstream at a pinned SHA, verify namespacing
+  install-swift-toolchain.sh      pinned generators into .tools/
+  toolchain.env                   the pins
   generate-swift.sh               regenerate Sources/
   verify-parity.sh                the phase-1 gate
 ```
@@ -61,6 +63,7 @@ reviewable-diff argument that applies to Swift does not apply here.
 ## Updating the contract
 
 ```bash
+scripts/install-swift-toolchain.sh      # once: pinned generators into .tools/
 scripts/sync-protos.sh <upstream-sha>   # re-pins flipcash2.lock
 scripts/generate-swift.sh               # refresh committed Swift
 ./gradlew build                         # Kotlin regenerates as part of the build
@@ -86,6 +89,14 @@ scripts/generate-swift.sh               # refresh committed Swift
 - **The JVM and Android variants of the protobuf Gradle plugin differ.** The JVM variant
   registers the `java` builtin by default; the Android variant does not, which is why the app
   declares `java` as a plugin and this repo configures the builtin instead.
+- **The Swift generators are pinned, and one of the pins is transitive.** `brew install
+  protoc-gen-grpc-swift` was enough to reproduce the committed output in August 2026 and is
+  not enough now. The gRPC stub text is rendered by grpc-swift-2's `GRPCCodeGen`, which
+  grpc-swift-protobuf pulls in with a floating `from:` requirement — so the output moves
+  when *that* releases, with the plugin's own version unchanged. 2.2.1 added `Sendable` to
+  the metadata enums and 2.3.0 added `type:` to every `MethodDescriptor`: hundreds of
+  changed lines, no contract change. `scripts/toolchain.env` pins all four versions and
+  `install-swift-toolchain.sh` builds the plugins against them.
 - **Coroutines are an explicit dependency.** The generated grpckt stubs reference
   `kotlinx.coroutines.flow.Flow`; the app gets that from elsewhere in its graph, a standalone
   artifact cannot.

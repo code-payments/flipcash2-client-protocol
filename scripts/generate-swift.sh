@@ -8,10 +8,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROTO_DIR="$ROOT/proto"
 DEPS_DIR="$ROOT/proto_deps"
+WKT_DIR="$ROOT/.tools/include"
 OUT="$ROOT/Sources/Flipcash2ClientProtocol"
 
+# Prefer the pinned toolchain. Generated Swift is version-sensitive -- a newer
+# protoc-gen-swift rewrites hundreds of lines with no contract change -- so an ambient
+# brew install is not a substitute. See scripts/toolchain.env.
+export PATH="$ROOT/.tools/bin:$PATH"
+
 for tool in protoc protoc-gen-swift protoc-gen-grpc-swift-2; do
-  command -v "$tool" >/dev/null || { echo "missing $tool" >&2; exit 1; }
+  command -v "$tool" >/dev/null || {
+    echo "missing $tool -- run scripts/install-swift-toolchain.sh" >&2; exit 1; }
 done
 
 rm -rf "$OUT"
@@ -23,14 +30,14 @@ mkdir -p "$OUT"
 while IFS= read -r f; do
   rel="${f#"$PROTO_DIR"/}"
 
-  protoc -I"$PROTO_DIR" -I"$DEPS_DIR" "$rel" \
+  protoc -I"$PROTO_DIR" -I"$DEPS_DIR" -I"$WKT_DIR" "$rel" \
     --swift_opt=Visibility=Public \
     --swift_opt=FileNaming=PathToUnderscores \
     --swift_out="$OUT"
 
   # gRPC stubs only for files that declare a service.
   if grep -q '^service ' "$f"; then
-    protoc -I"$PROTO_DIR" -I"$DEPS_DIR" "$rel" \
+    protoc -I"$PROTO_DIR" -I"$DEPS_DIR" -I"$WKT_DIR" "$rel" \
       --grpc-swift-2_opt=Visibility=Public \
       --grpc-swift-2_opt=Server=false \
       --grpc-swift-2_opt=Client=true \

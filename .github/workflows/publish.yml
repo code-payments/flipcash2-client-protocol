@@ -53,10 +53,16 @@ jobs:
       - name: Build the Swift package
         run: swift build
 
+      - name: Cache the pinned codegen toolchain
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: swift-codegen-${{ runner.os }}-${{ hashFiles('scripts/toolchain.env') }}
+
       - name: Check the committed Swift is up to date
         run: |
           set -euo pipefail
-          brew install protobuf swift-protobuf protoc-gen-grpc-swift
+          scripts/install-swift-toolchain.sh
           scripts/generate-swift.sh
           if ! git diff --quiet -- Sources; then
             echo "::error::Sources/ does not match what codegen produces — refusing to tag it."
