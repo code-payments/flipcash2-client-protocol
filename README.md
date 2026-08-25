@@ -124,7 +124,7 @@ implementation("com.flipcash:flipcash2-client-protocol:0.1.0")
 
 ### Secrets this needs
 
-None of these exist yet — the first publish is blocked until someone with org access adds them.
+Set in both repos.
 
 | Secret | What it is |
 |---|---|
@@ -134,14 +134,19 @@ None of these exist yet — the first publish is blocked until someone with org 
 | `MAVEN_SIGNING_KEY_ID` | last 8 characters of the key id |
 | `MAVEN_SIGNING_KEY_PASSWORD` | the key's passphrase |
 
-The `com.flipcash` namespace also has to be verified in the Central Portal before the first
-upload is accepted, which means a DNS TXT record on the matching domain. That is a one-time
-human step and it gates everything else here.
+**The signing key's public half must be on a keyserver Central queries.** Producing valid
+`.asc` files is not enough: Central fetches the public key by fingerprint to check them, and
+one it cannot find fails the whole deployment with `Could not find a public key by the key
+fingerprint` against every signed file. Upload once, per key:
 
-The signing path itself is verified: a throwaway key produces `.asc` signatures for all five
-artifacts Central requires (jar, sources, javadoc, pom, module), and all five verify.
+```bash
+gpg --keyserver keyserver.ubuntu.com --send-keys <fingerprint>
+```
+
+The `com.flipcash` namespace is verified in the Central Portal. That was the other one-time
+human step, and the one that needs a DNS TXT record.
 
 ## Not done yet
 
-A real released version and a committed dependency in either app. Publishing CI exists but has
-never run: the Central namespace is unverified and the signing secrets are unset.
+A real released version and a committed dependency in either app. This repo publishes after
+`ocp-client-protocol` 0.1.0 is out and resolving from Central.
