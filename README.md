@@ -62,6 +62,26 @@ scripts/generate-swift.sh               # refresh committed Swift
 Commit the resulting `proto/`, `flipcash2.lock`, and `Sources/` together. CI re-runs both
 generators and fails if `Sources/` does not match the protos.
 
+## Local development
+
+Trying a contract change does not need a release. `sync-protos.sh --local` reads a checkout of
+[`flipcash2-protobuf-api`](https://github.com/code-payments/flipcash2-protobuf-api) directly,
+uncommitted edits included:
+
+```bash
+scripts/sync-protos.sh --local ../flipcash2-protobuf-api  # or set FLIPCASH_UPSTREAM_PATH
+scripts/generate-swift.sh                                 # only if you need the Swift side
+```
+
+That writes `commit: LOCAL` into `flipcash2.lock`. CI fails on it and the publish workflow
+refuses to release it, so a local sync cannot reach `main` or Maven Central. Push the contract
+change and re-run `scripts/sync-protos.sh <sha>` to get back to a reproducible pin.
+
+Both apps can consume a checkout of this repo without a publish as well: `protoLocalRoot` in
+Android's `local.properties`, `FLIPCASH_PROTO_LOCAL` for iOS. The whole loop, including what
+stops a local state from shipping, is in `docs/proto-local-development.md` in the cross-platform
+orchestrator directory.
+
 ## Releasing
 
 `.github/workflows/publish.yml`, run from the Actions tab with a version like `0.1.0`. One

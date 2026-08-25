@@ -39,6 +39,17 @@ jobs:
             exit 1
           fi
 
+      # A local sync is for iterating, not releasing: proto/ came from a working tree and
+      # the published artifact would have no upstream commit behind it.
+      - name: Reject a local contract sync
+        run: |
+          set -euo pipefail
+          if grep -q '^commit: LOCAL' flipcash2.lock; then
+            echo "::error::flipcash2.lock records a local sync — refusing to publish it."
+            cat flipcash2.lock
+            exit 1
+          fi
+
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
