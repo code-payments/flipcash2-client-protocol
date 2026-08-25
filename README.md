@@ -15,8 +15,9 @@ ocp — and because they belong to different orgs once the split lands.
 
 ## Status
 
-Pilot. Nothing consumes this yet, and it has never been published to a real registry. What is
-verified is that the generated code is a drop-in replacement for what the apps produce now:
+Pilot. It has never been published to a real registry, and neither app depends on it on a
+branch. What is verified is that the generated code is a drop-in replacement for what the apps
+produce now:
 
 | Output | Files | Compared against | Result |
 |---|---|---|---|
@@ -32,6 +33,11 @@ are byte-identical to the app's `flipcash_`-prefixed copies. See below.
 
 Both artifacts also build: `swift build` compiles the SPM target, and `./gradlew build
 publishToMavenLocal` produces a 2574-class JAR under `com.codeinc.flipcash.gen.*`.
+
+The consumer side is proven too. Pointing `:services:flipcash` at the mavenLocal artifact and
+dropping `:definitions:flipcash:models` from its classpath builds the app and passes the module's
+220 unit tests. That was done with `:services:opencode` on its own artifact at the same time, so
+the combined end state builds, not just one half of it.
 
 Compare against a checkout whose vendored protos are current. An app checkout that predates the
 username protos generates 521 files, and the five-file gap is staleness, not drift.
@@ -86,6 +92,6 @@ scripts/generate-swift.sh               # refresh committed Swift
 
 ## Not done yet
 
-Publishing CI, a real released version, and consumption by either app. The Maven coordinates
+Publishing CI, a real released version, and a committed dependency in either app. The Maven coordinates
 (`com.flipcash:flipcash2-client-protocol`) and the Swift module name (`Flipcash2ClientProtocol`)
 are proposals, not decisions.
