@@ -5,9 +5,9 @@ Kotlin and Swift client SDKs for the Flipcash services, generated from the contr
 published so the apps consume a versioned dependency instead of vendoring `.proto` files and
 running protoc themselves.
 
-Today `code-android-app` and `code-ios-app` each vendor their own copy of these protos and
-generate independently. That is two copies of the contract, two generator toolchains, and no
-mechanism that makes them agree. This repo is the single generation point.
+`code-android-app` and `code-ios-app` used to each vendor their own copy of these protos and
+generate independently — two copies of the contract, two generator toolchains, and no mechanism
+that made them agree. This repo is the single generation point that replaced them.
 
 It is the sibling of [`ocp-client-protocol`](https://github.com/code-payments/ocp-client-protocol).
 The two are separate packages because the contracts are independent — flipcash2 does not import
@@ -15,32 +15,21 @@ ocp — and because they belong to different orgs once the split lands.
 
 ## Status
 
-Pilot. It has never been published to a real registry, and neither app depends on it on a
-branch. What is verified is that the generated code is a drop-in replacement for what the apps
-produce now:
+Released, and both apps are on it. `0.1.0` is on Maven Central and tagged for SPM. Android
+migrated in [code-android-app#1325](https://github.com/code-payments/code-android-app/pull/1325)
+and iOS in [code-ios-app#645](https://github.com/code-payments/code-ios-app/pull/645), which
+together deleted both vendored copies.
 
-| Output | Files | Compared against | Result |
-|---|---|---|---|
-| Kotlin/Java | 526 | `:definitions:flipcash:models:generateDebugProto` | identical |
-| Swift | 50 | `FlipcashAPI/.../Core/Generated` | identical, two files renamed |
-
-The Kotlin split matches per generator too: 17 grpc, 17 grpckt, 33 java, 257 kotlin, 202
-validate-kt. `scripts/verify-parity.sh` is that check, and it should stay green until both apps
-migrate.
-
-The two renamed Swift files are `messaging_v1_messaging_service.{pb,grpc}.swift`; their contents
-are byte-identical to the app's `flipcash_`-prefixed copies. See below.
-
-Both artifacts also build: `swift build` compiles the SPM target, and `./gradlew build
-publishToMavenLocal` produces a 2574-class JAR under `com.codeinc.flipcash.gen.*`.
-
-The consumer side is proven too. Pointing `:services:flipcash` at the mavenLocal artifact and
-dropping `:definitions:flipcash:models` from its classpath builds the app and passes the module's
-220 unit tests. That was done with `:services:opencode` on its own artifact at the same time, so
-the combined end state builds, not just one half of it.
-
-Compare against a checkout whose vendored protos are current. An app checkout that predates the
-username protos generates 521 files, and the five-file gap is staleness, not drift.
+Before the apps migrated, `scripts/verify-parity.sh` proved this repo is a drop-in replacement
+for what they generated: 526 Kotlin/Java files against
+`:definitions:flipcash:models:generateDebugProto` and 50 Swift files against
+`FlipcashAPI/.../Core/Generated`, both identical, with the Kotlin split matching per generator
+(17 grpc, 17 grpckt, 33 java, 257 kotlin, 202 validate-kt). Two Swift filenames differed —
+`messaging_v1_messaging_service.{pb,grpc}.swift` against the app's `flipcash_`-prefixed copies,
+byte-identical contents, see below. That gate is retired with the copies it compared against —
+an app that no longer generates has no second output to disagree with. What guards the output
+now is `scripts/toolchain.env`, since a floating generator moves the Swift without any contract
+change.
 
 ## Layout
 
@@ -54,7 +43,6 @@ scripts/
   install-swift-toolchain.sh      pinned generators into .tools/
   toolchain.env                   the pins
   generate-swift.sh               regenerate Sources/
-  verify-parity.sh                the phase-1 gate
 ```
 
 Generated Kotlin is not committed. It is a build input to a published JAR, so the
@@ -75,11 +63,11 @@ scripts/generate-swift.sh               # refresh committed Swift
   `com.codeinc.flipcash.gen.*` themselves, so unlike the OCP repo there is nothing to rewrite.
   `sync-protos.sh` verifies the `java_package` on every synced file instead and fails the sync
   if one is missing, which is what would silently break the artifact.
-- **The `flipcash_` filename prefix is an artifact of module merging.** The iOS app renames
-  `messaging_v1_messaging_service.*` in its `Scripts/run` because both protocols generate into
-  one `FlipcashAPI` module and the OCP messaging service collides. With a package per protocol
-  the collision cannot happen, so the rename is dropped. `verify-parity.sh` replays it to keep
-  the comparison honest until the app migrates.
+- **The `flipcash_` filename prefix was an artifact of module merging.** The iOS app renamed
+  `messaging_v1_messaging_service.*` in its `Scripts/run` because both protocols generated into
+  one `FlipcashAPI` module and the OCP messaging service collided. With a package per protocol
+  the collision cannot happen, so the rename is gone. The Swift type names
+  (`Flipcash_Messaging_V1_*` vs `Ocp_Messaging_V1_*`) never differed.
 - **`validate/validate.proto` is an include-path dependency only.** It is never generated. The
   iOS build currently generates it and then deletes the resulting
   `validate_validate.pb.swift`; keeping it in `proto_deps/` and off the generation list removes
@@ -145,8 +133,3 @@ gpg --keyserver keyserver.ubuntu.com --send-keys <fingerprint>
 
 The `com.flipcash` namespace is verified in the Central Portal. That was the other one-time
 human step, and the one that needs a DNS TXT record.
-
-## Not done yet
-
-A real released version and a committed dependency in either app. This repo publishes after
-`ocp-client-protocol` 0.1.0 is out and resolving from Central.
