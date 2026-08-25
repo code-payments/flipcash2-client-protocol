@@ -15,10 +15,10 @@ ocp — and because they belong to different orgs once the split lands.
 
 ## Status
 
-Released. `0.1.0` is on Maven Central and tagged for SPM. Android consumes it in
-[code-android-app#1325](https://github.com/code-payments/code-android-app/pull/1325) and iOS in
-[code-ios-app#645](https://github.com/code-payments/code-ios-app/pull/645), which together delete
-both vendored copies.
+Released, and both apps are on it. `0.1.0` is on Maven Central and tagged for SPM. Android
+migrated in [code-android-app#1325](https://github.com/code-payments/code-android-app/pull/1325)
+and iOS in [code-ios-app#645](https://github.com/code-payments/code-ios-app/pull/645), which
+together deleted both vendored copies.
 
 Before the apps migrated, `scripts/verify-parity.sh` proved this repo is a drop-in replacement
 for what they generated: 526 Kotlin/Java files against
@@ -133,7 +133,3 @@ gpg --keyserver keyserver.ubuntu.com --send-keys <fingerprint>
 
 The `com.flipcash` namespace is verified in the Central Portal. That was the other one-time
 human step, and the one that needs a DNS TXT record.
-
-## Not done yet
-
-Both consumer PRs are open, not merged.
