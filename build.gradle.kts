@@ -1,4 +1,6 @@
 import com.google.protobuf.gradle.id
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
 import dev.bmcreations.protovalidate.gradle.ProtoVariant
 import org.apache.tools.ant.taskdefs.condition.Os
 
@@ -6,7 +8,7 @@ plugins {
     kotlin("jvm") version "2.2.20"
     id("com.google.protobuf") version "0.10.0"
     id("dev.bmcreations.protovalidate") version "0.1.1"
-    `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 // Versions are pinned here rather than inherited from a consumer, so the artifact this
@@ -81,11 +83,45 @@ protovalidate {
     variant.set(ProtoVariant.PGV)
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            artifactId = "flipcash2-client-protocol"
-            from(components["java"])
+mavenPublishing {
+    // Central requires a javadoc jar to exist but does not require it to have content.
+    // Everything here is generated protobuf/gRPC code, so real javadoc is a few minutes of
+    // build time and 100 "no @return" warnings for pages nobody reads.
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = true))
+
+    publishToMavenCentral()
+    // Central rejects unsigned artifacts. CI supplies the key through the
+    // ORG_GRADLE_PROJECT_signingInMemoryKey* properties; locally this is a no-op unless
+    // the same properties are set, so `publishToMavenLocal` still works unsigned.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+        signAllPublications()
+    }
+
+    coordinates(group.toString(), "flipcash2-client-protocol", version.toString())
+
+    pom {
+        name.set("Flipcash client protocol")
+        description.set("Generated Kotlin client for the Flipcash gRPC contract")
+        inceptionYear.set("2026")
+        url.set("https://github.com/code-payments/flipcash2-client-protocol")
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
+                distribution.set("repo")
+            }
+        }
+        developers {
+            developer {
+                id.set("code-payments")
+                name.set("Code Payments")
+                url.set("https://github.com/code-payments")
+            }
+        }
+        scm {
+            url.set("https://github.com/code-payments/flipcash2-client-protocol")
+            connection.set("scm:git:git://github.com/code-payments/flipcash2-client-protocol.git")
+            developerConnection.set("scm:git:ssh://git@github.com/code-payments/flipcash2-client-protocol.git")
         }
     }
 }

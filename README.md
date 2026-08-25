@@ -90,8 +90,47 @@ scripts/generate-swift.sh               # refresh committed Swift
   `kotlinx.coroutines.flow.Flow`; the app gets that from elsewhere in its graph, a standalone
   artifact cannot.
 
+## Releasing
+
+`.github/workflows/publish.yml`, run from the Actions tab with a version like `0.1.0`. One
+version covers both languages: the Kotlin artifact goes to Maven Central, and the git tag the
+workflow pushes *is* the Swift Package release, because SPM resolves source straight from this
+repo.
+
+The workflow refuses to publish a version that is already tagged, builds and signs everything
+before it uploads anything, and tags last — so a broken POM or a stale `Sources/` fails while
+the version number is still spendable. `dry_run` does everything except upload and tag.
+
+Consuming a release:
+
+```kotlin
+implementation("com.flipcash:flipcash2-client-protocol:0.1.0")
+```
+
+```swift
+.package(url: "https://github.com/code-payments/flipcash2-client-protocol", from: "0.1.0")
+```
+
+### Secrets this needs
+
+None of these exist yet — the first publish is blocked until someone with org access adds them.
+
+| Secret | What it is |
+|---|---|
+| `MAVEN_CENTRAL_USERNAME` | Central Portal user token, not the account login |
+| `MAVEN_CENTRAL_PASSWORD` | the matching token password |
+| `MAVEN_SIGNING_KEY` | ASCII-armored private key, `gpg --armor --export-secret-keys` |
+| `MAVEN_SIGNING_KEY_ID` | last 8 characters of the key id |
+| `MAVEN_SIGNING_KEY_PASSWORD` | the key's passphrase |
+
+The `com.flipcash` namespace also has to be verified in the Central Portal before the first
+upload is accepted, which means a DNS TXT record on the matching domain. That is a one-time
+human step and it gates everything else here.
+
+The signing path itself is verified: a throwaway key produces `.asc` signatures for all five
+artifacts Central requires (jar, sources, javadoc, pom, module), and all five verify.
+
 ## Not done yet
 
-Publishing CI, a real released version, and a committed dependency in either app. The Maven coordinates
-(`com.flipcash:flipcash2-client-protocol`) and the Swift module name (`Flipcash2ClientProtocol`)
-are proposals, not decisions.
+A real released version and a committed dependency in either app. Publishing CI exists but has
+never run: the Central namespace is unverified and the signing secrets are unset.

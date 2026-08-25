@@ -1,0 +1,123 @@
+name: Publish
+
+# Cuts a release: the Kotlin artifact goes to Maven Central, and the git tag *is* the
+# Swift Package release, since SPM consumes source straight from this repo. One version
+# covers both languages.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, e.g. 0.1.0 — also the Swift Package tag'
+        required: true
+      dry_run:
+        description: 'Build and sign everything, but do not upload or tag'
+        type: boolean
+        default: false
+
+concurrency:
+  # Two publishes at once would race on the same tag and the same Central deployment.
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Flipcash ${{ inputs.version }}
+    # The Swift half has to build before the tag moves, and that needs Xcode.
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject a version that is already tagged
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify "refs/tags/${{ inputs.version }}" >/dev/null; then
+            echo "::error::${{ inputs.version }} is already tagged. Maven Central will not accept a re-published version either."
+            exit 1
+          fi
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+          cache: 'gradle'
+
+      # The Swift package is the same release as the JAR, so a Swift build failure has to
+      # stop the publish before anything is uploaded.
+      - name: Build the Swift package
+        run: swift build
+
+      - name: Check the committed Swift is up to date
+        run: |
+          set -euo pipefail
+          brew install protobuf swift-protobuf protoc-gen-grpc-swift
+          scripts/generate-swift.sh
+          if ! git diff --quiet -- Sources; then
+            echo "::error::Sources/ does not match what codegen produces — refusing to tag it."
+            echo "The tag is the Swift release, so it has to point at generated code that is current."
+            git --no-pager diff --stat -- Sources
+            exit 1
+          fi
+
+      # Central rejects unsigned artifacts, and it rejects a version twice. Doing the full
+      # signed build first means a broken POM or a bad key fails here, before the version
+      # number is spent.
+      - name: Build and sign, without uploading
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_SIGNING_KEY_PASSWORD }}
+        run: ./gradlew publishToMavenLocal --no-configuration-cache
+
+      - name: Publish to Maven Central
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_SIGNING_KEY_PASSWORD }}
+        run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
+
+      # Last, because the tag is the Swift release: once it exists, SPM consumers resolve
+      # it immediately. Tagging before the JAR is up would ship half a version.
+      - name: Tag the release
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ inputs.version }}" -m "Flipcash client protocol ${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+
+      - name: Create the GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.version }}" \
+            --title "${{ inputs.version }}" \
+            --generate-notes
+
+      - name: Summary
+        run: |
+          {
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "### Dry run — nothing was uploaded or tagged"
+            else
+              echo "### Flipcash client protocol ${{ inputs.version }} published"
+            fi
+            echo
+            echo '- Kotlin: `com.flipcash:flipcash2-client-protocol:${{ inputs.version }}`'
+            echo '- Swift: `.package(url: "https://github.com/code-payments/flipcash2-client-protocol", from: "${{ inputs.version }}")`'
+            echo
+            echo 'Central takes a few minutes to sync to `repo1.maven.org` after the upload reports success.'
+          } >> "$GITHUB_STEP_SUMMARY"
