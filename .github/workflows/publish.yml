@@ -50,6 +50,23 @@ jobs:
             exit 1
           fi
 
+      # The release notes come from CHANGELOG.md, not from generated commit titles, so a
+      # missing entry is a missing release note. Fail here rather than after the upload.
+      - name: Extract the release notes
+        run: |
+          set -euo pipefail
+          awk -v ver="${{ inputs.version }}" '
+            $0 == "## " ver { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md has no '## ${{ inputs.version }}' section. Add one describing the contract change before publishing."
+            exit 1
+          fi
+          echo "Release notes for ${{ inputs.version }}:"
+          cat release-notes.md
+
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
@@ -122,7 +139,7 @@ jobs:
         run: |
           gh release create "${{ inputs.version }}" \
             --title "${{ inputs.version }}" \
-            --generate-notes
+            --notes-file release-notes.md
 
       - name: Summary
         run: |

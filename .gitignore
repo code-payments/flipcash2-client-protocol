@@ -6,3 +6,6 @@ local.properties
 
 # Pinned codegen toolchain, installed by scripts/install-swift-toolchain.sh.
 .tools/
+
+# Written by publish.yml when it extracts release notes from CHANGELOG.md
+release-notes.md
