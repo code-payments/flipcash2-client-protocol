@@ -80,6 +80,18 @@ public enum Flipcash_Profile_V1_Profile {
                 method: "UpdateTipCard"
             )
         }
+        /// Namespace for "SetMinDmChatInitFee" metadata.
+        public enum SetMinDmChatInitFee {
+            /// Request type for "SetMinDmChatInitFee".
+            public typealias Input = Flipcash_Profile_V1_SetMinDmChatInitFeeRequest
+            /// Response type for "SetMinDmChatInitFee".
+            public typealias Output = Flipcash_Profile_V1_SetMinDmChatInitFeeResponse
+            /// Descriptor for "SetMinDmChatInitFee".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.profile.v1.Profile"),
+                method: "SetMinDmChatInitFee"
+            )
+        }
         /// Namespace for "LinkSocialAccount" metadata.
         public enum LinkSocialAccount {
             /// Request type for "LinkSocialAccount".
@@ -111,6 +123,7 @@ public enum Flipcash_Profile_V1_Profile {
             SetUsername.descriptor,
             SetProfilePicture.descriptor,
             UpdateTipCard.descriptor,
+            SetMinDmChatInitFee.descriptor,
             LinkSocialAccount.descriptor,
             UnlinkSocialAccount.descriptor
         ]
@@ -245,6 +258,30 @@ extension Flipcash_Profile_V1_Profile {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_UpdateTipCardResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateTipCardResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetMinDmChatInitFee" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetMinDmChatInitFee sets the minimum fee another user must pay to
+        /// > initialize a DM chat with the caller, replacing any fee already set.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Profile_V1_SetMinDmChatInitFeeRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_SetMinDmChatInitFeeRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_SetMinDmChatInitFeeResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setMinDmChatInitFee<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "LinkSocialAccount" method.
@@ -480,6 +517,41 @@ extension Flipcash_Profile_V1_Profile {
             )
         }
 
+        /// Call the "SetMinDmChatInitFee" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetMinDmChatInitFee sets the minimum fee another user must pay to
+        /// > initialize a DM chat with the caller, replacing any fee already set.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Profile_V1_SetMinDmChatInitFeeRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_SetMinDmChatInitFeeRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_SetMinDmChatInitFeeResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setMinDmChatInitFee<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Profile_V1_Profile.Method.SetMinDmChatInitFee.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "LinkSocialAccount" method.
         ///
         /// > Source IDL Documentation:
@@ -693,6 +765,36 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Profile_V1_UpdateTipCardRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Profile_V1_UpdateTipCardResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetMinDmChatInitFee" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetMinDmChatInitFee sets the minimum fee another user must pay to
+    /// > initialize a DM chat with the caller, replacing any fee already set.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Profile_V1_SetMinDmChatInitFeeRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setMinDmChatInitFee<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setMinDmChatInitFee(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -919,6 +1021,40 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
             metadata: metadata
         )
         return try await self.updateTipCard(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetMinDmChatInitFee" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetMinDmChatInitFee sets the minimum fee another user must pay to
+    /// > initialize a DM chat with the caller, replacing any fee already set.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setMinDmChatInitFee<Result>(
+        _ message: Flipcash_Profile_V1_SetMinDmChatInitFeeRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetMinDmChatInitFeeResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Profile_V1_SetMinDmChatInitFeeRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setMinDmChatInitFee(
             request: request,
             options: options,
             onResponse: handleResponse
