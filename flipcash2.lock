@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 0410e78f0b24c1f9ecb069f969324edb96612bd5
-subject: Add username_min_balance to UserFlags (#87)
+commit: 0300d252f35f3524e067aeef22382012c754902a
+subject: Add the ability to set a minimum DM initialization fee (#88)
