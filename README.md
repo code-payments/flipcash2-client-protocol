@@ -15,11 +15,11 @@ They are separate packages because the contracts are: flipcash2 does not import 
 ## Install
 
 ```kotlin
-implementation("com.flipcash:flipcash2-client-protocol:0.1.0")
+implementation("com.flipcash:flipcash2-client-protocol:0.3.0")
 ```
 
 ```swift
-.package(url: "https://github.com/code-payments/flipcash2-client-protocol", from: "0.1.0")
+.package(url: "https://github.com/code-payments/flipcash2-client-protocol", from: "0.3.0")
 ```
 
 `code-android-app` pins the version in `gradle/libs.versions.toml`. `code-ios-app` pins it in

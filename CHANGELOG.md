@@ -8,6 +8,38 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.3.0
+
+No contract change. `flipcash2.lock` points at the same upstream commit as `0.2.0`, and the generated
+Kotlin and Swift are unchanged. Swift consumers have nothing to gain from this release.
+
+### Added
+
+- The Kotlin artifact now ships R8 keep rules, at `META-INF/proguard/flipcash2-client-protocol.pro`:
+
+  ```proguard
+  -keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+      <fields>;
+  }
+  ```
+
+  protobuf-javalite ships no keep rules of its own, so until now every Android consumer had to
+  write one, and the obvious `-keep class * extends GeneratedMessageLite { *; }` is far wider
+  than javalite needs. javalite resolves *fields* reflectively — the schema built from
+  `newMessageInfo` looks up `java.lang.reflect.Field` by the generated `<name>_` field — while
+  builders and message methods are reached from ordinary call sites, so R8 traces those without
+  help. `-keepclassmembers` also does not keep the class, so a message type nothing references is
+  still removed entirely.
+
+  On upgrading, an Android consumer can delete its own protobuf keep rules. Dropping the wide
+  pair from `code-android-app` cut 25,542 live methods and 568 live classes, and moved its R8
+  optimization score from 89.3% to 96.3%.
+
+  The rule is deliberately not scoped to `com.codeinc.flipcash.gen.**`. The well-known types (`Any`, `Timestamp`,
+  `Duration`, `Struct`) come from protobuf-javalite itself, and other dependencies ship generated
+  messages with no rules of their own, so a package-scoped rule would leave those broken under R8
+  full mode. Both contract packages ship identical rule text; R8 collapses them into one entry.
+
 ## 0.2.0
 
 Synced to [`flipcash2-protobuf-api@0300d252`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0300d252f35f3524e067aeef22382012c754902a).
