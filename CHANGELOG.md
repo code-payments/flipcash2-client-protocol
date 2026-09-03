@@ -8,6 +8,27 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.4.0
+
+Synced to [`flipcash2-protobuf-api@0b56e3cd`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0b56e3cd9a9f380f86a09664f09695a2254d7b0a).
+
+### Added
+
+- `message_edit_window` and `message_delete_window` on `account.v1.UserFlags`, both
+  `google.protobuf.Duration`, on fields 17 and 18. Each is the window after a message is created
+  during which that message can still be edited or deleted.
+
+  They are message-typed, so they carry explicit presence and an unset value is not a zero duration.
+  Check `hasMessageEditWindow` / `hasMessageDeleteWindow` in Swift, or `hasMessageEditWindow()` in
+  Kotlin, before reading either one. A server that has not set them leaves them absent, and reading
+  the field directly would report a zero-length window rather than no configured window.
+
+### Unchanged
+
+Nothing existing changed. No services, RPCs, messages, or fields were removed or reshaped, no result
+enum gained or reordered a case, and nothing was renumbered: `username_min_balance` keeps field 16,
+and every field before it keeps its number. The upgrade from `0.3.0` is free for both languages.
+
 ## 0.3.0
 
 No contract change. `flipcash2.lock` points at the same upstream commit as `0.2.0`, and the generated

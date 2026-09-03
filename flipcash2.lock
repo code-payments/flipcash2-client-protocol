@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 0300d252f35f3524e067aeef22382012c754902a
-subject: Add the ability to set a minimum DM initialization fee (#88)
+commit: 0b56e3cd9a9f380f86a09664f09695a2254d7b0a
+subject: Add message_{edit,delete}_window to UserFlags (#89)
