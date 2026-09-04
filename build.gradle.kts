@@ -7,7 +7,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 plugins {
     kotlin("jvm") version "2.2.20"
     id("com.google.protobuf") version "0.10.0"
-    id("dev.bmcreations.protovalidate") version "0.1.1"
+    id("dev.bmcreations.protovalidate") version "0.1.2"
     id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
@@ -48,7 +48,7 @@ dependencies {
     // gets coroutines from elsewhere in its graph; a standalone artifact has to declare it.
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     // protoc-gen-validate-kt output needs this on the consumer classpath, so it is `api`.
-    api("dev.bmcreations:protovalidate-runtime:0.1.1")
+    api("dev.bmcreations:protovalidate-runtime:0.1.2")
     compileOnly("javax.annotation:javax.annotation-api:1.3.2")
 }
 
