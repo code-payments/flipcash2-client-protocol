@@ -31,7 +31,7 @@ from a consumer, so the artifact is reproducible from that file alone:
 | protoc | 4.35.1 | `java` and `kotlin` builtins, both `lite` |
 | protoc-gen-grpc-java | 1.83.1 | `grpc` stubs, `lite` |
 | protoc-gen-grpc-kotlin | 1.4.1 | `grpckt` stubs, `lite` |
-| protoc-gen-validate-kt | 0.1.1 | `validate-kt`, via the `dev.bmcreations.protovalidate` plugin in PGV mode |
+| protoc-gen-validate-kt | 0.1.2 | `validate-kt`, via the `dev.bmcreations.protovalidate` plugin in PGV mode |
 
 Two things that are easy to trip over:
 
