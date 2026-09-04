@@ -8,6 +8,32 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.4.1
+
+No contract change. `flipcash2.lock` points at the same upstream commit as `0.4.0`, and the Swift
+sources are untouched — protovalidate-kt generates Kotlin only, so Swift consumers have nothing to
+gain from this release.
+
+### Fixed
+
+- `blob.v1.AccessContext` can be validated at all. Its `scope` oneof marks each arm `required`, and
+  protovalidate-kt 0.1.1 emitted every arm's required check unguarded:
+
+  ```kotlin
+  Validators.checkRequired(scopeCase == ScopeCase.CHAT, "chat")?.let { violations += it }
+  Validators.checkRequired(scopeCase == ScopeCase.PROFILE, "profile")?.let { violations += it }
+  ```
+
+  Setting `chat` then failed as `profile: value is required`, setting `profile` failed as
+  `chat: value is required`, and setting neither failed as both. No `AccessContext` could pass
+  client-side validation, which made `GetBlobsRequest.context` unusable: a caller that needed a
+  scope had to validate the request before attaching one. 0.1.2 guards each arm's check on that arm
+  being the selected one, and reports an unset oneof once, as
+  `scope: exactly one field is required in oneof`.
+
+  `AccessContextValidator.kt` is the only one of the 203 generated validators whose output moves —
+  no other message in this contract has a `required` oneof arm.
+
 ## 0.4.0
 
 Synced to [`flipcash2-protobuf-api@0b56e3cd`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0b56e3cd9a9f380f86a09664f09695a2254d7b0a).
