@@ -8,6 +8,64 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.5.0
+
+Synced to [`flipcash2-protobuf-api@797052dd`](https://github.com/code-payments/flipcash2-protobuf-api/commit/797052dd1070662f97407427665fd48967abfac6),
+picking up three upstream changes: [#90](https://github.com/code-payments/flipcash2-protobuf-api/pull/90),
+[#91](https://github.com/code-payments/flipcash2-protobuf-api/pull/91) and
+[#92](https://github.com/code-payments/flipcash2-protobuf-api/pull/92).
+
+### Added
+
+- `message` on `push.v1.ChatMetadata`, field 3, typed `messaging.v1.Message`. A chat push now carries
+  the message it is about, so a client can render or store it without a follow-up fetch.
+
+  It is optional in practice as well as in type — the field comment says "if the push is for a
+  message", and a `Message` whose `TextContent` approaches its 4096-character limit will not fit a
+  4 KB push payload on either transport. Check `hasMessage` in Swift or `hasMessage()` in Kotlin and
+  keep the fetch path as the fallback.
+
+  How to merge one is already specified, on `Message.event_sequence` rather than here: ignore a copy
+  whose `event_sequence` is at or below the version already held, otherwise insert or replace. That
+  makes a pushed message, a `SendMessage` echo, and an event-stream delivery of the same message
+  interchangeable, which is what lets a push be written straight into local storage.
+
+- `action` on `intent.v1.ChatMetadata.PaymentMetadata`, field 2, with a new nested `Action` enum —
+  `DEFAULT = 0`, `SEND = 1`, `TIP = 2`. `DEFAULT` means infer from `location`, so a sender that
+  leaves it unset keeps the behaviour it has today.
+
+- `event.v1.ChatEvent` and `event.v1.ChatEventBatch`. A `ChatEvent` addresses an `Event` to a chat id
+  with up to 1024 `exclude_user_ids`, and a batch holds up to 1024 of them. Forwarding an event to a
+  chat's membership no longer requires the caller to expand it to user ids first.
+
+### Changed
+
+- `event.v1.ForwardEventsRequest.user_events` moved into a required `type` oneof alongside the new
+  `chat_events`. **This is source-breaking for code that constructs or reads that request.** In Swift
+  `userEvents` survives as a computed property but `hasUserEvents` is gone, `type` is a
+  `OneOf_Type?`, and an exhaustive switch needs the new `.chatEvents` case; Kotlin gains
+  `getTypeCase()`. Neither app calls this RPC — the only matches in either repo are inside a stale
+  worktree's vendored generated code — so the break is real but currently unreachable.
+
+- `push.v1.Payload` is now `@unchecked Sendable` backed by a copy-on-write `_StorageClass` in Swift,
+  where it was a plain `Sendable` struct with stored properties. Reaching `messaging.v1.Message`
+  through `ChatMetadata` put the message over SwiftProtobuf's threshold for indirect storage. Every
+  property keeps its name and type, so consuming code compiles unchanged; what changes is that
+  `Payload` heap-allocates and that its `Sendable` conformance is asserted rather than checked.
+
+### Deprecated
+
+- `sending_user_id` on `push.v1.ChatMetadata`. Read the sender from `message.sender_id` instead. It
+  is deprecated by comment only, with no `[deprecated = true]` option, so neither language emits a
+  warning and the server still populates it.
+
+### Unchanged
+
+Nothing was renumbered, and no result enum gained or reordered a case. `push.v1.ChatMetadata` keeps
+fields 1 and 2 and appends 3; `PaymentMetadata` keeps `location` on 1 and appends 2; and
+`user_events` keeps field number 1 inside its new oneof, so `ForwardEventsRequest` is wire-compatible
+and only its generated API moved. No service, RPC or message was removed.
+
 ## 0.4.1
 
 No contract change. `flipcash2.lock` points at the same upstream commit as `0.4.0`, and the Swift
