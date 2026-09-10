@@ -129,6 +129,8 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
 
     public var location: Flipcash_Intent_V1_ChatMetadata.TipDmPayment.Location = .tipcard
 
+    public var action: Flipcash_Intent_V1_ChatMetadata.TipDmPayment.Action = .default
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     /// Location in the app the payment was sent from
@@ -162,6 +164,47 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
       public static let allCases: [Flipcash_Intent_V1_ChatMetadata.TipDmPayment.Location] = [
         .tipcard,
         .chat,
+      ]
+
+    }
+
+    /// The action being performed for the payment
+    public enum Action: SwiftProtobuf.Enum, Swift.CaseIterable {
+      public typealias RawValue = Int
+
+      /// Default based on location
+      case `default` // = 0
+      case send // = 1
+      case tip // = 2
+      case UNRECOGNIZED(Int)
+
+      public init() {
+        self = .default
+      }
+
+      public init?(rawValue: Int) {
+        switch rawValue {
+        case 0: self = .default
+        case 1: self = .send
+        case 2: self = .tip
+        default: self = .UNRECOGNIZED(rawValue)
+        }
+      }
+
+      public var rawValue: Int {
+        switch self {
+        case .default: return 0
+        case .send: return 1
+        case .tip: return 2
+        case .UNRECOGNIZED(let i): return i
+        }
+      }
+
+      // The compiler won't synthesize support with the UNRECOGNIZED case.
+      public static let allCases: [Flipcash_Intent_V1_ChatMetadata.TipDmPayment.Action] = [
+        .default,
+        .send,
+        .tip,
       ]
 
     }
@@ -337,7 +380,7 @@ extension Flipcash_Intent_V1_ChatMetadata.ContactDmPayment: SwiftProtobuf.Messag
 
 extension Flipcash_Intent_V1_ChatMetadata.TipDmPayment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Intent_V1_ChatMetadata.protoMessageName + ".TipDmPayment"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}location\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}location\0\u{1}action\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -346,6 +389,7 @@ extension Flipcash_Intent_V1_ChatMetadata.TipDmPayment: SwiftProtobuf.Message, S
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularEnumField(value: &self.location) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.action) }()
       default: break
       }
     }
@@ -355,11 +399,15 @@ extension Flipcash_Intent_V1_ChatMetadata.TipDmPayment: SwiftProtobuf.Message, S
     if self.location != .tipcard {
       try visitor.visitSingularEnumField(value: self.location, fieldNumber: 1)
     }
+    if self.action != .default {
+      try visitor.visitSingularEnumField(value: self.action, fieldNumber: 2)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.TipDmPayment, rhs: Flipcash_Intent_V1_ChatMetadata.TipDmPayment) -> Bool {
     if lhs.location != rhs.location {return false}
+    if lhs.action != rhs.action {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -367,4 +415,8 @@ extension Flipcash_Intent_V1_ChatMetadata.TipDmPayment: SwiftProtobuf.Message, S
 
 extension Flipcash_Intent_V1_ChatMetadata.TipDmPayment.Location: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0TIPCARD\0\u{1}CHAT\0")
+}
+
+extension Flipcash_Intent_V1_ChatMetadata.TipDmPayment.Action: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0DEFAULT\0\u{1}SEND\0\u{1}TIP\0")
 }

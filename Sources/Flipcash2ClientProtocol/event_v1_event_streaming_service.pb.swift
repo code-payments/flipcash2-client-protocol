@@ -183,20 +183,33 @@ public struct Flipcash_Event_V1_ForwardEventsRequest: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
+  public var type: Flipcash_Event_V1_ForwardEventsRequest.OneOf_Type? = nil
+
   public var userEvents: Flipcash_Event_V1_UserEventBatch {
-    get {return _userEvents ?? Flipcash_Event_V1_UserEventBatch()}
-    set {_userEvents = newValue}
+    get {
+      if case .userEvents(let v)? = type {return v}
+      return Flipcash_Event_V1_UserEventBatch()
+    }
+    set {type = .userEvents(newValue)}
   }
-  /// Returns true if `userEvents` has been explicitly set.
-  public var hasUserEvents: Bool {return self._userEvents != nil}
-  /// Clears the value of `userEvents`. Subsequent reads from it will return its default value.
-  public mutating func clearUserEvents() {self._userEvents = nil}
+
+  public var chatEvents: Flipcash_Event_V1_ChatEventBatch {
+    get {
+      if case .chatEvents(let v)? = type {return v}
+      return Flipcash_Event_V1_ChatEventBatch()
+    }
+    set {type = .chatEvents(newValue)}
+  }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  public enum OneOf_Type: Equatable, Sendable {
+    case userEvents(Flipcash_Event_V1_UserEventBatch)
+    case chatEvents(Flipcash_Event_V1_ChatEventBatch)
 
-  fileprivate var _userEvents: Flipcash_Event_V1_UserEventBatch? = nil
+  }
+
+  public init() {}
 }
 
 public struct Flipcash_Event_V1_ForwardEventsResponse: Sendable {
@@ -475,7 +488,7 @@ extension Flipcash_Event_V1_StreamEventsResponse.StreamError.Code: SwiftProtobuf
 
 extension Flipcash_Event_V1_ForwardEventsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ForwardEventsRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_events\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_events\0\u{3}chat_events\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -483,7 +496,32 @@ extension Flipcash_Event_V1_ForwardEventsRequest: SwiftProtobuf.Message, SwiftPr
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularMessageField(value: &self._userEvents) }()
+      case 1: try {
+        var v: Flipcash_Event_V1_UserEventBatch?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .userEvents(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .userEvents(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Event_V1_ChatEventBatch?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .chatEvents(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .chatEvents(v)
+        }
+      }()
       default: break
       }
     }
@@ -494,14 +532,22 @@ extension Flipcash_Event_V1_ForwardEventsRequest: SwiftProtobuf.Message, SwiftPr
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    try { if let v = self._userEvents {
+    switch self.type {
+    case .userEvents?: try {
+      guard case .userEvents(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    } }()
+    }()
+    case .chatEvents?: try {
+      guard case .chatEvents(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Event_V1_ForwardEventsRequest, rhs: Flipcash_Event_V1_ForwardEventsRequest) -> Bool {
-    if lhs._userEvents != rhs._userEvents {return false}
+    if lhs.type != rhs.type {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

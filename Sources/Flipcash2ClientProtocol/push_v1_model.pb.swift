@@ -63,42 +63,54 @@ public enum Flipcash_Push_V1_TokenType: SwiftProtobuf.Enum, Swift.CaseIterable {
 }
 
 /// Payload provided as extra data in a push
-public struct Flipcash_Push_V1_Payload: Sendable {
+public struct Flipcash_Push_V1_Payload: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   /// If present, where the app should navigate to after clicking the push
   public var navigation: Flipcash_Push_V1_Navigation {
-    get {return _navigation ?? Flipcash_Push_V1_Navigation()}
-    set {_navigation = newValue}
+    get {return _storage._navigation ?? Flipcash_Push_V1_Navigation()}
+    set {_uniqueStorage()._navigation = newValue}
   }
   /// Returns true if `navigation` has been explicitly set.
-  public var hasNavigation: Bool {return self._navigation != nil}
+  public var hasNavigation: Bool {return _storage._navigation != nil}
   /// Clears the value of `navigation`. Subsequent reads from it will return its default value.
-  public mutating func clearNavigation() {self._navigation = nil}
+  public mutating func clearNavigation() {_uniqueStorage()._navigation = nil}
 
   /// Ordered substitutions to apply to push title
-  public var titleSubstitutions: [Flipcash_Common_V1_Substitution] = []
+  public var titleSubstitutions: [Flipcash_Common_V1_Substitution] {
+    get {return _storage._titleSubstitutions}
+    set {_uniqueStorage()._titleSubstitutions = newValue}
+  }
 
   /// Ordered substitutions to apply to push body
-  public var bodySubstitutions: [Flipcash_Common_V1_Substitution] = []
+  public var bodySubstitutions: [Flipcash_Common_V1_Substitution] {
+    get {return _storage._bodySubstitutions}
+    set {_uniqueStorage()._bodySubstitutions = newValue}
+  }
 
   /// Push notification category
-  public var category: Flipcash_Push_V1_Payload.Category = .default
+  public var category: Flipcash_Push_V1_Payload.Category {
+    get {return _storage._category}
+    set {_uniqueStorage()._category = newValue}
+  }
 
   /// Push notification key for grouping pushes. If not set, then no grouping
   /// is applied.
-  public var groupKey: String = String()
+  public var groupKey: String {
+    get {return _storage._groupKey}
+    set {_uniqueStorage()._groupKey = newValue}
+  }
 
   public var chatMetadata: Flipcash_Push_V1_ChatMetadata {
-    get {return _chatMetadata ?? Flipcash_Push_V1_ChatMetadata()}
-    set {_chatMetadata = newValue}
+    get {return _storage._chatMetadata ?? Flipcash_Push_V1_ChatMetadata()}
+    set {_uniqueStorage()._chatMetadata = newValue}
   }
   /// Returns true if `chatMetadata` has been explicitly set.
-  public var hasChatMetadata: Bool {return self._chatMetadata != nil}
+  public var hasChatMetadata: Bool {return _storage._chatMetadata != nil}
   /// Clears the value of `chatMetadata`. Subsequent reads from it will return its default value.
-  public mutating func clearChatMetadata() {self._chatMetadata = nil}
+  public mutating func clearChatMetadata() {_uniqueStorage()._chatMetadata = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -154,8 +166,7 @@ public struct Flipcash_Push_V1_Payload: Sendable {
 
   public init() {}
 
-  fileprivate var _navigation: Flipcash_Push_V1_Navigation? = nil
-  fileprivate var _chatMetadata: Flipcash_Push_V1_ChatMetadata? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 /// Navigation within the app upon clicking the push
@@ -218,6 +229,8 @@ public struct Flipcash_Push_V1_ChatMetadata: Sendable {
   ///
   /// Note: This will not be set for system messages OR for notifications that
   ///       don't relate to a user
+  ///
+  /// Deprecated: Infer from message instead
   public var sendingUserID: Flipcash_Common_V1_UserId {
     get {return _sendingUserID ?? Flipcash_Common_V1_UserId()}
     set {_sendingUserID = newValue}
@@ -230,11 +243,22 @@ public struct Flipcash_Push_V1_ChatMetadata: Sendable {
   /// The type of chat
   public var type: Flipcash_Chat_V1_ChatType = .unknown
 
+  /// The chat message that was sent, if the push is for a message
+  public var message: Flipcash_Messaging_V1_Message {
+    get {return _message ?? Flipcash_Messaging_V1_Message()}
+    set {_message = newValue}
+  }
+  /// Returns true if `message` has been explicitly set.
+  public var hasMessage: Bool {return self._message != nil}
+  /// Clears the value of `message`. Subsequent reads from it will return its default value.
+  public mutating func clearMessage() {self._message = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _sendingUserID: Flipcash_Common_V1_UserId? = nil
+  fileprivate var _message: Flipcash_Messaging_V1_Message? = nil
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -249,56 +273,102 @@ extension Flipcash_Push_V1_Payload: SwiftProtobuf.Message, SwiftProtobuf._Messag
   public static let protoMessageName: String = _protobuf_package + ".Payload"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}navigation\0\u{3}title_substitutions\0\u{3}body_substitutions\0\u{1}category\0\u{3}group_key\0\u{3}chat_metadata\0")
 
+  fileprivate class _StorageClass {
+    var _navigation: Flipcash_Push_V1_Navigation? = nil
+    var _titleSubstitutions: [Flipcash_Common_V1_Substitution] = []
+    var _bodySubstitutions: [Flipcash_Common_V1_Substitution] = []
+    var _category: Flipcash_Push_V1_Payload.Category = .default
+    var _groupKey: String = String()
+    var _chatMetadata: Flipcash_Push_V1_ChatMetadata? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _navigation = source._navigation
+      _titleSubstitutions = source._titleSubstitutions
+      _bodySubstitutions = source._bodySubstitutions
+      _category = source._category
+      _groupKey = source._groupKey
+      _chatMetadata = source._chatMetadata
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularMessageField(value: &self._navigation) }()
-      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.titleSubstitutions) }()
-      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.bodySubstitutions) }()
-      case 4: try { try decoder.decodeSingularEnumField(value: &self.category) }()
-      case 5: try { try decoder.decodeSingularStringField(value: &self.groupKey) }()
-      case 6: try { try decoder.decodeSingularMessageField(value: &self._chatMetadata) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularMessageField(value: &_storage._navigation) }()
+        case 2: try { try decoder.decodeRepeatedMessageField(value: &_storage._titleSubstitutions) }()
+        case 3: try { try decoder.decodeRepeatedMessageField(value: &_storage._bodySubstitutions) }()
+        case 4: try { try decoder.decodeSingularEnumField(value: &_storage._category) }()
+        case 5: try { try decoder.decodeSingularStringField(value: &_storage._groupKey) }()
+        case 6: try { try decoder.decodeSingularMessageField(value: &_storage._chatMetadata) }()
+        default: break
+        }
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    try { if let v = self._navigation {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    } }()
-    if !self.titleSubstitutions.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.titleSubstitutions, fieldNumber: 2)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      try { if let v = _storage._navigation {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      } }()
+      if !_storage._titleSubstitutions.isEmpty {
+        try visitor.visitRepeatedMessageField(value: _storage._titleSubstitutions, fieldNumber: 2)
+      }
+      if !_storage._bodySubstitutions.isEmpty {
+        try visitor.visitRepeatedMessageField(value: _storage._bodySubstitutions, fieldNumber: 3)
+      }
+      if _storage._category != .default {
+        try visitor.visitSingularEnumField(value: _storage._category, fieldNumber: 4)
+      }
+      if !_storage._groupKey.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._groupKey, fieldNumber: 5)
+      }
+      try { if let v = _storage._chatMetadata {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+      } }()
     }
-    if !self.bodySubstitutions.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.bodySubstitutions, fieldNumber: 3)
-    }
-    if self.category != .default {
-      try visitor.visitSingularEnumField(value: self.category, fieldNumber: 4)
-    }
-    if !self.groupKey.isEmpty {
-      try visitor.visitSingularStringField(value: self.groupKey, fieldNumber: 5)
-    }
-    try { if let v = self._chatMetadata {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
-    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Push_V1_Payload, rhs: Flipcash_Push_V1_Payload) -> Bool {
-    if lhs._navigation != rhs._navigation {return false}
-    if lhs.titleSubstitutions != rhs.titleSubstitutions {return false}
-    if lhs.bodySubstitutions != rhs.bodySubstitutions {return false}
-    if lhs.category != rhs.category {return false}
-    if lhs.groupKey != rhs.groupKey {return false}
-    if lhs._chatMetadata != rhs._chatMetadata {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._navigation != rhs_storage._navigation {return false}
+        if _storage._titleSubstitutions != rhs_storage._titleSubstitutions {return false}
+        if _storage._bodySubstitutions != rhs_storage._bodySubstitutions {return false}
+        if _storage._category != rhs_storage._category {return false}
+        if _storage._groupKey != rhs_storage._groupKey {return false}
+        if _storage._chatMetadata != rhs_storage._chatMetadata {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -394,7 +464,7 @@ extension Flipcash_Push_V1_Navigation: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sending_user_id\0\u{1}type\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sending_user_id\0\u{1}type\0\u{1}message\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -404,6 +474,7 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._sendingUserID) }()
       case 2: try { try decoder.decodeSingularEnumField(value: &self.type) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._message) }()
       default: break
       }
     }
@@ -420,12 +491,16 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
     if self.type != .unknown {
       try visitor.visitSingularEnumField(value: self.type, fieldNumber: 2)
     }
+    try { if let v = self._message {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Push_V1_ChatMetadata, rhs: Flipcash_Push_V1_ChatMetadata) -> Bool {
     if lhs._sendingUserID != rhs._sendingUserID {return false}
     if lhs.type != rhs.type {return false}
+    if lhs._message != rhs._message {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
