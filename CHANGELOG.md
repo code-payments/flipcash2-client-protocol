@@ -30,7 +30,7 @@ picking up three upstream changes: [#90](https://github.com/code-payments/flipca
   makes a pushed message, a `SendMessage` echo, and an event-stream delivery of the same message
   interchangeable, which is what lets a push be written straight into local storage.
 
-- `action` on `intent.v1.ChatMetadata.PaymentMetadata`, field 2, with a new nested `Action` enum —
+- `action` on `intent.v1.ChatMetadata.TipDmPayment`, field 2, with a new nested `Action` enum —
   `DEFAULT = 0`, `SEND = 1`, `TIP = 2`. `DEFAULT` means infer from `location`, so a sender that
   leaves it unset keeps the behaviour it has today.
 
@@ -62,7 +62,7 @@ picking up three upstream changes: [#90](https://github.com/code-payments/flipca
 ### Unchanged
 
 Nothing was renumbered, and no result enum gained or reordered a case. `push.v1.ChatMetadata` keeps
-fields 1 and 2 and appends 3; `PaymentMetadata` keeps `location` on 1 and appends 2; and
+fields 1 and 2 and appends 3; `TipDmPayment` keeps `location` on 1 and appends 2; and
 `user_events` keeps field number 1 inside its new oneof, so `ForwardEventsRequest` is wire-compatible
 and only its generated API moved. No service, RPC or message was removed.
 
