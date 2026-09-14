@@ -548,14 +548,18 @@ public struct Flipcash_Messaging_V1_EmojiReaction: Sendable {
   /// reactor list is fetched on demand via GetReactors.
   public var sampleReactors: [Flipcash_Messaging_V1_Reactor] = []
 
-  /// Monotonic version of this emoji's aggregate on the message, assigned by
-  /// the server and advanced on every change to it. Ordering only: clients
-  /// apply reaction updates last-writer-wins by this value per (message, emoji)
-  /// — and per actor for reacted_by_self — and treat a loaded summary as stale
-  /// when a higher sequence arrives. It is NOT the chat event sequence
-  /// (reactions never advance that), and it is NOT gapless: it carries no
-  /// gap-detection meaning.
-  public var sequence: UInt64 = 0
+  /// Version of this emoji's aggregate on the message: assigned by the server
+  /// and advanced by one on every change to it — a reactor added or removed.
+  ///
+  /// Opaque to clients, and for ordering only. Apply reaction updates
+  /// last-writer-wins by this value per (message, emoji) — and per actor for
+  /// reacted_by_self — and treat a loaded summary as stale when a higher
+  /// version arrives. It is compared the same way as chat.v1.RosterSummary.
+  /// version. It is NOT the chat event sequence (reactions never advance
+  /// that), and it is NOT gapless: a skipped value means nothing, and there is
+  /// no delta to fetch against it — a missed update is reconciled by
+  /// refreshing the summary on view.
+  public var version: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -612,11 +616,11 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   /// remain and the client should drop the entry from the summary.
   public var count: UInt64 = 0
 
-  /// The emoji aggregate's new version after this change. Clients apply
-  /// last-writer-wins by this value: ignore the count if sequence <= the
-  /// count watermark held, and ignore the actor's reacted_by_self toggle if
-  /// sequence <= the per-actor watermark held. Matches EmojiReaction.sequence.
-  public var sequence: UInt64 = 0
+  /// The emoji aggregate's version after this change. Clients apply
+  /// last-writer-wins by this value: ignore the count if version <= the count
+  /// watermark held, and ignore the actor's reacted_by_self toggle if
+  /// version <= the per-actor watermark held. Matches EmojiReaction.version.
+  public var version: UInt64 = 0
 
   /// When the actor reacted. On ADDED, clients record this as the actor's
   /// Reactor.reacted_ts (e.g. when slotting them into sample_reactors); ignored
@@ -1630,7 +1634,7 @@ extension Flipcash_Messaging_V1_ReactionSummary: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".EmojiReaction"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}emoji\0\u{1}count\0\u{3}reacted_by_self\0\u{3}sample_reactors\0\u{1}sequence\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}emoji\0\u{1}count\0\u{3}reacted_by_self\0\u{3}sample_reactors\0\u{1}version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1642,7 +1646,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
       case 2: try { try decoder.decodeSingularUInt64Field(value: &self.count) }()
       case 3: try { try decoder.decodeSingularBoolField(value: &self.reactedBySelf) }()
       case 4: try { try decoder.decodeRepeatedMessageField(value: &self.sampleReactors) }()
-      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.sequence) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       default: break
       }
     }
@@ -1665,8 +1669,8 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
     if !self.sampleReactors.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.sampleReactors, fieldNumber: 4)
     }
-    if self.sequence != 0 {
-      try visitor.visitSingularUInt64Field(value: self.sequence, fieldNumber: 5)
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 5)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1676,7 +1680,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
     if lhs.count != rhs.count {return false}
     if lhs.reactedBySelf != rhs.reactedBySelf {return false}
     if lhs.sampleReactors != rhs.sampleReactors {return false}
-    if lhs.sequence != rhs.sequence {return false}
+    if lhs.version != rhs.version {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1684,7 +1688,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
 
 extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ReactionUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{1}emoji\0\u{1}actor\0\u{1}action\0\u{1}count\0\u{1}sequence\0\u{3}reacted_ts\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{1}emoji\0\u{1}actor\0\u{1}action\0\u{1}count\0\u{1}version\0\u{3}reacted_ts\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1697,7 +1701,7 @@ extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProt
       case 3: try { try decoder.decodeSingularMessageField(value: &self._actor) }()
       case 4: try { try decoder.decodeSingularEnumField(value: &self.action) }()
       case 5: try { try decoder.decodeSingularUInt64Field(value: &self.count) }()
-      case 6: try { try decoder.decodeSingularUInt64Field(value: &self.sequence) }()
+      case 6: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._reactedTs) }()
       default: break
       }
@@ -1724,8 +1728,8 @@ extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProt
     if self.count != 0 {
       try visitor.visitSingularUInt64Field(value: self.count, fieldNumber: 5)
     }
-    if self.sequence != 0 {
-      try visitor.visitSingularUInt64Field(value: self.sequence, fieldNumber: 6)
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 6)
     }
     try { if let v = self._reactedTs {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
@@ -1739,7 +1743,7 @@ extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProt
     if lhs._actor != rhs._actor {return false}
     if lhs.action != rhs.action {return false}
     if lhs.count != rhs.count {return false}
-    if lhs.sequence != rhs.sequence {return false}
+    if lhs.version != rhs.version {return false}
     if lhs._reactedTs != rhs._reactedTs {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true

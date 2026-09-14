@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 797052dd1070662f97407427665fd48967abfac6
-subject: Add chat message to push payload ChatMetadata (#92)
+commit: 35f9981400947921bbe2872be63b0bb77a569e34
+subject: Update chat rules to be a repeated with and introduce staff requirements (#98)
