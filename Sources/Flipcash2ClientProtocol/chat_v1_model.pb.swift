@@ -467,6 +467,149 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
   public init() {}
 }
 
+/// RosterUpdate is a best-effort, real-time change to a chat's roster — a
+/// member joining (e.g. via Chat.JoinChat, or as the first member via
+/// Chat.StartChat) or leaving (e.g. via Chat.LeaveChat). It is delivered to
+/// the chat's members, including the affected user's other devices.
+///
+/// Roster changes are a convergent overlay, so these ride the event stream
+/// OUTSIDE the gap-detected event log. Clients apply them by roster_summary
+/// version as described on RosterSummary: a greater version than the one held
+/// means the cached member list is stale and this update should be applied; a
+/// lesser or equal version should be dropped, so delivery order does not
+/// matter. A missed update is not caught up via GetDelta but reconciled by
+/// refetching the roster when a client observes a version it cannot reconcile.
+public struct Flipcash_Chat_V1_RosterUpdate: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var kind: OneOf_Kind? {
+    get {return _storage._kind}
+    set {_uniqueStorage()._kind = newValue}
+  }
+
+  public var memberJoined: Flipcash_Chat_V1_RosterUpdate.MemberJoined {
+    get {
+      if case .memberJoined(let v)? = _storage._kind {return v}
+      return Flipcash_Chat_V1_RosterUpdate.MemberJoined()
+    }
+    set {_uniqueStorage()._kind = .memberJoined(newValue)}
+  }
+
+  public var memberLeft: Flipcash_Chat_V1_RosterUpdate.MemberLeft {
+    get {
+      if case .memberLeft(let v)? = _storage._kind {return v}
+      return Flipcash_Chat_V1_RosterUpdate.MemberLeft()
+    }
+    set {_uniqueStorage()._kind = .memberLeft(newValue)}
+  }
+
+  /// The chat's roster summary after this change, applied by version as
+  /// described above.
+  public var rosterSummary: Flipcash_Chat_V1_RosterSummary {
+    get {return _storage._rosterSummary ?? Flipcash_Chat_V1_RosterSummary()}
+    set {_uniqueStorage()._rosterSummary = newValue}
+  }
+  /// Returns true if `rosterSummary` has been explicitly set.
+  public var hasRosterSummary: Bool {return _storage._rosterSummary != nil}
+  /// Clears the value of `rosterSummary`. Subsequent reads from it will return its default value.
+  public mutating func clearRosterSummary() {_uniqueStorage()._rosterSummary = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Kind: Equatable, Sendable {
+    case memberJoined(Flipcash_Chat_V1_RosterUpdate.MemberJoined)
+    case memberLeft(Flipcash_Chat_V1_RosterUpdate.MemberLeft)
+
+  }
+
+  /// A member joined the chat. When member is the recipient, the recipient
+  /// has just become a member of the chat and should insert it into their
+  /// chat list using metadata.
+  public struct MemberJoined: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The member that joined, with their profile hydrated, so a client
+    /// can update its cached member list without a refetch.
+    public var member: Flipcash_Chat_V1_Member {
+      get {return _member ?? Flipcash_Chat_V1_Member()}
+      set {_member = newValue}
+    }
+    /// Returns true if `member` has been explicitly set.
+    public var hasMember: Bool {return self._member != nil}
+    /// Clears the value of `member`. Subsequent reads from it will return its default value.
+    public mutating func clearMember() {self._member = nil}
+
+    /// The full metadata for the chat, so the recipient can insert it into
+    /// their chat list without a refetch. Set only when member is the
+    /// recipient; unset for every other member of the chat.
+    ///
+    /// The recipient inserts the chat from this snapshot, then applies the
+    /// enclosing RosterUpdate.roster_summary by version like any other
+    /// roster update. RosterUpdate.roster_summary is authoritative for
+    /// versioning; metadata.roster_summary is not compared separately.
+    public var metadata: Flipcash_Chat_V1_Metadata {
+      get {return _metadata ?? Flipcash_Chat_V1_Metadata()}
+      set {_metadata = newValue}
+    }
+    /// Returns true if `metadata` has been explicitly set.
+    public var hasMetadata: Bool {return self._metadata != nil}
+    /// Clears the value of `metadata`. Subsequent reads from it will return its default value.
+    public mutating func clearMetadata() {self._metadata = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _member: Flipcash_Chat_V1_Member? = nil
+    fileprivate var _metadata: Flipcash_Chat_V1_Metadata? = nil
+  }
+
+  /// A member left the chat. When user_id is the recipient, the recipient is
+  /// no longer a member of the chat and should remove it from their chat
+  /// list.
+  public struct MemberLeft: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The user that left
+    public var userID: Flipcash_Common_V1_UserId {
+      get {return _userID ?? Flipcash_Common_V1_UserId()}
+      set {_userID = newValue}
+    }
+    /// Returns true if `userID` has been explicitly set.
+    public var hasUserID: Bool {return self._userID != nil}
+    /// Clears the value of `userID`. Subsequent reads from it will return its default value.
+    public mutating func clearUserID() {self._userID = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _userID: Flipcash_Common_V1_UserId? = nil
+  }
+
+  public init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+public struct Flipcash_Chat_V1_RosterUpdateBatch: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var rosterUpdates: [Flipcash_Chat_V1_RosterUpdate] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "flipcash.chat.v1"
@@ -1051,6 +1194,219 @@ extension Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged: SwiftProtobuf.Mes
 
   public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged) -> Bool {
     if lhs._newLastActivity != rhs._newLastActivity {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_RosterUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RosterUpdate"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}member_joined\0\u{3}member_left\0\u{4}\u{8}roster_summary\0")
+
+  fileprivate class _StorageClass {
+    var _kind: Flipcash_Chat_V1_RosterUpdate.OneOf_Kind?
+    var _rosterSummary: Flipcash_Chat_V1_RosterSummary? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _kind = source._kind
+      _rosterSummary = source._rosterSummary
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try {
+          var v: Flipcash_Chat_V1_RosterUpdate.MemberJoined?
+          var hadOneofValue = false
+          if let current = _storage._kind {
+            hadOneofValue = true
+            if case .memberJoined(let m) = current {v = m}
+          }
+          try decoder.decodeSingularMessageField(value: &v)
+          if let v = v {
+            if hadOneofValue {try decoder.handleConflictingOneOf()}
+            _storage._kind = .memberJoined(v)
+          }
+        }()
+        case 2: try {
+          var v: Flipcash_Chat_V1_RosterUpdate.MemberLeft?
+          var hadOneofValue = false
+          if let current = _storage._kind {
+            hadOneofValue = true
+            if case .memberLeft(let m) = current {v = m}
+          }
+          try decoder.decodeSingularMessageField(value: &v)
+          if let v = v {
+            if hadOneofValue {try decoder.handleConflictingOneOf()}
+            _storage._kind = .memberLeft(v)
+          }
+        }()
+        case 10: try { try decoder.decodeSingularMessageField(value: &_storage._rosterSummary) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      switch _storage._kind {
+      case .memberJoined?: try {
+        guard case .memberJoined(let v)? = _storage._kind else { preconditionFailure() }
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      }()
+      case .memberLeft?: try {
+        guard case .memberLeft(let v)? = _storage._kind else { preconditionFailure() }
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      }()
+      case nil: break
+      }
+      try { if let v = _storage._rosterSummary {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+      } }()
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_RosterUpdate, rhs: Flipcash_Chat_V1_RosterUpdate) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._kind != rhs_storage._kind {return false}
+        if _storage._rosterSummary != rhs_storage._rosterSummary {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_RosterUpdate.MemberJoined: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_RosterUpdate.protoMessageName + ".MemberJoined"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}member\0\u{1}metadata\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._member) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._metadata) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._member {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._metadata {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_RosterUpdate.MemberJoined, rhs: Flipcash_Chat_V1_RosterUpdate.MemberJoined) -> Bool {
+    if lhs._member != rhs._member {return false}
+    if lhs._metadata != rhs._metadata {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_RosterUpdate.MemberLeft: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_RosterUpdate.protoMessageName + ".MemberLeft"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._userID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_RosterUpdate.MemberLeft, rhs: Flipcash_Chat_V1_RosterUpdate.MemberLeft) -> Bool {
+    if lhs._userID != rhs._userID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_RosterUpdateBatch: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RosterUpdateBatch"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}roster_updates\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.rosterUpdates) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.rosterUpdates.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.rosterUpdates, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_RosterUpdateBatch, rhs: Flipcash_Chat_V1_RosterUpdateBatch) -> Bool {
+    if lhs.rosterUpdates != rhs.rosterUpdates {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
