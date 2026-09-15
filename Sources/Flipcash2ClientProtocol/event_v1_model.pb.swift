@@ -284,21 +284,6 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   /// Clears the value of `chat`. Subsequent reads from it will return its default value.
   public mutating func clearChat() {self._chat = nil}
 
-  /// If present, new real-time messages sent on the chat.
-  ///
-  /// Deprecated: superseded by `events` (Event.message_sent), which is
-  /// sequenced and gap-detectable. New messages now arrive as events.
-  ///
-  /// NOTE: This field was marked as deprecated in the .proto file.
-  public var newMessages: Flipcash_Messaging_V1_MessageBatch {
-    get {return _newMessages ?? Flipcash_Messaging_V1_MessageBatch()}
-    set {_newMessages = newValue}
-  }
-  /// Returns true if `newMessages` has been explicitly set.
-  public var hasNewMessages: Bool {return self._newMessages != nil}
-  /// Clears the value of `newMessages`. Subsequent reads from it will return its default value.
-  public mutating func clearNewMessages() {self._newMessages = nil}
-
   /// If present, message pointer updates for members in the chat. Pointers are
   /// convergent (monotonic, last-writer-wins), so they ride the stream as a
   /// best-effort overlay and are reconciled from current state on reconnect —
@@ -353,16 +338,35 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   /// Clears the value of `reactionUpdates`. Subsequent reads from it will return its default value.
   public mutating func clearReactionUpdates() {self._reactionUpdates = nil}
 
+  /// If present, best-effort real-time roster changes for the chat — members
+  /// joining or leaving. Like reaction_updates, roster changes are a
+  /// convergent overlay — NOT part of the gap-detected event log; clients
+  /// apply them by RosterSummary.version and reconcile any misses by
+  /// refetching the roster.
+  ///
+  /// When a RosterUpdate.MemberLeft names the recipient, the recipient is no
+  /// longer a member of the chat and should remove it from their chat list.
+  /// This is how a chat left between pages of a chat feed read is
+  /// reconciled.
+  public var rosterUpdates: Flipcash_Chat_V1_RosterUpdateBatch {
+    get {return _rosterUpdates ?? Flipcash_Chat_V1_RosterUpdateBatch()}
+    set {_rosterUpdates = newValue}
+  }
+  /// Returns true if `rosterUpdates` has been explicitly set.
+  public var hasRosterUpdates: Bool {return self._rosterUpdates != nil}
+  /// Clears the value of `rosterUpdates`. Subsequent reads from it will return its default value.
+  public mutating func clearRosterUpdates() {self._rosterUpdates = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _chat: Flipcash_Common_V1_ChatId? = nil
-  fileprivate var _newMessages: Flipcash_Messaging_V1_MessageBatch? = nil
   fileprivate var _pointerUpdates: Flipcash_Messaging_V1_PointerBatch? = nil
   fileprivate var _isTypingNotifications: Flipcash_Messaging_V1_IsTypingNotificationBatch? = nil
   fileprivate var _events: Flipcash_Messaging_V1_EventBatch? = nil
   fileprivate var _reactionUpdates: Flipcash_Messaging_V1_ReactionUpdateBatch? = nil
+  fileprivate var _rosterUpdates: Flipcash_Chat_V1_RosterUpdateBatch? = nil
 }
 
 /// BlobUpdate notifies the recipient in real time that blobs they uploaded have
@@ -808,7 +812,7 @@ extension Flipcash_Event_V1_ClientPong: SwiftProtobuf.Message, SwiftProtobuf._Me
 
 extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{3}new_messages\0\u{3}pointer_updates\0\u{3}is_typing_notifications\0\u{3}metadata_updates\0\u{1}events\0\u{3}reaction_updates\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{4}\u{2}pointer_updates\0\u{3}is_typing_notifications\0\u{3}metadata_updates\0\u{1}events\0\u{3}reaction_updates\0\u{3}roster_updates\0\u{c}\u{2}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -817,12 +821,12 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._chat) }()
-      case 2: try { try decoder.decodeSingularMessageField(value: &self._newMessages) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._pointerUpdates) }()
       case 4: try { try decoder.decodeSingularMessageField(value: &self._isTypingNotifications) }()
       case 5: try { try decoder.decodeRepeatedMessageField(value: &self.metadataUpdates) }()
       case 6: try { try decoder.decodeSingularMessageField(value: &self._events) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._reactionUpdates) }()
+      case 8: try { try decoder.decodeSingularMessageField(value: &self._rosterUpdates) }()
       default: break
       }
     }
@@ -835,9 +839,6 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
     // https://github.com/apple/swift-protobuf/issues/1182
     try { if let v = self._chat {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    } }()
-    try { if let v = self._newMessages {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
     try { if let v = self._pointerUpdates {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
@@ -854,17 +855,20 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
     try { if let v = self._reactionUpdates {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     } }()
+    try { if let v = self._rosterUpdates {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Event_V1_ChatUpdate, rhs: Flipcash_Event_V1_ChatUpdate) -> Bool {
     if lhs._chat != rhs._chat {return false}
-    if lhs._newMessages != rhs._newMessages {return false}
     if lhs._pointerUpdates != rhs._pointerUpdates {return false}
     if lhs._isTypingNotifications != rhs._isTypingNotifications {return false}
     if lhs.metadataUpdates != rhs.metadataUpdates {return false}
     if lhs._events != rhs._events {return false}
     if lhs._reactionUpdates != rhs._reactionUpdates {return false}
+    if lhs._rosterUpdates != rhs._rosterUpdates {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
