@@ -84,7 +84,8 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
 
   /// Members of this chat
   ///
-  /// For large group chats, this is a subset of all members.
+  /// For large group chats, this is a subset of all members. Use
+  /// RosterSummary.member_count to infer if there are more members.
   public var members: [Flipcash_Chat_V1_Member] {
     get {return _storage._members}
     set {_uniqueStorage()._members = newValue}
@@ -138,11 +139,181 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
     set {_uniqueStorage()._title = newValue}
   }
 
+  /// Picture for this chat. Only supported for group chats
+  public var picture: Flipcash_Blob_V1_Media {
+    get {return _storage._picture ?? Flipcash_Blob_V1_Media()}
+    set {_uniqueStorage()._picture = newValue}
+  }
+  /// Returns true if `picture` has been explicitly set.
+  public var hasPicture: Bool {return _storage._picture != nil}
+  /// Clears the value of `picture`. Subsequent reads from it will return its default value.
+  public mutating func clearPicture() {_uniqueStorage()._picture = nil}
+
+  /// Chat roster summary
+  public var rosterSummary: Flipcash_Chat_V1_RosterSummary {
+    get {return _storage._rosterSummary ?? Flipcash_Chat_V1_RosterSummary()}
+    set {_uniqueStorage()._rosterSummary = newValue}
+  }
+  /// Returns true if `rosterSummary` has been explicitly set.
+  public var hasRosterSummary: Bool {return _storage._rosterSummary != nil}
+  /// Clears the value of `rosterSummary`. Subsequent reads from it will return its default value.
+  public mutating func clearRosterSummary() {_uniqueStorage()._rosterSummary = nil}
+
+  /// Rules governing participation in this chat. Only supported for group
+  /// chats. If not set, the chat has no participation requirements.
+  public var rules: Flipcash_Chat_V1_Rules {
+    get {return _storage._rules ?? Flipcash_Chat_V1_Rules()}
+    set {_uniqueStorage()._rules = newValue}
+  }
+  /// Returns true if `rules` has been explicitly set.
+  public var hasRules: Bool {return _storage._rules != nil}
+  /// Clears the value of `rules`. Subsequent reads from it will return its default value.
+  public mutating func clearRules() {_uniqueStorage()._rules = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+/// Rules define the requirements a user must satisfy to participate in a chat.
+///
+/// Rules are split into two classes, each of which is independently optional:
+///  - ListenerRules gate reading and joining the chat
+///  - SpeakerRules gate sending messages in the chat
+///
+/// All rules within a class must be satisfied. Speaker rules are applied in
+/// addition to listener rules: a user must be able to listen before they can
+/// speak.
+public struct Flipcash_Chat_V1_Rules: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Rules to read and join the chat. If empty, anyone can read and join.
+  public var listener: [Flipcash_Chat_V1_ListenerRules] = []
+
+  /// Rules to send messages in the chat. If empty, any member can send
+  /// messages.
+  public var speaker: [Flipcash_Chat_V1_SpeakerRules] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// ListenerRules are the rules a user must satisfy to read and join a chat
+public struct Flipcash_Chat_V1_ListenerRules: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var kind: Flipcash_Chat_V1_ListenerRules.OneOf_Kind? = nil
+
+  public var minimumBalance: Flipcash_Chat_V1_MinimumBalanceRequirement {
+    get {
+      if case .minimumBalance(let v)? = kind {return v}
+      return Flipcash_Chat_V1_MinimumBalanceRequirement()
+    }
+    set {kind = .minimumBalance(newValue)}
+  }
+
+  public var staff: Flipcash_Chat_V1_StaffRequirement {
+    get {
+      if case .staff(let v)? = kind {return v}
+      return Flipcash_Chat_V1_StaffRequirement()
+    }
+    set {kind = .staff(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Kind: Equatable, Sendable {
+    case minimumBalance(Flipcash_Chat_V1_MinimumBalanceRequirement)
+    case staff(Flipcash_Chat_V1_StaffRequirement)
+
+  }
+
+  public init() {}
+}
+
+/// SpeakerRules are the rules a user must satisfy to send messages in a chat
+public struct Flipcash_Chat_V1_SpeakerRules: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var kind: Flipcash_Chat_V1_SpeakerRules.OneOf_Kind? = nil
+
+  public var minimumBalance: Flipcash_Chat_V1_MinimumBalanceRequirement {
+    get {
+      if case .minimumBalance(let v)? = kind {return v}
+      return Flipcash_Chat_V1_MinimumBalanceRequirement()
+    }
+    set {kind = .minimumBalance(newValue)}
+  }
+
+  public var staff: Flipcash_Chat_V1_StaffRequirement {
+    get {
+      if case .staff(let v)? = kind {return v}
+      return Flipcash_Chat_V1_StaffRequirement()
+    }
+    set {kind = .staff(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Kind: Equatable, Sendable {
+    case minimumBalance(Flipcash_Chat_V1_MinimumBalanceRequirement)
+    case staff(Flipcash_Chat_V1_StaffRequirement)
+
+  }
+
+  public init() {}
+}
+
+/// StaffRequirement requires the user to be a Flipcash staff member, as
+/// indicated by UserFlags.is_staff.
+public struct Flipcash_Chat_V1_StaffRequirement: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// MinimumBalanceRequirement requires a user to hold a minimum balance,
+/// denominated in fiat, in an acceptable mint.
+public struct Flipcash_Chat_V1_MinimumBalanceRequirement: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The minimum balance, denominated in fiat
+  public var amount: Flipcash_Common_V1_FiatPaymentAmount {
+    get {return _amount ?? Flipcash_Common_V1_FiatPaymentAmount()}
+    set {_amount = newValue}
+  }
+  /// Returns true if `amount` has been explicitly set.
+  public var hasAmount: Bool {return self._amount != nil}
+  /// Clears the value of `amount`. Subsequent reads from it will return its default value.
+  public mutating func clearAmount() {self._amount = nil}
+
+  /// The mints the balance may be held in. If empty, the requirement applies
+  /// to all mints. Otherwise, it applies only to the one listed mint.
+  ///
+  /// Currently limited to at most one mint. This is a repeated field so that
+  /// multiple mints can be specified in the future.
+  public var mints: [Flipcash_Common_V1_PublicKey] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _amount: Flipcash_Common_V1_FiatPaymentAmount? = nil
 }
 
 public struct Flipcash_Chat_V1_Member: Sendable {
@@ -182,6 +353,40 @@ public struct Flipcash_Chat_V1_Member: Sendable {
 
   fileprivate var _userID: Flipcash_Common_V1_UserId? = nil
   fileprivate var _userProfile: Flipcash_Profile_V1_UserProfile? = nil
+}
+
+/// RosterSummary describes a chat's roster — its member list — without
+/// containing it: what a client needs in order to know whether its copy of
+/// that list is stale, without holding the list.
+///
+/// It says nothing about member profiles. Profiles are hydrated afresh onto
+/// every response that carries a member, and a profile change never moves
+/// this summary.
+public struct Flipcash_Chat_V1_RosterSummary: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Number of currently joined members. For a large group chat,
+  /// Metadata.members is a subset of the roster; this is its true size.
+  public var memberCount: UInt64 = 0
+
+  /// Version of the roster: advanced by exactly one on every change to the
+  /// membership records — a member joining, a member leaving, and in future
+  /// any change to what the chat records about a member (e.g. a role) — and
+  /// never by an idempotent no-op or a profile change.
+  ///
+  /// Opaque to clients. Compare it against the last value seen: a different
+  /// value means the cached member list may be stale and should be refetched.
+  /// On a stream, apply a greater value and drop the rest, so delivery order
+  /// does not matter. It is compared the same way as ReactionSummary.version
+  /// and, like it, is NOT the chat event sequence: there is no delta to fetch
+  /// against it, only a refetch of the members.
+  public var version: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
 }
 
 public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
@@ -272,7 +477,7 @@ extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Metadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0")
 
   fileprivate class _StorageClass {
     var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -283,6 +488,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
     var _latestEventSequence: UInt64 = 0
     var _isHidden: Bool = false
     var _title: String = String()
+    var _picture: Flipcash_Blob_V1_Media? = nil
+    var _rosterSummary: Flipcash_Chat_V1_RosterSummary? = nil
+    var _rules: Flipcash_Chat_V1_Rules? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -301,6 +509,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _latestEventSequence = source._latestEventSequence
       _isHidden = source._isHidden
       _title = source._title
+      _picture = source._picture
+      _rosterSummary = source._rosterSummary
+      _rules = source._rules
     }
   }
 
@@ -327,6 +538,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 6: try { try decoder.decodeSingularUInt64Field(value: &_storage._latestEventSequence) }()
         case 7: try { try decoder.decodeSingularBoolField(value: &_storage._isHidden) }()
         case 8: try { try decoder.decodeSingularStringField(value: &_storage._title) }()
+        case 9: try { try decoder.decodeSingularMessageField(value: &_storage._picture) }()
+        case 10: try { try decoder.decodeSingularMessageField(value: &_storage._rosterSummary) }()
+        case 11: try { try decoder.decodeSingularMessageField(value: &_storage._rules) }()
         default: break
         }
       }
@@ -363,6 +577,15 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       if !_storage._title.isEmpty {
         try visitor.visitSingularStringField(value: _storage._title, fieldNumber: 8)
       }
+      try { if let v = _storage._picture {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+      } }()
+      try { if let v = _storage._rosterSummary {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+      } }()
+      try { if let v = _storage._rules {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -380,10 +603,240 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._latestEventSequence != rhs_storage._latestEventSequence {return false}
         if _storage._isHidden != rhs_storage._isHidden {return false}
         if _storage._title != rhs_storage._title {return false}
+        if _storage._picture != rhs_storage._picture {return false}
+        if _storage._rosterSummary != rhs_storage._rosterSummary {return false}
+        if _storage._rules != rhs_storage._rules {return false}
         return true
       }
       if !storagesAreEqual {return false}
     }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_Rules: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Rules"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}listener\0\u{1}speaker\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.listener) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.speaker) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.listener.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.listener, fieldNumber: 1)
+    }
+    if !self.speaker.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.speaker, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_Rules, rhs: Flipcash_Chat_V1_Rules) -> Bool {
+    if lhs.listener != rhs.listener {return false}
+    if lhs.speaker != rhs.speaker {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_ListenerRules: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ListenerRules"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}minimum_balance\0\u{1}staff\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Flipcash_Chat_V1_MinimumBalanceRequirement?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .minimumBalance(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .minimumBalance(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Chat_V1_StaffRequirement?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .staff(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .staff(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.kind {
+    case .minimumBalance?: try {
+      guard case .minimumBalance(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .staff?: try {
+      guard case .staff(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_ListenerRules, rhs: Flipcash_Chat_V1_ListenerRules) -> Bool {
+    if lhs.kind != rhs.kind {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SpeakerRules"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}minimum_balance\0\u{1}staff\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Flipcash_Chat_V1_MinimumBalanceRequirement?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .minimumBalance(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .minimumBalance(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Chat_V1_StaffRequirement?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .staff(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .staff(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.kind {
+    case .minimumBalance?: try {
+      guard case .minimumBalance(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .staff?: try {
+      guard case .staff(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_SpeakerRules, rhs: Flipcash_Chat_V1_SpeakerRules) -> Bool {
+    if lhs.kind != rhs.kind {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_StaffRequirement: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".StaffRequirement"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_StaffRequirement, rhs: Flipcash_Chat_V1_StaffRequirement) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MinimumBalanceRequirement: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MinimumBalanceRequirement"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}amount\0\u{1}mints\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._amount) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.mints) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._amount {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    if !self.mints.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.mints, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MinimumBalanceRequirement, rhs: Flipcash_Chat_V1_MinimumBalanceRequirement) -> Bool {
+    if lhs._amount != rhs._amount {return false}
+    if lhs.mints != rhs.mints {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -428,6 +881,41 @@ extension Flipcash_Chat_V1_Member: SwiftProtobuf.Message, SwiftProtobuf._Message
     if lhs._userID != rhs._userID {return false}
     if lhs._userProfile != rhs._userProfile {return false}
     if lhs.pointers != rhs.pointers {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_RosterSummary: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RosterSummary"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}member_count\0\u{1}version\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.memberCount) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.memberCount != 0 {
+      try visitor.visitSingularUInt64Field(value: self.memberCount, fieldNumber: 1)
+    }
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_RosterSummary, rhs: Flipcash_Chat_V1_RosterSummary) -> Bool {
+    if lhs.memberCount != rhs.memberCount {return false}
+    if lhs.version != rhs.version {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -726,12 +726,24 @@ public struct Flipcash_Blob_V1_AccessContext: Sendable {
   ///
   /// A caller never needs this for its OWN profile picture, since it owns
   /// those blobs.
-  public var profile: Flipcash_Common_V1_UserId {
+  public var userProfile: Flipcash_Common_V1_UserId {
     get {
-      if case .profile(let v)? = scope {return v}
+      if case .userProfile(let v)? = scope {return v}
       return Flipcash_Common_V1_UserId()
     }
-    set {scope = .profile(newValue)}
+    set {scope = .userProfile(newValue)}
+  }
+
+  /// The caller is accessing these blobs from this chat's public profile.
+  /// Authorized iff the blob is a rendition of that chat's CURRENT profile
+  /// picture — a profile grants nothing else, and a superseded picture's
+  /// renditions stop resolving through it.
+  public var chatProfile: Flipcash_Common_V1_ChatId {
+    get {
+      if case .chatProfile(let v)? = scope {return v}
+      return Flipcash_Common_V1_ChatId()
+    }
+    set {scope = .chatProfile(newValue)}
   }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -747,7 +759,12 @@ public struct Flipcash_Blob_V1_AccessContext: Sendable {
     ///
     /// A caller never needs this for its OWN profile picture, since it owns
     /// those blobs.
-    case profile(Flipcash_Common_V1_UserId)
+    case userProfile(Flipcash_Common_V1_UserId)
+    /// The caller is accessing these blobs from this chat's public profile.
+    /// Authorized iff the blob is a rendition of that chat's CURRENT profile
+    /// picture — a profile grants nothing else, and a superseded picture's
+    /// renditions stop resolving through it.
+    case chatProfile(Flipcash_Common_V1_ChatId)
 
   }
 
@@ -1388,7 +1405,7 @@ extension Flipcash_Blob_V1_RejectionMetadata: SwiftProtobuf.Message, SwiftProtob
 
 extension Flipcash_Blob_V1_AccessContext: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AccessContext"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{1}profile\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{3}user_profile\0\u{3}chat_profile\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1414,12 +1431,25 @@ extension Flipcash_Blob_V1_AccessContext: SwiftProtobuf.Message, SwiftProtobuf._
         var hadOneofValue = false
         if let current = self.scope {
           hadOneofValue = true
-          if case .profile(let m) = current {v = m}
+          if case .userProfile(let m) = current {v = m}
         }
         try decoder.decodeSingularMessageField(value: &v)
         if let v = v {
           if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.scope = .profile(v)
+          self.scope = .userProfile(v)
+        }
+      }()
+      case 3: try {
+        var v: Flipcash_Common_V1_ChatId?
+        var hadOneofValue = false
+        if let current = self.scope {
+          hadOneofValue = true
+          if case .chatProfile(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.scope = .chatProfile(v)
         }
       }()
       default: break
@@ -1437,9 +1467,13 @@ extension Flipcash_Blob_V1_AccessContext: SwiftProtobuf.Message, SwiftProtobuf._
       guard case .chat(let v)? = self.scope else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
     }()
-    case .profile?: try {
-      guard case .profile(let v)? = self.scope else { preconditionFailure() }
+    case .userProfile?: try {
+      guard case .userProfile(let v)? = self.scope else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .chatProfile?: try {
+      guard case .chatProfile(let v)? = self.scope else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     }()
     case nil: break
     }

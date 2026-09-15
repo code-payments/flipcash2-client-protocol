@@ -8,6 +8,79 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.6.0
+
+Synced to [`flipcash2-protobuf-api@35f99814`](https://github.com/code-payments/flipcash2-protobuf-api/commit/35f9981400947921bbe2872be63b0bb77a569e34),
+picking up six upstream changes: [#93](https://github.com/code-payments/flipcash2-protobuf-api/pull/93)
+through [#98](https://github.com/code-payments/flipcash2-protobuf-api/pull/98).
+
+Three fields were renamed in place. Nothing was renumbered, so the wire format is unchanged and an
+old client keeps decoding new messages — but the generated accessors move, and upgrading will not
+compile until you rename with them. Details under Changed.
+
+### Changed
+
+- `messaging.v1.EmojiReaction.sequence` and `messaging.v1.ReactionUpdate.sequence` are both now
+  `version`. **Source-breaking.** Field numbers (5 and 6), types and semantics are untouched; the
+  name was wrong for what the value does. It is a per-aggregate version advanced by one on every
+  change, not a position in a sequence, and it was already documented as opaque and ordering-only.
+  Swift `.sequence` becomes `.version`; Kotlin `getSequence()`/`setSequence` become
+  `getVersion()`/`setVersion`.
+
+  Keep applying reaction updates last-writer-wins by this value per (message, emoji), and per actor
+  for `reacted_by_self`. It is still not the chat event sequence and still not gapless.
+
+- `blob.v1.AccessContext.profile` is now `user_profile`, and the `scope` oneof gains a third arm.
+  **Source-breaking twice over.** The rename keeps field number 2 and type `common.v1.UserId`, so
+  Swift's oneof case `.profile` becomes `.userProfile` and Kotlin's `ScopeCase.PROFILE` becomes
+  `ScopeCase.USER_PROFILE`. Separately, an exhaustive `switch` or `when` over `scope` needs the new
+  `chat_profile` arm below. Code that only sets one arm sees the rename; code that reads the oneof
+  exhaustively sees both.
+
+### Added
+
+- `chat_profile` on `blob.v1.AccessContext`, field 3, typed `common.v1.ChatId` — the third `scope`
+  arm. It authorizes reading a chat's public profile picture, and only that: the blob must be a
+  rendition of the chat's *current* picture, so renditions of a superseded picture stop resolving
+  through it. That expiry is the difference from the `chat` scope, which does not narrow to one blob.
+
+- `picture` on `chat.v1.Metadata`, field 9, typed `blob.v1.Media`. Group chats only, and optional.
+  This is what makes `chat/v1/model.proto` import `blob/v1/model.proto` for the first time, so a
+  build that compiles the chat package now needs the blob package alongside it.
+
+- `roster_summary` on `chat.v1.Metadata`, field 10, typed `chat.v1.RosterSummary` and marked
+  required. `RosterSummary` describes a chat's member list without containing it: `member_count`
+  (field 1) is the roster's true size, where `Metadata.members` is only a subset for large group
+  chats, and `version` (field 2) advances by one on every membership-record change — a join, a
+  leave, and in future anything the chat records about a member, such as a role.
+
+  `version` is opaque. Compare it against the last value you held: different means your cached member
+  list may be stale and should be refetched. On a stream, apply the greater value and drop the rest,
+  so delivery order stops mattering. There is no delta to fetch against it, only a refetch. It never
+  moves for a profile change — profiles are hydrated fresh onto every response carrying a member.
+
+- `rules` on `chat.v1.Metadata`, field 11, typed `chat.v1.Rules`. Group chats only, and unset means
+  no participation requirements, so existing chats are unaffected.
+
+  `Rules` splits into two independently optional classes: `listener` (field 1, up to 32) gates
+  reading and joining, `speaker` (field 2, up to 32) gates sending. Empty `listener` means anyone can
+  read and join; empty `speaker` means any member can send. All rules within a class must be
+  satisfied, and speaker rules apply on top of listener rules — a user has to be able to listen
+  before they can speak.
+
+  `ListenerRules` and `SpeakerRules` are separate messages with identical `kind` oneofs, each
+  requiring one of `minimum_balance` (field 1) or `staff` (field 2). `StaffRequirement` is empty and
+  means `UserFlags.is_staff`. `MinimumBalanceRequirement` carries a required fiat `amount` and a
+  `mints` list that is currently capped at one entry — empty applies the requirement across all
+  mints, and the field is repeated only so more can be allowed later.
+
+### Unchanged
+
+No field or enum was renumbered, and no result enum gained, lost or reordered a case — the three
+renames all keep their field numbers, and the new `chat_profile` arm appends at 3. No service, RPC or
+message was removed, and no existing message changed the type of an existing field. Every break in
+this release is a name your compiler will point at, not a value that silently means something else.
+
 ## 0.5.0
 
 Synced to [`flipcash2-protobuf-api@797052dd`](https://github.com/code-payments/flipcash2-protobuf-api/commit/797052dd1070662f97407427665fd48967abfac6),
