@@ -8,6 +8,7 @@
 // For information on using the generated types, please see the documentation:
 //   https://github.com/apple/swift-protobuf/
 
+import Foundation
 import SwiftProtobuf
 
 // If the compiler emits an error on this type, it is because this file
@@ -604,6 +605,26 @@ public struct Flipcash_Chat_V1_RosterUpdateBatch: Sendable {
   // methods supported on all messages.
 
   public var rosterUpdates: [Flipcash_Chat_V1_RosterUpdate] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// IdempotencyKey lets a client safely retry a request that creates something.
+/// The server derives the created object's identity from the caller and this
+/// key, so a retry with the same key returns the original result instead of
+/// creating a duplicate. Which parameters were sent is not part of the identity:
+/// a retry with different parameters still returns the original.
+///
+/// The key is owned by the client and is typically a randomly generated UUID.
+/// It is never exposed as the object's identity.
+public struct Flipcash_Chat_V1_IdempotencyKey: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: Data = Data()
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1407,6 +1428,36 @@ extension Flipcash_Chat_V1_RosterUpdateBatch: SwiftProtobuf.Message, SwiftProtob
 
   public static func ==(lhs: Flipcash_Chat_V1_RosterUpdateBatch, rhs: Flipcash_Chat_V1_RosterUpdateBatch) -> Bool {
     if lhs.rosterUpdates != rhs.rosterUpdates {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_IdempotencyKey: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".IdempotencyKey"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.value.isEmpty {
+      try visitor.visitSingularBytesField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_IdempotencyKey, rhs: Flipcash_Chat_V1_IdempotencyKey) -> Bool {
+    if lhs.value != rhs.value {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
