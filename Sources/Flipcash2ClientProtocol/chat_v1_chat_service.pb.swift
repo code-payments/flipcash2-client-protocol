@@ -367,6 +367,18 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
     set {parameters = .group(newValue)}
   }
 
+  /// Key for retrying this request safely. A retry with the same key from the
+  /// same caller returns the chat the first attempt created, with result OK,
+  /// even if the parameters differ.
+  public var idempotencyKey: Flipcash_Chat_V1_IdempotencyKey {
+    get {return _idempotencyKey ?? Flipcash_Chat_V1_IdempotencyKey()}
+    set {_idempotencyKey = newValue}
+  }
+  /// Returns true if `idempotencyKey` has been explicitly set.
+  public var hasIdempotencyKey: Bool {return self._idempotencyKey != nil}
+  /// Clears the value of `idempotencyKey`. Subsequent reads from it will return its default value.
+  public mutating func clearIdempotencyKey() {self._idempotencyKey = nil}
+
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
     set {_auth = newValue}
@@ -427,6 +439,7 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
 
   public init() {}
 
+  fileprivate var _idempotencyKey: Flipcash_Chat_V1_IdempotencyKey? = nil
   fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
 }
 
@@ -967,7 +980,7 @@ extension Flipcash_Chat_V1_GetGroupChatFeedResponse.Result: SwiftProtobuf._Proto
 
 extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".StartChatRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}group\0\u{2}\u{9}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}group\0\u{4}\u{8}idempotency_key\0\u{1}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -988,6 +1001,7 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
           self.parameters = .group(v)
         }
       }()
+      case 9: try { try decoder.decodeSingularMessageField(value: &self._idempotencyKey) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       default: break
       }
@@ -1002,6 +1016,9 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
     try { if case .group(let v)? = self.parameters {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
     } }()
+    try { if let v = self._idempotencyKey {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+    } }()
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
@@ -1010,6 +1027,7 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
 
   public static func ==(lhs: Flipcash_Chat_V1_StartChatRequest, rhs: Flipcash_Chat_V1_StartChatRequest) -> Bool {
     if lhs.parameters != rhs.parameters {return false}
+    if lhs._idempotencyKey != rhs._idempotencyKey {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
