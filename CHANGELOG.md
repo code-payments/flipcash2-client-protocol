@@ -8,6 +8,49 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.8.0
+
+Synced to [`flipcash2-protobuf-api@e1f4116c`](https://github.com/code-payments/flipcash2-protobuf-api/commit/e1f4116c499718401d002cf79ce64229149ee297),
+picking up [#102](https://github.com/code-payments/flipcash2-protobuf-api/pull/102).
+
+`StartChat` gains a required idempotency key, carried by a new `chat.v1.IdempotencyKey` message.
+Twenty added lines across two files, nothing removed and nothing renumbered — but this is not a free
+upgrade, because the new field is required and 0.7.0 has no way to set it.
+
+Group chat is still in flux. `StartChat` itself only arrived one version ago, in 0.7.0, and the
+surface is still being iterated on, so expect it to keep moving. The bump to 0.8.0 tracks the pinned
+contract advancing, not the feature settling — if you are integrating group chat, plan on taking
+further versions rather than pinning this one and walking away.
+
+### Added
+
+- `chat.v1.IdempotencyKey`, a single `bytes value` (field 1) constrained to exactly 16 bytes:
+  `min_len` and `max_len` are both 16, so a shorter or longer value fails validation rather than
+  being padded or truncated. The key is minted and owned by the client, typically a random UUID, and
+  is never exposed as the created chat's identity.
+
+- `idempotency_key` on `chat.v1.StartChatRequest`, field 9,
+  `[(validate.rules).message.required = true]`. It sits between the `parameters` oneof (field 1) and
+  `auth` (field 10), both of which keep their numbers.
+
+### Upgrading
+
+Every `StartChat` call site has to set the key, and where it is minted decides whether the field does
+anything. The server derives the created chat's identity from the caller and the key, so a retry
+carrying the same key returns the chat the first attempt created, with result `OK`, instead of
+creating a second one. The parameters are not part of that identity: a retry with a different title,
+picture or rules still returns the original chat, unchanged. So the key is only worth something if it
+survives a retry — mint it where the user's intent to create a chat begins and carry it down through
+the retry path. A key generated inside the call, fresh on each attempt, passes validation and buys
+nothing: the duplicate chat it was meant to prevent is exactly what you get.
+
+### Unchanged
+
+Nothing was renumbered. `StartChatResponse.Result` keeps all six of its cases in place
+(`OK`, `DENIED`, `TITLE_MODERATED`, `PICTURE_BLOB_NOT_ACCEPTED`, `INVALID_RULES`,
+`RULES_NOT_SATISFIED`), so a positional `rawValue` mapping over it does not shift. No existing field
+changed number or type, and no service, RPC, message or enum case was removed.
+
 ## 0.7.0
 
 Synced to [`flipcash2-protobuf-api@89b444bc`](https://github.com/code-payments/flipcash2-protobuf-api/commit/89b444bc4ae0d099dbaa90cc8b1b301398c94990),
