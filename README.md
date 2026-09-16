@@ -37,6 +37,28 @@ push, resolver, settings, third party — plus the shared `common/v1` and `inten
 contract is owned upstream; `flipcash2.lock` records which commit of it this package was
 generated from.
 
+## Knowing what you built against
+
+Both generated clients carry the package version and the upstream commit they were
+generated from:
+
+```kotlin
+Flipcash2ContractInfo.VERSION           // "0.9.0"
+Flipcash2ContractInfo.shortProtoCommit  // "e1f4116c", or "LOCAL"
+```
+
+```swift
+Flipcash2ContractInfo.version           // "0.9.0"
+Flipcash2ContractInfo.shortProtoCommit  // "e1f4116c", or "LOCAL"
+```
+
+A build on a local proto sync reports `LOCAL` for the commit, because that is what
+`sync-protos.sh --local` writes to `flipcash2.lock` and both generators read it from
+there. `isLocal` is the flag to branch on.
+
+The Swift file's version reads `<next>-dev` on `main`. `publish.yml` stamps the real
+number into the commit it tags, so a resolved SPM tag always carries a released version.
+
 ## Layout
 
 ```

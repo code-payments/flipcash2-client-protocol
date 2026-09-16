@@ -8,6 +8,19 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.9.0
+
+No contract change. Still synced to
+[`flipcash2-protobuf-api@e1f4116c`](https://github.com/code-payments/flipcash2-protobuf-api/commit/e1f4116c499718401d002cf79ce64229149ee297).
+
+### Added
+
+- `Flipcash2ContractInfo`, in both Kotlin and Swift, carrying `VERSION` / `version` and
+  `PROTO_COMMIT` / `protoCommit` for the upstream commit this package was generated from,
+  plus `shortProtoCommit` and `isLocal`. A package built from `sync-protos.sh --local`
+  reports `LOCAL` as its commit, so a consumer can tell a local contract build from a
+  pinned one at runtime.
+
 ## 0.8.0
 
 Synced to [`flipcash2-protobuf-api@e1f4116c`](https://github.com/code-payments/flipcash2-protobuf-api/commit/e1f4116c499718401d002cf79ce64229149ee297),

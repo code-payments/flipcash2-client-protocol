@@ -92,10 +92,10 @@ jobs:
           set -euo pipefail
           scripts/install-swift-toolchain.sh
           scripts/generate-swift.sh
-          if ! git diff --quiet -- Sources; then
+          if ! git diff --quiet -- Sources ':(exclude)Sources/Flipcash2ClientProtocol/ContractInfo.swift'; then
             echo "::error::Sources/ does not match what codegen produces — refusing to tag it."
             echo "The tag is the Swift release, so it has to point at generated code that is current."
-            git --no-pager diff --stat -- Sources
+            git --no-pager diff --stat -- Sources ':(exclude)Sources/Flipcash2ClientProtocol/ContractInfo.swift'
             exit 1
           fi
 
@@ -120,6 +120,26 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_SIGNING_KEY_PASSWORD }}
         run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
+
+      # ContractInfo.swift ships the version, and on main it reads "<next>-dev" because the
+      # number is not real until this workflow runs. Regenerate it with the real one and
+      # commit, so the tag -- which IS the Swift release -- carries a released version.
+      #
+      # The commit is never pushed to main. Only the tag is pushed, so main keeps -dev and
+      # this workflow never needs write access to a protected branch. The tagged commit is
+      # reachable from the tag alone, which is exactly what SPM resolves.
+      - name: Stamp the released version into ContractInfo.swift
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          scripts/generate-swift.sh
+          scripts/check-contract-info.sh
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Sources/Flipcash2ClientProtocol/ContractInfo.swift
+          git commit -m "chore(release): stamp ${{ inputs.version }} into ContractInfo.swift"
 
       # Last, because the tag is the Swift release: once it exists, SPM consumers resolve
       # it immediately. Tagging before the JAR is up would ship half a version.

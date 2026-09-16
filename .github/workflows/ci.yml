@@ -57,6 +57,12 @@ jobs:
       - name: Verify the publishable artifacts assemble
         run: ./gradlew publishToMavenLocal
 
+      - name: Check the contract metadata matches the lock file
+        run: |
+          set -euo pipefail
+          ./gradlew generateContractInfo
+          scripts/check-contract-info.sh
+
       - name: Report generated file counts
         run: |
           set -euo pipefail
@@ -99,7 +105,10 @@ jobs:
         run: |
           set -euo pipefail
           scripts/generate-swift.sh
-          if git diff --quiet -- Sources; then
+          # ContractInfo.swift is excluded below: its version line is stamped by publish.yml
+          # just before tagging, so on a released tag it will not match what codegen produces
+          # here. Its commit field is what matters and check-contract-info.sh guards that.
+          if git diff --quiet -- Sources ':(exclude)Sources/Flipcash2ClientProtocol/ContractInfo.swift'; then
             echo "Sources/ matches the protos."
             exit 0
           fi
@@ -109,5 +118,5 @@ jobs:
           echo "::error::Sources/ does not match what codegen produces."
           echo "Run scripts/generate-swift.sh and commit the result. Pinned toolchain:"
           cat scripts/toolchain.env | grep -v '^#'
-          git --no-pager diff --stat -- Sources
+          git --no-pager diff --stat -- Sources ':(exclude)Sources/Flipcash2ClientProtocol/ContractInfo.swift'
           exit 1
