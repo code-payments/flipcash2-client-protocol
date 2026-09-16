@@ -8,6 +8,115 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.7.0
+
+Synced to [`flipcash2-protobuf-api@89b444bc`](https://github.com/code-payments/flipcash2-protobuf-api/commit/89b444bc4ae0d099dbaa90cc8b1b301398c94990),
+picking up [#99](https://github.com/code-payments/flipcash2-protobuf-api/pull/99) and
+[#100](https://github.com/code-payments/flipcash2-protobuf-api/pull/100).
+
+One field is gone: `event.v1.ChatUpdate.new_messages`, field 2, now `reserved 2`. It has carried
+`[deprecated = true]` since 0.1.0, and `events` has sat beside it as the sequenced replacement for
+just as long, so a client already reading `events` is unaffected and one still falling back to
+`new_messages` will not compile. Everything else is additive: four RPCs that let a client create a
+group chat and move in and out of it, and roster changes delivered on the event stream.
+
+### Removed
+
+- `new_messages` on `event.v1.ChatUpdate`, field 2, previously `messaging.v1.MessageBatch`. The
+  number is now `reserved`, so it cannot be reused and the wire format stays unambiguous for old
+  clients. **Source-breaking for anyone still reading it.** Read new messages from `events`
+  (field 6), which is contiguous, ordered, gap-detectable and catchable up through
+  `Messaging.GetDelta` — none of which `new_messages` offered. Delete the fallback rather than
+  porting it; there is nothing left for it to fall back to.
+
+### Added
+
+- Four RPCs on `service Chat`: `GetGroupChatFeed`, `StartChat`, `JoinChat` and `LeaveChat`. This is
+  what makes `chat/v1/chat_service.proto` import `blob/v1/model.proto` and
+  `moderation/v1/model.proto` for the first time, so anything compiling the chat service now needs
+  both alongside it.
+
+- `GetGroupChatFeed` reads the caller's group chats, ordered by last activity with the most recent
+  first. `GetGroupChatFeedRequest` carries `query_options` (field 1) and required `auth` (field 10);
+  `GetGroupChatFeedResponse` carries `result` (field 1, `OK`/`DENIED`/`NOT_FOUND`), up to 100 `chats`
+  (field 2, `chat.v1.Metadata`), `paging_token` (field 3) and `has_more` (field 4).
+
+  It has the same read contract as `GetDmChatFeed`, and the same reason for it: chats are ordered by
+  a mutable key, so pagination alone cannot give a complete read. Open the event stream and start
+  buffering `ChatUpdate` *before* the first call, page until `has_more` is false while echoing back
+  the previous response's `paging_token`, then merge the buffered and ongoing updates onto the
+  paginated set. `query_options` controls `page_size` only — ordering is not client-selectable, and
+  the token is opaque and server-minted, so leave it unset on the first request and never construct
+  one.
+
+  One thing the DM feed does not have: a group's membership can change mid-read. Every page is served
+  only for groups the caller is still a member of at the time of that page, so a group left between
+  pages is simply absent and its removal arrives on the stream. A client treating the paginated set
+  as authoritative without reconciling will show a chat it is no longer in.
+
+  Group feed tokens are considerably larger than DM feed tokens, because the server carries the
+  snapshot's remaining order inside the token rather than recomputing it per page. See the
+  `PagingToken` change below.
+
+- `StartChat` creates a chat. `StartChatRequest` has a required `parameters` oneof whose only arm
+  today is `group` (field 1), plus required `auth` (field 10). `GroupChatParameters` carries `title`
+  (field 1, 1–64 characters), optional `picture` (field 2, `blob.v1.BlobId` — the original the caller
+  uploaded, which must be caller-owned and `READY`) and optional `rules` (field 3, the
+  `chat.v1.Rules` added in 0.6.0; unset means no participation requirements, and the caller must
+  satisfy whatever it does set).
+
+  `StartChatResponse.result` (field 1) is `OK`, `DENIED`, `TITLE_MODERATED`,
+  `PICTURE_BLOB_NOT_ACCEPTED`, `INVALID_RULES` or `RULES_NOT_SATISFIED`. `chat` (field 2) is set only
+  on `OK` and carries the server-generated `chat_id` along with any picture renditions the server
+  derived, so there is nothing to refetch. `flagged_category` (field 3,
+  `moderation.v1.FlaggedCategory`) is the best-fit category that tripped moderation, set only on
+  `TITLE_MODERATED` and `NONE` otherwise; it mirrors the Moderation service's vocabulary, so a client
+  already rendering moderation categories can reuse that mapping.
+
+- `JoinChat` and `LeaveChat` move the caller in and out of a chat's roster. Both requests take
+  required `chat_id` (field 1) and `auth` (field 10). `JoinChatResponse.result` is
+  `OK`/`DENIED`/`NOT_FOUND`/`RULES_NOT_SATISFIED`, with `chat` (field 2) set only on `OK`, giving the
+  joined chat's metadata as the caller now sees it. `LeaveChatResponse.result` is
+  `OK`/`DENIED`/`NOT_FOUND` and carries nothing else.
+
+- `chat.v1.RosterUpdate` and `chat.v1.RosterUpdateBatch`. A `RosterUpdate` is one member joining or
+  leaving — a required `kind` oneof of `member_joined` (field 1) or `member_left` (field 2), plus
+  required `roster_summary` (field 10) holding the roster after that change. `RosterUpdateBatch`
+  wraps 1–100 of them. Updates go to the chat's members, including the affected user's other
+  devices, and are best-effort.
+
+  They are convergent, not sequenced: they ride the event stream *outside* the gap-detected event
+  log, and are applied by version as described on `RosterSummary` — a greater version than the one
+  held means apply, lesser or equal means drop, so delivery order does not matter. A miss is not
+  caught up via `GetDelta`; refetch the roster on a version that cannot be reconciled.
+
+  `MemberJoined.member` (field 1) arrives with the profile hydrated, so a cached member list updates
+  without a refetch. `MemberJoined.metadata` (field 2) is set **only when the joining member is the
+  recipient** — that is the signal to insert the chat into your own list, from that snapshot. Version
+  by the enclosing `RosterUpdate.roster_summary`, which is authoritative;
+  `metadata.roster_summary` is not compared separately. `MemberLeft.user_id` (field 1) naming the
+  recipient means the recipient is out and the chat should come off their list.
+
+- `roster_updates` on `event.v1.ChatUpdate`, field 8, typed `chat.v1.RosterUpdateBatch`. Same
+  convergent-overlay handling as `reaction_updates`, and the delivery path for everything above: a
+  `MemberLeft` naming the recipient is how a group dropped between pages of a feed read gets
+  reconciled.
+
+### Changed
+
+- `common.v1.PagingToken.value` raises its validation `max_len` from 128 to 16384. Same field, same
+  number, bytes on the wire either way, and no generated API change — this is a server-side
+  validation ceiling only. It is raised because `GetGroupChatFeed` packs the snapshot's remaining
+  order into the token. Treat the token as an opaque blob and size any storage holding it for the new
+  ceiling rather than the old one.
+
+### Unchanged
+
+Nothing was renumbered, and no existing result enum gained, lost or reordered a case — all four
+`Result` enums in this release are on brand-new messages, so nothing positional shifted underneath
+anyone. No existing field changed type, and no service, RPC or message other than `new_messages` was
+removed. Apart from dropping that one fallback, the upgrade is additive.
+
 ## 0.6.0
 
 Synced to [`flipcash2-protobuf-api@35f99814`](https://github.com/code-payments/flipcash2-protobuf-api/commit/35f9981400947921bbe2872be63b0bb77a569e34),

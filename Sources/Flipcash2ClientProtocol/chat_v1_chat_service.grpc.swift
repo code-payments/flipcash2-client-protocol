@@ -44,10 +44,62 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetDmChatFeed"
             )
         }
+        /// Namespace for "GetGroupChatFeed" metadata.
+        public enum GetGroupChatFeed {
+            /// Request type for "GetGroupChatFeed".
+            public typealias Input = Flipcash_Chat_V1_GetGroupChatFeedRequest
+            /// Response type for "GetGroupChatFeed".
+            public typealias Output = Flipcash_Chat_V1_GetGroupChatFeedResponse
+            /// Descriptor for "GetGroupChatFeed".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetGroupChatFeed"
+            )
+        }
+        /// Namespace for "StartChat" metadata.
+        public enum StartChat {
+            /// Request type for "StartChat".
+            public typealias Input = Flipcash_Chat_V1_StartChatRequest
+            /// Response type for "StartChat".
+            public typealias Output = Flipcash_Chat_V1_StartChatResponse
+            /// Descriptor for "StartChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "StartChat"
+            )
+        }
+        /// Namespace for "JoinChat" metadata.
+        public enum JoinChat {
+            /// Request type for "JoinChat".
+            public typealias Input = Flipcash_Chat_V1_JoinChatRequest
+            /// Response type for "JoinChat".
+            public typealias Output = Flipcash_Chat_V1_JoinChatResponse
+            /// Descriptor for "JoinChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "JoinChat"
+            )
+        }
+        /// Namespace for "LeaveChat" metadata.
+        public enum LeaveChat {
+            /// Request type for "LeaveChat".
+            public typealias Input = Flipcash_Chat_V1_LeaveChatRequest
+            /// Response type for "LeaveChat".
+            public typealias Output = Flipcash_Chat_V1_LeaveChatResponse
+            /// Descriptor for "LeaveChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "LeaveChat"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.chat.v1.Chat" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetChat.descriptor,
-            GetDmChatFeed.descriptor
+            GetDmChatFeed.descriptor,
+            GetGroupChatFeed.descriptor,
+            StartChat.descriptor,
+            JoinChat.descriptor,
+            LeaveChat.descriptor
         ]
     }
 }
@@ -132,6 +184,119 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetDmChatFeedResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetDmChatFeedResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetGroupChatFeed" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetGroupChatFeed gets the set of group chats for an owner account using
+        /// > a paged API, ordered by last activity with the most recent first.
+        /// > 
+        /// > It has the same read contract as GetDmChatFeed. Chats are ordered by a
+        /// > mutable key (last_activity), so pagination alone cannot guarantee a
+        /// > complete read. To get the full list, the client MUST combine this RPC
+        /// > with the event stream:
+        /// > 
+        /// >   1. Open the event stream to receive ChatUpdate and begin buffering
+        /// >      updates BEFORE the first GetGroupChatFeed call.
+        /// >   2. Page through GetGroupChatFeed to exhaustion (until has_more is
+        /// >      false), always echoing back the paging token returned by the prior
+        /// >      response. All pages are served against a single snapshot pinned by
+        /// >      that token.
+        /// >   3. Merge the buffered and ongoing stream updates onto the paginated
+        /// >      set. Any chat whose activity changed after the snapshot watermark
+        /// >      is delivered via the stream rather than via pagination.
+        /// > 
+        /// > Unlike the DM feed, a group's membership can change while the feed is
+        /// > being read. Every page is served only for groups the caller is still a
+        /// > member of at the time of that page; a group the caller left between
+        /// > pages is dropped, and its removal arrives on the stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetGroupChatFeedRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetGroupChatFeedRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetGroupChatFeedResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getGroupChatFeed<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetGroupChatFeedRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetGroupChatFeedRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetGroupChatFeedResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetGroupChatFeedResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "StartChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > StartChat starts a new chat.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_StartChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_StartChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_StartChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func startChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_StartChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_StartChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_StartChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_StartChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "JoinChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > JoinChat adds the caller to a chat's roster.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_JoinChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_JoinChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func joinChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_JoinChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_JoinChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_JoinChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_JoinChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "LeaveChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > LeaveChat removes the caller from a chat's roster.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_LeaveChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_LeaveChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func leaveChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_LeaveChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_LeaveChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveChatResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -239,6 +404,163 @@ extension Flipcash_Chat_V1_Chat {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "GetGroupChatFeed" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetGroupChatFeed gets the set of group chats for an owner account using
+        /// > a paged API, ordered by last activity with the most recent first.
+        /// > 
+        /// > It has the same read contract as GetDmChatFeed. Chats are ordered by a
+        /// > mutable key (last_activity), so pagination alone cannot guarantee a
+        /// > complete read. To get the full list, the client MUST combine this RPC
+        /// > with the event stream:
+        /// > 
+        /// >   1. Open the event stream to receive ChatUpdate and begin buffering
+        /// >      updates BEFORE the first GetGroupChatFeed call.
+        /// >   2. Page through GetGroupChatFeed to exhaustion (until has_more is
+        /// >      false), always echoing back the paging token returned by the prior
+        /// >      response. All pages are served against a single snapshot pinned by
+        /// >      that token.
+        /// >   3. Merge the buffered and ongoing stream updates onto the paginated
+        /// >      set. Any chat whose activity changed after the snapshot watermark
+        /// >      is delivered via the stream rather than via pagination.
+        /// > 
+        /// > Unlike the DM feed, a group's membership can change while the feed is
+        /// > being read. Every page is served only for groups the caller is still a
+        /// > member of at the time of that page; a group the caller left between
+        /// > pages is dropped, and its removal arrives on the stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetGroupChatFeedRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetGroupChatFeedRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetGroupChatFeedResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getGroupChatFeed<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetGroupChatFeedRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetGroupChatFeedRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetGroupChatFeedResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetGroupChatFeedResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetGroupChatFeed.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "StartChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > StartChat starts a new chat.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_StartChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_StartChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_StartChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func startChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_StartChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_StartChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_StartChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_StartChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.StartChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "JoinChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > JoinChat adds the caller to a chat's roster.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_JoinChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_JoinChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func joinChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_JoinChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_JoinChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_JoinChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_JoinChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.JoinChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "LeaveChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > LeaveChat removes the caller from a chat's roster.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_LeaveChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_LeaveChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func leaveChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_LeaveChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_LeaveChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.LeaveChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -319,6 +641,143 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetDmChatFeedRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetDmChatFeedResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetGroupChatFeed" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetGroupChatFeed gets the set of group chats for an owner account using
+    /// > a paged API, ordered by last activity with the most recent first.
+    /// > 
+    /// > It has the same read contract as GetDmChatFeed. Chats are ordered by a
+    /// > mutable key (last_activity), so pagination alone cannot guarantee a
+    /// > complete read. To get the full list, the client MUST combine this RPC
+    /// > with the event stream:
+    /// > 
+    /// >   1. Open the event stream to receive ChatUpdate and begin buffering
+    /// >      updates BEFORE the first GetGroupChatFeed call.
+    /// >   2. Page through GetGroupChatFeed to exhaustion (until has_more is
+    /// >      false), always echoing back the paging token returned by the prior
+    /// >      response. All pages are served against a single snapshot pinned by
+    /// >      that token.
+    /// >   3. Merge the buffered and ongoing stream updates onto the paginated
+    /// >      set. Any chat whose activity changed after the snapshot watermark
+    /// >      is delivered via the stream rather than via pagination.
+    /// > 
+    /// > Unlike the DM feed, a group's membership can change while the feed is
+    /// > being read. Every page is served only for groups the caller is still a
+    /// > member of at the time of that page; a group the caller left between
+    /// > pages is dropped, and its removal arrives on the stream.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetGroupChatFeedRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getGroupChatFeed<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetGroupChatFeedRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetGroupChatFeedResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getGroupChatFeed(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetGroupChatFeedRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetGroupChatFeedResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "StartChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > StartChat starts a new chat.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_StartChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func startChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_StartChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_StartChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.startChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_StartChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_StartChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "JoinChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > JoinChat adds the caller to a chat's roster.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func joinChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_JoinChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_JoinChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.joinChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_JoinChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_JoinChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "LeaveChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > LeaveChat removes the caller from a chat's roster.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func leaveChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.leaveChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_LeaveChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_LeaveChatResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -409,6 +868,159 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getDmChatFeed(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetGroupChatFeed" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetGroupChatFeed gets the set of group chats for an owner account using
+    /// > a paged API, ordered by last activity with the most recent first.
+    /// > 
+    /// > It has the same read contract as GetDmChatFeed. Chats are ordered by a
+    /// > mutable key (last_activity), so pagination alone cannot guarantee a
+    /// > complete read. To get the full list, the client MUST combine this RPC
+    /// > with the event stream:
+    /// > 
+    /// >   1. Open the event stream to receive ChatUpdate and begin buffering
+    /// >      updates BEFORE the first GetGroupChatFeed call.
+    /// >   2. Page through GetGroupChatFeed to exhaustion (until has_more is
+    /// >      false), always echoing back the paging token returned by the prior
+    /// >      response. All pages are served against a single snapshot pinned by
+    /// >      that token.
+    /// >   3. Merge the buffered and ongoing stream updates onto the paginated
+    /// >      set. Any chat whose activity changed after the snapshot watermark
+    /// >      is delivered via the stream rather than via pagination.
+    /// > 
+    /// > Unlike the DM feed, a group's membership can change while the feed is
+    /// > being read. Every page is served only for groups the caller is still a
+    /// > member of at the time of that page; a group the caller left between
+    /// > pages is dropped, and its removal arrives on the stream.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getGroupChatFeed<Result>(
+        _ message: Flipcash_Chat_V1_GetGroupChatFeedRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetGroupChatFeedResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetGroupChatFeedRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getGroupChatFeed(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "StartChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > StartChat starts a new chat.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func startChat<Result>(
+        _ message: Flipcash_Chat_V1_StartChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_StartChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_StartChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.startChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "JoinChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > JoinChat adds the caller to a chat's roster.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func joinChat<Result>(
+        _ message: Flipcash_Chat_V1_JoinChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_JoinChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_JoinChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.joinChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "LeaveChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > LeaveChat removes the caller from a chat's roster.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func leaveChat<Result>(
+        _ message: Flipcash_Chat_V1_LeaveChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.leaveChat(
             request: request,
             options: options,
             onResponse: handleResponse
