@@ -43,6 +43,11 @@ public struct Flipcash_Messaging_V1_GetMessageRequest: Sendable {
   /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
   public mutating func clearMessageID() {self._messageID = nil}
 
+  /// What the client intends to render, and so whether the message may be
+  /// returned redacted (see ViewMode). Unset (FULL) is the pre-redaction
+  /// contract: full content, or DENIED.
+  public var viewMode: Flipcash_Messaging_V1_ViewMode = .full
+
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
     set {_auth = newValue}
@@ -154,6 +159,13 @@ public struct Flipcash_Messaging_V1_GetMessagesRequest: Sendable {
     set {query = .messageIds(newValue)}
   }
 
+  /// What the client intends to render, and so whether the messages may be
+  /// returned redacted (see ViewMode). Applies to both query forms. Unset
+  /// (FULL) is the pre-redaction contract: full content, or DENIED. Every
+  /// message in a response is returned under the same mode: a page is
+  /// either wholly full or wholly redacted, never mixed.
+  public var viewMode: Flipcash_Messaging_V1_ViewMode = .full
+
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
     set {_auth = newValue}
@@ -257,6 +269,15 @@ public struct Flipcash_Messaging_V1_GetDeltaRequest: Sendable {
   /// this value, up to the current head. Use 0 to fetch from the beginning of
   /// the retained log.
   public var afterSequence: UInt64 = 0
+
+  /// What the client intends to render, and so whether the messages may be
+  /// returned redacted (see ViewMode). Unset (FULL) is the pre-redaction
+  /// contract: full content, or DENIED. The mode is fixed at stream open,
+  /// like latest_sequence: every batch in the stream is returned under the
+  /// same mode, never mixed. A client catching up a redacted view must use
+  /// the same mode it read the history under, so the delta it applies is
+  /// shaped like the state it applies it to.
+  public var viewMode: Flipcash_Messaging_V1_ViewMode = .full
 
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
@@ -790,7 +811,8 @@ public struct Flipcash_Messaging_V1_AddReactionResponse: Sendable {
 
   public var result: Flipcash_Messaging_V1_AddReactionResponse.Result = .ok
 
-  /// The affected emoji's aggregate after the add (count, reacted_by_self true).
+  /// The affected emoji's aggregate after the add (count, self_reactor set at
+  /// the aggregate's version).
   public var reaction: Flipcash_Messaging_V1_EmojiReaction {
     get {return _reaction ?? Flipcash_Messaging_V1_EmojiReaction()}
     set {_reaction = newValue}
@@ -1003,11 +1025,13 @@ public struct Flipcash_Messaging_V1_GetReactorsRequest: Sendable {
   /// Clears the value of `emoji`. Subsequent reads from it will return its default value.
   public mutating func clearEmoji() {self._emoji = nil}
 
-  /// Paging over the reactor list (server-ordered, typically most-recent
-  /// first). Leave options.paging_token unset on the first request; on every
-  /// subsequent request, set it to the paging_token from the most recent
-  /// response to advance through the list. The token is opaque and
-  /// server-generated; do not construct it.
+  /// Paging over the reactor list. The order is fixed: reaction order, newest
+  /// first — descending Reactor.version, never reacted_ts. Leave
+  /// options.paging_token unset on the first request; on every subsequent
+  /// request, set it to the paging_token from the most recent response to
+  /// advance through the list. The token is opaque and server-generated; do
+  /// not construct it. options.page_size above 100 is clamped to 100, the most
+  /// a response carries; options.order is ignored.
   public var options: Flipcash_Common_V1_QueryOptions {
     get {return _options ?? Flipcash_Common_V1_QueryOptions()}
     set {_options = newValue}
@@ -1044,8 +1068,9 @@ public struct Flipcash_Messaging_V1_GetReactorsResponse: Sendable {
 
   public var result: Flipcash_Messaging_V1_GetReactorsResponse.Result = .ok
 
-  /// A page of users who reacted with the requested emoji, with their reaction
-  /// timestamps. Empty when the message exists but has no reactors for the emoji.
+  /// A page of users who reacted with the requested emoji, newest first (see
+  /// Reactor.version). Empty when the message exists but has no reactors for
+  /// the emoji.
   public var reactors: [Flipcash_Messaging_V1_Reactor] = []
 
   /// The server-generated cursor advanced past this page. The client MUST send
@@ -1065,6 +1090,16 @@ public struct Flipcash_Messaging_V1_GetReactorsResponse: Sendable {
   /// the reactor list has been fully read. When true, the client should issue
   /// another GetReactorsRequest with the returned paging_token.
   public var hasMore_p: Bool = false
+
+  /// The emoji aggregate's version (EmojiReaction.version) the page is current
+  /// to: the server reads it BEFORE the page, so the page reflects every add
+  /// and remove up to this version and possibly some after it. A client
+  /// keeping an open reactor list live applies ReactionUpdates for this
+  /// (message, emoji) whose version exceeds this value; any it re-applies are
+  /// idempotent (an ADDED actor already listed dedupes, a REMOVED actor already
+  /// absent is a no-op). 0 when the emoji has never been reacted with on the
+  /// message. Set when result is OK.
+  public var version: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1159,9 +1194,9 @@ public struct Flipcash_Messaging_V1_GetReactionSummaryResponse: Sendable {
 
   public var result: Flipcash_Messaging_V1_GetReactionSummaryResponse.Result = .ok
 
-  /// The aggregate reaction state for the message. reacted_by_self is computed
+  /// The aggregate reaction state for the message. self_reactor is computed
   /// for the caller; clients still apply per (message, emoji) by
-  /// EmojiReaction.sequence, so a summary that is slightly behind a live update
+  /// EmojiReaction.version, so a summary that is slightly behind a live update
   /// is harmlessly ignored rather than regressing state.
   public var summary: Flipcash_Messaging_V1_ReactionSummary {
     get {return _summary ?? Flipcash_Messaging_V1_ReactionSummary()}
@@ -1280,9 +1315,9 @@ public struct Flipcash_Messaging_V1_GetReactionSummariesResponse: Sendable {
   public var result: Flipcash_Messaging_V1_GetReactionSummariesResponse.Result = .ok
 
   /// One summary per requested message, keyed by ReactionSummary.message_id.
-  /// reacted_by_self in each summary is computed for the caller; clients still
-  /// apply per (message, emoji) by EmojiReaction.sequence,  so a summary that
-  /// is slightly behind a live update is harmlessly ignored rather than regressing
+  /// self_reactor in each summary is computed for the caller; clients still
+  /// apply per (message, emoji) by EmojiReaction.version, so a summary that is
+  /// slightly behind a live update is harmlessly ignored rather than regressing
   /// state.
   public var summaries: [Flipcash_Messaging_V1_ReactionSummary] = []
 
@@ -1503,7 +1538,7 @@ fileprivate let _protobuf_package = "flipcash.messaging.v1"
 
 extension Flipcash_Messaging_V1_GetMessageRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GetMessageRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}message_id\0\u{2}\u{8}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}message_id\0\u{3}view_mode\0\u{2}\u{7}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1513,6 +1548,7 @@ extension Flipcash_Messaging_V1_GetMessageRequest: SwiftProtobuf.Message, SwiftP
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.viewMode) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       default: break
       }
@@ -1530,6 +1566,9 @@ extension Flipcash_Messaging_V1_GetMessageRequest: SwiftProtobuf.Message, SwiftP
     try { if let v = self._messageID {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    if self.viewMode != .full {
+      try visitor.visitSingularEnumField(value: self.viewMode, fieldNumber: 3)
+    }
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
@@ -1539,6 +1578,7 @@ extension Flipcash_Messaging_V1_GetMessageRequest: SwiftProtobuf.Message, SwiftP
   public static func ==(lhs: Flipcash_Messaging_V1_GetMessageRequest, rhs: Flipcash_Messaging_V1_GetMessageRequest) -> Bool {
     if lhs._chatID != rhs._chatID {return false}
     if lhs._messageID != rhs._messageID {return false}
+    if lhs.viewMode != rhs.viewMode {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -1590,7 +1630,7 @@ extension Flipcash_Messaging_V1_GetMessageResponse.Result: SwiftProtobuf._ProtoN
 
 extension Flipcash_Messaging_V1_GetMessagesRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GetMessagesRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}options\0\u{3}message_ids\0\u{2}\u{7}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}options\0\u{3}message_ids\0\u{3}view_mode\0\u{2}\u{6}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1625,6 +1665,7 @@ extension Flipcash_Messaging_V1_GetMessagesRequest: SwiftProtobuf.Message, Swift
           self.query = .messageIds(v)
         }
       }()
+      case 4: try { try decoder.decodeSingularEnumField(value: &self.viewMode) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       default: break
       }
@@ -1650,6 +1691,9 @@ extension Flipcash_Messaging_V1_GetMessagesRequest: SwiftProtobuf.Message, Swift
     }()
     case nil: break
     }
+    if self.viewMode != .full {
+      try visitor.visitSingularEnumField(value: self.viewMode, fieldNumber: 4)
+    }
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
@@ -1659,6 +1703,7 @@ extension Flipcash_Messaging_V1_GetMessagesRequest: SwiftProtobuf.Message, Swift
   public static func ==(lhs: Flipcash_Messaging_V1_GetMessagesRequest, rhs: Flipcash_Messaging_V1_GetMessagesRequest) -> Bool {
     if lhs._chatID != rhs._chatID {return false}
     if lhs.query != rhs.query {return false}
+    if lhs.viewMode != rhs.viewMode {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -1710,7 +1755,7 @@ extension Flipcash_Messaging_V1_GetMessagesResponse.Result: SwiftProtobuf._Proto
 
 extension Flipcash_Messaging_V1_GetDeltaRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GetDeltaRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}after_sequence\0\u{2}\u{8}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}after_sequence\0\u{3}view_mode\0\u{2}\u{7}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1720,6 +1765,7 @@ extension Flipcash_Messaging_V1_GetDeltaRequest: SwiftProtobuf.Message, SwiftPro
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
       case 2: try { try decoder.decodeSingularUInt64Field(value: &self.afterSequence) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.viewMode) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       default: break
       }
@@ -1737,6 +1783,9 @@ extension Flipcash_Messaging_V1_GetDeltaRequest: SwiftProtobuf.Message, SwiftPro
     if self.afterSequence != 0 {
       try visitor.visitSingularUInt64Field(value: self.afterSequence, fieldNumber: 2)
     }
+    if self.viewMode != .full {
+      try visitor.visitSingularEnumField(value: self.viewMode, fieldNumber: 3)
+    }
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
@@ -1746,6 +1795,7 @@ extension Flipcash_Messaging_V1_GetDeltaRequest: SwiftProtobuf.Message, SwiftPro
   public static func ==(lhs: Flipcash_Messaging_V1_GetDeltaRequest, rhs: Flipcash_Messaging_V1_GetDeltaRequest) -> Bool {
     if lhs._chatID != rhs._chatID {return false}
     if lhs.afterSequence != rhs.afterSequence {return false}
+    if lhs.viewMode != rhs.viewMode {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -2326,7 +2376,7 @@ extension Flipcash_Messaging_V1_GetReactorsRequest: SwiftProtobuf.Message, Swift
 
 extension Flipcash_Messaging_V1_GetReactorsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".GetReactorsResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{1}reactors\0\u{3}paging_token\0\u{3}has_more\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{1}reactors\0\u{3}paging_token\0\u{3}has_more\0\u{1}version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2338,6 +2388,7 @@ extension Flipcash_Messaging_V1_GetReactorsResponse: SwiftProtobuf.Message, Swif
       case 2: try { try decoder.decodeRepeatedMessageField(value: &self.reactors) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._pagingToken) }()
       case 4: try { try decoder.decodeSingularBoolField(value: &self.hasMore_p) }()
+      case 5: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       default: break
       }
     }
@@ -2360,6 +2411,9 @@ extension Flipcash_Messaging_V1_GetReactorsResponse: SwiftProtobuf.Message, Swif
     if self.hasMore_p != false {
       try visitor.visitSingularBoolField(value: self.hasMore_p, fieldNumber: 4)
     }
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 5)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2368,6 +2422,7 @@ extension Flipcash_Messaging_V1_GetReactorsResponse: SwiftProtobuf.Message, Swif
     if lhs.reactors != rhs.reactors {return false}
     if lhs._pagingToken != rhs._pagingToken {return false}
     if lhs.hasMore_p != rhs.hasMore_p {return false}
+    if lhs.version != rhs.version {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

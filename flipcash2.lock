@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: e1f4116c499718401d002cf79ce64229149ee297
-subject: Add idempotency key to StartChat RPC request (#102)
+commit: dd5e92db6f76700ab6b565f4eff1f9fb25140c9a
+subject: Add Reporting RPC service (#113)

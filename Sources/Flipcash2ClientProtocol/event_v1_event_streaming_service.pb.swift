@@ -78,12 +78,113 @@ public struct Flipcash_Event_V1_StreamEventsRequest: Sendable {
     /// Clears the value of `ts`. Subsequent reads from it will return its default value.
     public mutating func clearTs() {self._ts = nil}
 
+    /// What the stream is for. Optional: when nothing is set, the stream is
+    /// for the signing user and carries every event addressed to them, the
+    /// contract that predates this field. When set, it takes over, and the
+    /// stream carries only what the target describes.
+    public var target: Flipcash_Event_V1_StreamEventsRequest.Params.OneOf_Target? = nil
+
+    public var chatPreview: Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams {
+      get {
+        if case .chatPreview(let v)? = target {return v}
+        return Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams()
+      }
+      set {target = .chatPreview(newValue)}
+    }
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    /// What the stream is for. Optional: when nothing is set, the stream is
+    /// for the signing user and carries every event addressed to them, the
+    /// contract that predates this field. When set, it takes over, and the
+    /// stream carries only what the target describes.
+    public enum OneOf_Target: Equatable, Sendable {
+      case chatPreview(Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams)
+
+    }
 
     public init() {}
 
     fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
     fileprivate var _ts: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  }
+
+  /// ChatPreviewParams targets a stream at a preview of a single group chat:
+  /// ChatUpdate for chat_id, under view_mode, and nothing else, for a bounded
+  /// window of time. No update for any other chat, is ever delivered on it.
+  ///
+  /// Only group chats can be previewed. A DM has no one to preview it — a
+  /// non-member of a DM may not read it under any mode — so a chat_id naming
+  /// a DM is DENIED, whatever the viewer's standing and whatever the mode,
+  /// by the same rule that denies every other read of it. A DM's members
+  /// follow it on their user stream.
+  ///
+  /// The stream is time-bounded. The server fixes the lifetime of a preview
+  /// at open — the bound is the server's, not the client's, and there is no
+  /// way to request a longer one — and ends the stream with STREAM_EXPIRED
+  /// when it elapses, whether or not anything was delivered. Pings and pongs
+  /// keep the stream healthy, not alive: a pong does not extend the window.
+  /// A client still previewing the chat when the window closes opens a new
+  /// preview stream, and reconciles anything it missed in between the way it
+  /// would after any reconnect (GetDelta for the event log, a refresh of the
+  /// overlays). The server may refuse to open a preview, with DENIED, to a
+  /// viewer who opens too many in too short a time.
+  ///
+  /// A preview is for a viewer who is not (yet) a member of the chat. A
+  /// member's own chats are already carried on their user stream, which is
+  /// not time-bounded, and a client should not preview a chat it is a member
+  /// of; the server does not refuse it, but delivers the chat's updates on
+  /// both streams. A viewer who joins the chat while previewing it switches
+  /// to their user stream: the preview keeps delivering until its window
+  /// closes, but is not extended by the join.
+  ///
+  /// The stream opens only if the viewer may read the chat under the mode,
+  /// by the same rule as any other read under a messaging.v1.ViewMode: a
+  /// member, or a non-member of a group who satisfies its listener rules,
+  /// may read in full; a non-member of a group with listener rules they do
+  /// not satisfy may read redacted; anyone else is DENIED. A chat that does
+  /// not exist is NOT_FOUND. Standing is evaluated at stream open, and the
+  /// server may end the stream with DENIED before the window closes if the
+  /// viewer later may not read the chat under the mode — e.g. the rules
+  /// changed, or they were removed from the roster.
+  ///
+  /// Within a ChatUpdate, the mode decides only the messages: those carried
+  /// by events, and last_message in metadata_updates. Every message on the
+  /// stream is delivered under the mode fixed at open, like GetDelta, never
+  /// mixed, with Message.redacted set on each when redacted. Pointer,
+  /// typing, reaction and roster overlays are delivered whatever the mode.
+  ///
+  /// A client previewing a chat redacted keeps this stream and its
+  /// GetMessages/GetDelta reads under the same mode, so the events it
+  /// applies are shaped like the state it applies them to (see
+  /// messaging.v1.Message.redacted).
+  public struct ChatPreviewParams: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The one chat whose updates are streamed. Must be a group chat; a DM
+    /// is DENIED.
+    public var chatID: Flipcash_Common_V1_ChatId {
+      get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+      set {_chatID = newValue}
+    }
+    /// Returns true if `chatID` has been explicitly set.
+    public var hasChatID: Bool {return self._chatID != nil}
+    /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+    public mutating func clearChatID() {self._chatID = nil}
+
+    /// What the client intends to render of the chat, and so whether its
+    /// messages may be delivered redacted (see messaging.v1.ViewMode).
+    /// Unset (FULL) delivers full content to a viewer who may read the
+    /// chat in full, and is DENIED to everyone else.
+    public var viewMode: Flipcash_Messaging_V1_ViewMode = .full
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
   }
 
   public init() {}
@@ -142,6 +243,8 @@ public struct Flipcash_Event_V1_StreamEventsResponse: Sendable {
       public typealias RawValue = Int
       case denied // = 0
       case invalidTimestamp // = 1
+      case notFound // = 2
+      case streamExpired // = 3
       case UNRECOGNIZED(Int)
 
       public init() {
@@ -152,6 +255,8 @@ public struct Flipcash_Event_V1_StreamEventsResponse: Sendable {
         switch rawValue {
         case 0: self = .denied
         case 1: self = .invalidTimestamp
+        case 2: self = .notFound
+        case 3: self = .streamExpired
         default: self = .UNRECOGNIZED(rawValue)
         }
       }
@@ -160,6 +265,8 @@ public struct Flipcash_Event_V1_StreamEventsResponse: Sendable {
         switch self {
         case .denied: return 0
         case .invalidTimestamp: return 1
+        case .notFound: return 2
+        case .streamExpired: return 3
         case .UNRECOGNIZED(let i): return i
         }
       }
@@ -168,6 +275,8 @@ public struct Flipcash_Event_V1_StreamEventsResponse: Sendable {
       public static let allCases: [Flipcash_Event_V1_StreamEventsResponse.StreamError.Code] = [
         .denied,
         .invalidTimestamp,
+        .notFound,
+        .streamExpired,
       ]
 
     }
@@ -331,7 +440,7 @@ extension Flipcash_Event_V1_StreamEventsRequest: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Event_V1_StreamEventsRequest.Params: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Event_V1_StreamEventsRequest.protoMessageName + ".Params"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}auth\0\u{1}ts\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}auth\0\u{1}ts\0\u{3}chat_preview\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -341,6 +450,19 @@ extension Flipcash_Event_V1_StreamEventsRequest.Params: SwiftProtobuf.Message, S
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._ts) }()
+      case 3: try {
+        var v: Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams?
+        var hadOneofValue = false
+        if let current = self.target {
+          hadOneofValue = true
+          if case .chatPreview(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.target = .chatPreview(v)
+        }
+      }()
       default: break
       }
     }
@@ -357,12 +479,55 @@ extension Flipcash_Event_V1_StreamEventsRequest.Params: SwiftProtobuf.Message, S
     try { if let v = self._ts {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    try { if case .chatPreview(let v)? = self.target {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Event_V1_StreamEventsRequest.Params, rhs: Flipcash_Event_V1_StreamEventsRequest.Params) -> Bool {
     if lhs._auth != rhs._auth {return false}
     if lhs._ts != rhs._ts {return false}
+    if lhs.target != rhs.target {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Event_V1_StreamEventsRequest.protoMessageName + ".ChatPreviewParams"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}view_mode\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.viewMode) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    if self.viewMode != .full {
+      try visitor.visitSingularEnumField(value: self.viewMode, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams, rhs: Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs.viewMode != rhs.viewMode {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -483,7 +648,7 @@ extension Flipcash_Event_V1_StreamEventsResponse.StreamError: SwiftProtobuf.Mess
 }
 
 extension Flipcash_Event_V1_StreamEventsResponse.StreamError.Code: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0DENIED\0\u{1}INVALID_TIMESTAMP\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0DENIED\0\u{1}INVALID_TIMESTAMP\0\u{1}NOT_FOUND\0\u{1}STREAM_EXPIRED\0")
 }
 
 extension Flipcash_Event_V1_ForwardEventsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

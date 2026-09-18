@@ -21,6 +21,84 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
+/// ViewMode is what a client intends to render from a read of a chat's
+/// messages, and so how much of them the server may return. It is set on
+/// every read that returns a Message (GetMessage, GetMessages, GetDelta,
+/// chat.v1.GetChat, for last_message, and event.v1.StreamEvents when
+/// previewing a chat) and is combined with the viewer's standing in the chat:
+///
+///   - A member, or a non-member of a group who satisfies its listener rules,
+///     may read the chat in full.
+///   - A non-member of a group who does not satisfy its listener rules may
+///     read it redacted, provided the group has at least one listener rule.
+///   - Anyone else — a non-member of a DM, or of a group with no listener
+///     rules — may not read it at all.
+///
+/// The mode never widens what the standing allows: it can turn a full read
+/// into a redacted one, or a refusal into a redacted read, but never a
+/// redacted read into a full one. Redaction is the server's, not the
+/// client's; blurring full content on the device is not a substitute, since
+/// the content is still on the device.
+///
+/// The default, FULL, is the contract that predates redaction, so a client
+/// that does not set the field behaves exactly as before.
+public enum Flipcash_Messaging_V1_ViewMode: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+
+  /// Full content or nothing. A viewer who may read the chat in full gets
+  /// it; every other viewer is DENIED. Never returns a redacted message, so
+  /// a client that does not understand Message.redacted is never handed one.
+  case full // = 0
+
+  /// The most the viewer's standing allows. A viewer who may read the chat
+  /// in full gets it; a viewer who may only read it redacted gets it
+  /// redacted, with Message.redacted set on every message; every other
+  /// viewer is DENIED. The server evaluates the group's listener rules to
+  /// decide which, so this mode costs what a full read costs.
+  case fullOrRedacted // = 1
+
+  /// Redacted content, always. Every viewer who may read the chat at all —
+  /// in full or redacted — gets it redacted, with Message.redacted set on
+  /// every message; every other viewer is DENIED. A member asking for
+  /// REDACTED gets placeholders too. The server does not evaluate the
+  /// group's listener rules, only that it carries one, so this is the cheap
+  /// way to render a group blurred, and the mode to use whenever the client
+  /// intends to render it blurred regardless of whether the viewer could
+  /// read it in full.
+  case redacted // = 2
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .full
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .full
+    case 1: self = .fullOrRedacted
+    case 2: self = .redacted
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .full: return 0
+    case .fullOrRedacted: return 1
+    case .redacted: return 2
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Flipcash_Messaging_V1_ViewMode] = [
+    .full,
+    .fullOrRedacted,
+    .redacted,
+  ]
+
+}
+
 public struct Flipcash_Messaging_V1_MessageId: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -150,6 +228,37 @@ public struct Flipcash_Messaging_V1_Message: Sendable {
   public var hasReactions: Bool {return self._reactions != nil}
   /// Clears the value of `reactions`. Subsequent reads from it will return its default value.
   public mutating func clearReactions() {self._reactions = nil}
+
+  /// Set when this copy of the message was redacted for the viewer: the
+  /// viewer sees that the message exists and its shape, never what it says.
+  /// The content keeps its kind and structure but holds placeholders — text
+  /// of the same script, length and line structure; media with its
+  /// dimensions and blurhash but no download_url; a reply to the same
+  /// message with a placeholder body. Cash, system and deleted content are
+  /// not redacted.
+  ///
+  /// A copy is redacted for one of two reasons, and the client cannot tell
+  /// which from the message alone (see ViewMode on the read request):
+  ///  - The viewer asked for FULL_OR_REDACTED and is a non-member of a group
+  ///    whose listener rules they do not satisfy. Full content would have
+  ///    been DENIED.
+  ///  - The viewer asked for REDACTED, whatever their standing.
+  ///
+  /// Clients render a redacted message blurred, the way they render a
+  /// blurhash, and must not offer to copy, quote, download or otherwise
+  /// surface its content. The placeholder is a pure function of the
+  /// message's identity and shape, so it is stable across pages, devices and
+  /// view modes. A redacted copy is not a version of the message:
+  /// event_sequence still describes the underlying message, and a client
+  /// that later reads the same message unredacted replaces the placeholder
+  /// because the read was unredacted, not because of a higher
+  /// event_sequence. Clients should keep redacted and unredacted copies of a
+  /// chat apart (keyed by the ViewMode the read was made under) rather than
+  /// merging them into one history.
+  ///
+  /// Per-viewer, like EmojiReaction.self_reactor. Absent on every message
+  /// from a server that does not redact.
+  public var redacted: Bool = false
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -455,7 +564,8 @@ public struct Flipcash_Messaging_V1_Emoji: Sendable {
   public init() {}
 }
 
-/// Reactor identifies a user who reacted to a message and when they did so.
+/// Reactor identifies a user who reacted to a message with a given emoji, and
+/// when they did so.
 public struct Flipcash_Messaging_V1_Reactor: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -470,7 +580,8 @@ public struct Flipcash_Messaging_V1_Reactor: Sendable {
   /// Clears the value of `userID`. Subsequent reads from it will return its default value.
   public mutating func clearUserID() {self._userID = nil}
 
-  /// Timestamp the user added this reaction.
+  /// Timestamp the user added this reaction. Display only: reactors are never
+  /// ordered by it (see version).
   public var reactedTs: SwiftProtobuf.Google_Protobuf_Timestamp {
     get {return _reactedTs ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
     set {_reactedTs = newValue}
@@ -479,6 +590,15 @@ public struct Flipcash_Messaging_V1_Reactor: Sendable {
   public var hasReactedTs: Bool {return self._reactedTs != nil}
   /// Clears the value of `reactedTs`. Subsequent reads from it will return its default value.
   public mutating func clearReactedTs() {self._reactedTs = nil}
+
+  /// The emoji aggregate's version at which this reaction was added — the
+  /// EmojiReaction.version the add produced. Unique among an emoji's reactors,
+  /// so it is the reactor list's order: descending version is reaction order,
+  /// newest first, with no clock involved. A reactor who removes and re-adds
+  /// comes back under a fresh, higher version, at the top. A client slotting a
+  /// ReactionUpdate's actor into sample_reactors records the update's version
+  /// here.
+  public var version: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -538,14 +658,37 @@ public struct Flipcash_Messaging_V1_EmojiReaction: Sendable {
   /// returned here.
   public var count: UInt64 = 0
 
-  /// Whether the requesting user reacted with this emoji. Per-viewer: count and
-  /// sample_reactors are shareable across users, but this bit is computed for
-  /// the caller.
-  public var reactedBySelf: Bool = false
+  /// The requesting user's own Reactor entry for this emoji: set exactly when
+  /// they currently react with it, absent when they do not. Per-viewer: count
+  /// and sample_reactors are shareable across users, but this is computed for
+  /// the caller. It is the same entry the reactor list carries, whether or
+  /// not the viewer still sits in sample_reactors, so a client can render
+  /// itself among the reactors, or place itself in a partially loaded reactor
+  /// list by its version, without paging GetReactors to find its own row.
+  ///
+  /// Its presence answers "did I react"; its version is NOT the watermark for
+  /// that toggle. An EmojiReaction is a snapshot at `version`, and every
+  /// transition of the viewer's at or below it is already reflected here, so
+  /// live ReactionUpdates for the viewer are applied against `version` as for
+  /// any other actor. In an AddReactionResponse the entry's version equals
+  /// `version`. In a summary read it is normally at most `version`, but can
+  /// exceed it by one: the viewer's own add landing between the server's
+  /// aggregate read and its per-viewer read. Then this entry is the newer
+  /// truth and the aggregate is one transition behind, which the add's own
+  /// ReactionUpdate or the next refresh reconciles.
+  public var selfReactor: Flipcash_Messaging_V1_Reactor {
+    get {return _selfReactor ?? Flipcash_Messaging_V1_Reactor()}
+    set {_selfReactor = newValue}
+  }
+  /// Returns true if `selfReactor` has been explicitly set.
+  public var hasSelfReactor: Bool {return self._selfReactor != nil}
+  /// Clears the value of `selfReactor`. Subsequent reads from it will return its default value.
+  public mutating func clearSelfReactor() {self._selfReactor = nil}
 
-  /// A small sample of reactors, with their reaction timestamps (e.g. for
-  /// rendering a few avatars), capped well below count. The complete, paged
-  /// reactor list is fetched on demand via GetReactors.
+  /// A small sample of reactors (e.g. for rendering a few avatars), capped
+  /// well below count: the most recent reactors by Reactor.version, newest
+  /// first. The complete, paged reactor list is fetched on demand via
+  /// GetReactors, in the same order.
   public var sampleReactors: [Flipcash_Messaging_V1_Reactor] = []
 
   /// Version of this emoji's aggregate on the message: assigned by the server
@@ -553,12 +696,22 @@ public struct Flipcash_Messaging_V1_EmojiReaction: Sendable {
   ///
   /// Opaque to clients, and for ordering only. Apply reaction updates
   /// last-writer-wins by this value per (message, emoji) — and per actor for
-  /// reacted_by_self — and treat a loaded summary as stale when a higher
+  /// self_reactor — and treat a loaded summary as stale when a higher
   /// version arrives. It is compared the same way as chat.v1.RosterSummary.
   /// version. It is NOT the chat event sequence (reactions never advance
   /// that), and it is NOT gapless: a skipped value means nothing, and there is
   /// no delta to fetch against it — a missed update is reconciled by
   /// refreshing the summary on view.
+  ///
+  /// Keep the watermark after the emoji empties. The server retains the
+  /// version across an emoji's count reaching 0 and being re-added, so a
+  /// re-add always arrives with a higher version than the removal; a client
+  /// that forgets the (message, emoji) version when it stops rendering the
+  /// emoji has no way to reject a delayed, lower-versioned ADDED for it, and
+  /// would resurrect an emoji the server has already emptied. Hide the entry,
+  /// keep its version, at least for the session. A summary omits emptied
+  /// emoji entirely — their versions are not surfaced — so a refresh cannot
+  /// restore a watermark once forgotten.
   public var version: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -566,6 +719,7 @@ public struct Flipcash_Messaging_V1_EmojiReaction: Sendable {
   public init() {}
 
   fileprivate var _emoji: Flipcash_Messaging_V1_Emoji? = nil
+  fileprivate var _selfReactor: Flipcash_Messaging_V1_Reactor? = nil
 }
 
 /// ReactionUpdate is a best-effort, real-time reaction change for a single
@@ -598,9 +752,10 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   /// Clears the value of `emoji`. Subsequent reads from it will return its default value.
   public mutating func clearEmoji() {self._emoji = nil}
 
-  /// The user who added or removed the reaction. A client renders
-  /// reacted_by_self by comparing this to itself, so a reaction made on the
-  /// user's other device is reflected.
+  /// The user who added or removed the reaction. A client maintains its own
+  /// EmojiReaction.self_reactor by comparing this to itself (ADDED sets it
+  /// from this actor, `version` and `reacted_ts` below; REMOVED clears it),
+  /// so a reaction made on the user's other device is reflected.
   public var actor: Flipcash_Common_V1_UserId {
     get {return _actor ?? Flipcash_Common_V1_UserId()}
     set {_actor = newValue}
@@ -613,19 +768,22 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   public var action: Flipcash_Messaging_V1_ReactionUpdate.Action = .unknown
 
   /// The emoji's total reactor count after this change. 0 means no reactors
-  /// remain and the client should drop the entry from the summary.
+  /// remain: stop rendering the emoji, but keep its version watermark (see
+  /// EmojiReaction.version) so a delayed, lower-versioned ADDED for it is
+  /// still ignored rather than resurrecting it.
   public var count: UInt64 = 0
 
   /// The emoji aggregate's version after this change. Clients apply
   /// last-writer-wins by this value: ignore the count if version <= the count
-  /// watermark held, and ignore the actor's reacted_by_self toggle if
+  /// watermark held, and ignore the actor's self_reactor toggle if
   /// version <= the per-actor watermark held. Matches EmojiReaction.version.
   public var version: UInt64 = 0
 
   /// When the actor reacted. On ADDED, clients record this as the actor's
-  /// Reactor.reacted_ts (e.g. when slotting them into sample_reactors); ignored
-  /// for REMOVED. This is a display timestamp, distinct from `sequence`, which
-  /// is the ordering key.
+  /// Reactor.reacted_ts, and `version` above as their Reactor.version, when
+  /// slotting them into sample_reactors or an open reactor list; ignored for
+  /// REMOVED. This is a display timestamp, distinct from `version`, which is
+  /// the ordering key.
   public var reactedTs: SwiftProtobuf.Google_Protobuf_Timestamp {
     get {return _reactedTs ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
     set {_reactedTs = newValue}
@@ -1035,6 +1193,10 @@ public struct Flipcash_Messaging_V1_IsTypingNotificationBatch: Sendable {
 
 fileprivate let _protobuf_package = "flipcash.messaging.v1"
 
+extension Flipcash_Messaging_V1_ViewMode: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FULL\0\u{1}FULL_OR_REDACTED\0\u{1}REDACTED\0")
+}
+
 extension Flipcash_Messaging_V1_MessageId: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MessageId"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
@@ -1097,7 +1259,7 @@ extension Flipcash_Messaging_V1_ClientMessageId: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Messaging_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Message"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{3}sender_id\0\u{1}content\0\u{1}ts\0\u{3}unread_seq\0\u{3}last_edited_ts\0\u{3}event_sequence\0\u{1}reactions\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{3}sender_id\0\u{1}content\0\u{1}ts\0\u{3}unread_seq\0\u{3}last_edited_ts\0\u{3}event_sequence\0\u{1}reactions\0\u{1}redacted\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1113,6 +1275,7 @@ extension Flipcash_Messaging_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
       case 6: try { try decoder.decodeSingularMessageField(value: &self._lastEditedTs) }()
       case 7: try { try decoder.decodeSingularUInt64Field(value: &self.eventSequence) }()
       case 8: try { try decoder.decodeSingularMessageField(value: &self._reactions) }()
+      case 9: try { try decoder.decodeSingularBoolField(value: &self.redacted) }()
       default: break
       }
     }
@@ -1147,6 +1310,9 @@ extension Flipcash_Messaging_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
     try { if let v = self._reactions {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
     } }()
+    if self.redacted != false {
+      try visitor.visitSingularBoolField(value: self.redacted, fieldNumber: 9)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1159,6 +1325,7 @@ extension Flipcash_Messaging_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
     if lhs._lastEditedTs != rhs._lastEditedTs {return false}
     if lhs.eventSequence != rhs.eventSequence {return false}
     if lhs._reactions != rhs._reactions {return false}
+    if lhs.redacted != rhs.redacted {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1556,7 +1723,7 @@ extension Flipcash_Messaging_V1_Emoji: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Reactor"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{3}reacted_ts\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{3}reacted_ts\0\u{1}version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1566,6 +1733,7 @@ extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._M
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._reactedTs) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       default: break
       }
     }
@@ -1582,12 +1750,16 @@ extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._M
     try { if let v = self._reactedTs {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Messaging_V1_Reactor, rhs: Flipcash_Messaging_V1_Reactor) -> Bool {
     if lhs._userID != rhs._userID {return false}
     if lhs._reactedTs != rhs._reactedTs {return false}
+    if lhs.version != rhs.version {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1634,7 +1806,7 @@ extension Flipcash_Messaging_V1_ReactionSummary: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".EmojiReaction"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}emoji\0\u{1}count\0\u{3}reacted_by_self\0\u{3}sample_reactors\0\u{1}version\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}emoji\0\u{1}count\0\u{3}self_reactor\0\u{3}sample_reactors\0\u{1}version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1644,7 +1816,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._emoji) }()
       case 2: try { try decoder.decodeSingularUInt64Field(value: &self.count) }()
-      case 3: try { try decoder.decodeSingularBoolField(value: &self.reactedBySelf) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._selfReactor) }()
       case 4: try { try decoder.decodeRepeatedMessageField(value: &self.sampleReactors) }()
       case 5: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       default: break
@@ -1663,9 +1835,9 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
     if self.count != 0 {
       try visitor.visitSingularUInt64Field(value: self.count, fieldNumber: 2)
     }
-    if self.reactedBySelf != false {
-      try visitor.visitSingularBoolField(value: self.reactedBySelf, fieldNumber: 3)
-    }
+    try { if let v = self._selfReactor {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     if !self.sampleReactors.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.sampleReactors, fieldNumber: 4)
     }
@@ -1678,7 +1850,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
   public static func ==(lhs: Flipcash_Messaging_V1_EmojiReaction, rhs: Flipcash_Messaging_V1_EmojiReaction) -> Bool {
     if lhs._emoji != rhs._emoji {return false}
     if lhs.count != rhs.count {return false}
-    if lhs.reactedBySelf != rhs.reactedBySelf {return false}
+    if lhs._selfReactor != rhs._selfReactor {return false}
     if lhs.sampleReactors != rhs.sampleReactors {return false}
     if lhs.version != rhs.version {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
