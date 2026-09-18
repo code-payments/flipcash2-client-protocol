@@ -8,6 +8,114 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.10.0
+
+Synced to [`flipcash2-protobuf-api@dd5e92db`](https://github.com/code-payments/flipcash2-protobuf-api/commit/dd5e92db6f76700ab6b565f4eff1f9fb25140c9a),
+picking up [#103](https://github.com/code-payments/flipcash2-protobuf-api/pull/103) through
+[#113](https://github.com/code-payments/flipcash2-protobuf-api/pull/113) — eleven upstream commits,
+the largest sync so far.
+
+One field changes type in place, so this upgrade is not free. Everything else is additive: chat
+muting, a Reporting service, and a redaction model that lets a non-member preview a group without
+being shown what it says.
+
+### Breaking
+
+`messaging.v1.EmojiReaction.reacted_by_self` (`bool`, field 3) is replaced by `self_reactor`
+(`Reactor`, field 3). Same field number, different wire type — varint to length-delimited — so this
+is not a field that can be read either way. A 0.9.0 client parsing a 0.10.0 response does not see a
+missing field, it sees a malformed one.
+
+The replacement carries more than the bit it replaces. `self_reactor` is set exactly when the viewer
+currently reacts with that emoji, and it is the same `Reactor` entry the reactor list carries, so a
+client can place itself in a partially loaded reactor list by its `version` instead of paging
+`GetReactors` to find its own row. Its presence answers "did I react". Its version is not the
+watermark for that toggle: an `EmojiReaction` is a snapshot at `version`, every transition of the
+viewer's at or below it is already reflected, and live `ReactionUpdate`s for the viewer are applied
+against `EmojiReaction.version` like any other actor's.
+
+### Added
+
+Chat muting, on `chat.v1.Chat`:
+
+- `MuteChat(MuteChatRequest) returns (MuteChatResponse)` and
+  `UnmuteChat(UnmuteChatRequest) returns (UnmuteChatResponse)`. Both results are `OK`, `DENIED`
+  (not a member) and `NOT_FOUND`. Both responses carry `viewer_state` when `OK`, so the caller can
+  apply the new state at its version without a refetch.
+- `MuteState`, a required `oneof duration` of `google.protobuf.Timestamp until` or an empty
+  `Forever`. A timed mute must end in the future or the server rejects it.
+- `ViewerState`, holding `Settings.mute` and a `version` that advances by one on every real change.
+  It is compared like `RosterSummary.version` — apply the greater, drop the rest — and it is
+  private to the viewer, so it never moves the roster's version.
+- `Metadata.viewer_state` (field 12), absent when the chat holds nothing about the viewer.
+- `MetadataUpdate.ViewerStateChanged` (oneof case 3), which is how a mute made on another device
+  arrives.
+- `push.v1.ChatMetadata.muted` (field 4).
+
+A Reporting service, in the new `flipcash.reporting.v1` package:
+
+- `Report(ReportRequest) returns (ReportResponse)` over a required target `oneof` of `user_id`,
+  `chat_id`, `message` or `blob_id`, plus an optional free-form `description` capped at 8192 bytes.
+  A reported message travels with its chat, because `MessageId` is a per-chat sequence number.
+- Reports are advisory. Nothing about the client's view changes, no outcome is reported back, and
+  reporting the same target twice is a no-op that returns `OK`.
+
+Redacted reads, so a viewer can be shown that a chat exists without being shown what it says:
+
+- `messaging.v1.ViewMode`, with `FULL = 0`, `FULL_OR_REDACTED = 1` and `REDACTED = 2`. It is set on
+  every read that returns a `Message` — `GetMessage`, `GetMessages`, `GetDelta`, `GetChat` for
+  `last_message`, and a preview stream. `FULL = 0` is the contract that predates redaction, so a
+  client that does not set the field behaves exactly as before.
+- `messaging.v1.Message.redacted` (field 9), set on a copy that was redacted for the viewer. The
+  content keeps its kind and structure but holds placeholders: text of the same script, length and
+  line structure; media with its dimensions and blurhash; a reply with a placeholder body. Cash,
+  system and deleted content are never redacted.
+- `event.v1.StreamEventsRequest.Params.chat_preview`, a stream targeted at one group chat under a
+  `ViewMode` for a server-fixed window, ending in `STREAM_EXPIRED`. Group chats only; a DM is
+  `DENIED` whatever the viewer's standing.
+- `StreamEventsResponse.Error.Code` gains `NOT_FOUND = 2` and `STREAM_EXPIRED = 3`.
+- `Reactor.version` (field 3) and `GetReactorsResponse.version` (field 5).
+
+### Changed
+
+`blob.v1.BlobMetadata.download_url` (field 3) is no longer `required`. A redacted message's
+renditions carry their intrinsic metadata — for an image, dimensions and blurhash — with no URL.
+The blob is not readable by that viewer, so `GetBlobs` would not return one either.
+
+Reactor lists are now ordered by `Reactor.version` descending, newest first. `reacted_ts` is display
+only and no longer an ordering key; `GetReactorsRequest.options.order` is ignored and `page_size`
+above 100 is clamped to 100.
+
+### Upgrading
+
+Three things need attention beyond the rename.
+
+**Keep an emoji's version watermark after its count reaches 0.** The server retains the version
+across an emoji emptying and being re-added, so a re-add always arrives above the removal. A client
+that drops the `(message, emoji)` version when it stops rendering the emoji has nothing to reject a
+delayed, lower-versioned `ADDED` with, and resurrects an emoji the server has already emptied. Hide
+the entry, keep its version. A summary omits emptied emoji entirely, so once the watermark is
+forgotten a refresh cannot restore it.
+
+**Muted pushes are still delivered.** The server sends them so the client can store the message, and
+flags them with `ChatMetadata.muted`; suppressing the notification is the client's job. Nothing is
+sent when a timed mute lapses either, so the client owns that countdown. A mute is cleared
+server-side when the caller leaves the chat.
+
+**Redacted and unredacted copies of a chat are not one history.** A redacted copy is not a version of
+the message — `event_sequence` still describes the underlying message — so a client that later reads
+it unredacted replaces the placeholder because the read was unredacted, not because of a higher
+sequence. Key the cache by the `ViewMode` the read was made under and keep the two apart. A client
+catching up a redacted view must call `GetDelta` under the same mode it read the history under, and
+must not offer to copy, quote or download a redacted message.
+
+### Unchanged
+
+`reacted_by_self` is the only field that changed number or type, and nothing was renumbered. The two
+new `StreamEventsResponse.Error.Code` cases are appended after `DENIED` and `INVALID_TIMESTAMP`, so
+a positional `rawValue` mapping over that enum does not shift. No service, RPC, message or enum case
+was removed.
+
 ## 0.9.0
 
 No contract change. Still synced to
