@@ -327,7 +327,7 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   /// If present, best-effort real-time reaction changes for messages in the
   /// chat. Like pointer_updates, reactions are a convergent overlay — NOT part
   /// of the gap-detected event log; clients apply them last-writer-wins by
-  /// ReactionUpdate.sequence and reconcile any misses by refreshing a message's
+  /// ReactionUpdate.version and reconcile any misses by refreshing a message's
   /// ReactionSummary on view.
   public var reactionUpdates: Flipcash_Messaging_V1_ReactionUpdateBatch {
     get {return _reactionUpdates ?? Flipcash_Messaging_V1_ReactionUpdateBatch()}

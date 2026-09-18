@@ -92,7 +92,10 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
     set {_uniqueStorage()._members = newValue}
   }
 
-  /// The last message in this chat
+  /// The last message in this chat. Withheld, along with
+  /// latest_event_sequence, from a viewer who may not read the chat. May be
+  /// redacted (see messaging.v1.Message.redacted) when the read was made
+  /// under a messaging.v1.ViewMode other than FULL.
   public var lastMessage: Flipcash_Messaging_V1_Message {
     get {return _storage._lastMessage ?? Flipcash_Messaging_V1_Message()}
     set {_uniqueStorage()._lastMessage = newValue}
@@ -170,6 +173,16 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   public var hasRules: Bool {return _storage._rules != nil}
   /// Clears the value of `rules`. Subsequent reads from it will return its default value.
   public mutating func clearRules() {_uniqueStorage()._rules = nil}
+
+  /// Per-viewer chat state, absent when the chat holds nothing about them.
+  public var viewerState: Flipcash_Chat_V1_ViewerState {
+    get {return _storage._viewerState ?? Flipcash_Chat_V1_ViewerState()}
+    set {_uniqueStorage()._viewerState = newValue}
+  }
+  /// Returns true if `viewerState` has been explicitly set.
+  public var hasViewerState: Bool {return _storage._viewerState != nil}
+  /// Clears the value of `viewerState`. Subsequent reads from it will return its default value.
+  public mutating func clearViewerState() {_uniqueStorage()._viewerState = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -375,7 +388,9 @@ public struct Flipcash_Chat_V1_RosterSummary: Sendable {
   /// Version of the roster: advanced by exactly one on every change to the
   /// membership records — a member joining, a member leaving, and in future
   /// any change to what the chat records about a member (e.g. a role) — and
-  /// never by an idempotent no-op or a profile change.
+  /// never by an idempotent no-op or a profile change. A viewer's own state
+  /// (see ViewerState) is not part of the roster: it is private to that
+  /// viewer, carries its own version, and never moves this one.
   ///
   /// Opaque to clients. Compare it against the last value seen: a different
   /// value means the cached member list may be stale and should be refetched.
@@ -413,11 +428,20 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     set {kind = .lastActivityChanged(newValue)}
   }
 
+  public var viewerStateChanged: Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged {
+    get {
+      if case .viewerStateChanged(let v)? = kind {return v}
+      return Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged()
+    }
+    set {kind = .viewerStateChanged(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Kind: Equatable, Sendable {
     case fullRefresh(Flipcash_Chat_V1_MetadataUpdate.FullRefresh)
     case lastActivityChanged(Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged)
+    case viewerStateChanged(Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged)
 
   }
 
@@ -463,6 +487,28 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     public init() {}
 
     fileprivate var _newLastActivity: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  }
+
+  /// The receiving user's own state for the chat has changed
+  public struct ViewerStateChanged: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    public var viewerState: Flipcash_Chat_V1_ViewerState {
+      get {return _viewerState ?? Flipcash_Chat_V1_ViewerState()}
+      set {_viewerState = newValue}
+    }
+    /// Returns true if `viewerState` has been explicitly set.
+    public var hasViewerState: Bool {return self._viewerState != nil}
+    /// Clears the value of `viewerState`. Subsequent reads from it will return its default value.
+    public mutating func clearViewerState() {self._viewerState = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _viewerState: Flipcash_Chat_V1_ViewerState? = nil
   }
 
   public init() {}
@@ -611,6 +657,111 @@ public struct Flipcash_Chat_V1_RosterUpdateBatch: Sendable {
   public init() {}
 }
 
+/// ViewerState is what this chat holds about the requesting user,
+/// independent of whether they are a member. It is per-viewer and never
+/// shared with other members.
+public struct Flipcash_Chat_V1_ViewerState: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// State the viewer set for themselves through their own RPCs.
+  public var settings: Flipcash_Chat_V1_ViewerState.Settings {
+    get {return _settings ?? Flipcash_Chat_V1_ViewerState.Settings()}
+    set {_settings = newValue}
+  }
+  /// Returns true if `settings` has been explicitly set.
+  public var hasSettings: Bool {return self._settings != nil}
+  /// Clears the value of `settings`. Subsequent reads from it will return its default value.
+  public mutating func clearSettings() {self._settings = nil}
+
+  /// Advanced by exactly one on every real change to any field of this
+  /// message, never by a no-op. Compared like RosterSummary.version: apply
+  /// the greater value and drop the rest, so delivery order does not matter.
+  /// It is not the chat event sequence and has no delta.
+  public var version: UInt64 = 0
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public struct Settings: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Present if and only if the chat is muted for the viewer. Muted pushes
+    /// are still delivered, flagged with push.v1.ChatMetadata.muted, and the
+    /// client suppresses the notification.
+    public var mute: Flipcash_Chat_V1_MuteState {
+      get {return _mute ?? Flipcash_Chat_V1_MuteState()}
+      set {_mute = newValue}
+    }
+    /// Returns true if `mute` has been explicitly set.
+    public var hasMute: Bool {return self._mute != nil}
+    /// Clears the value of `mute`. Subsequent reads from it will return its default value.
+    public mutating func clearMute() {self._mute = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _mute: Flipcash_Chat_V1_MuteState? = nil
+  }
+
+  public init() {}
+
+  fileprivate var _settings: Flipcash_Chat_V1_ViewerState.Settings? = nil
+}
+
+public struct Flipcash_Chat_V1_MuteState: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var duration: Flipcash_Chat_V1_MuteState.OneOf_Duration? = nil
+
+  /// Muted until this time, after which the mute lapses. Nothing is
+  /// sent when it does, so the client owns the countdown.
+  public var until: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {
+      if case .until(let v)? = duration {return v}
+      return SwiftProtobuf.Google_Protobuf_Timestamp()
+    }
+    set {duration = .until(newValue)}
+  }
+
+  /// Muted forever until explicitly unmuted.
+  public var forever: Flipcash_Chat_V1_MuteState.Forever {
+    get {
+      if case .forever(let v)? = duration {return v}
+      return Flipcash_Chat_V1_MuteState.Forever()
+    }
+    set {duration = .forever(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Duration: Equatable, Sendable {
+    /// Muted until this time, after which the mute lapses. Nothing is
+    /// sent when it does, so the client owns the countdown.
+    case until(SwiftProtobuf.Google_Protobuf_Timestamp)
+    /// Muted forever until explicitly unmuted.
+    case forever(Flipcash_Chat_V1_MuteState.Forever)
+
+  }
+
+  public struct Forever: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+  }
+
+  public init() {}
+}
+
 /// IdempotencyKey lets a client safely retry a request that creates something.
 /// The server derives the created object's identity from the caller and this
 /// key, so a retry with the same key returns the original result instead of
@@ -641,7 +792,7 @@ extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Metadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0")
 
   fileprivate class _StorageClass {
     var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -655,6 +806,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
     var _picture: Flipcash_Blob_V1_Media? = nil
     var _rosterSummary: Flipcash_Chat_V1_RosterSummary? = nil
     var _rules: Flipcash_Chat_V1_Rules? = nil
+    var _viewerState: Flipcash_Chat_V1_ViewerState? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -676,6 +828,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _picture = source._picture
       _rosterSummary = source._rosterSummary
       _rules = source._rules
+      _viewerState = source._viewerState
     }
   }
 
@@ -705,6 +858,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 9: try { try decoder.decodeSingularMessageField(value: &_storage._picture) }()
         case 10: try { try decoder.decodeSingularMessageField(value: &_storage._rosterSummary) }()
         case 11: try { try decoder.decodeSingularMessageField(value: &_storage._rules) }()
+        case 12: try { try decoder.decodeSingularMessageField(value: &_storage._viewerState) }()
         default: break
         }
       }
@@ -750,6 +904,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       try { if let v = _storage._rules {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
       } }()
+      try { if let v = _storage._viewerState {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -770,6 +927,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._picture != rhs_storage._picture {return false}
         if _storage._rosterSummary != rhs_storage._rosterSummary {return false}
         if _storage._rules != rhs_storage._rules {return false}
+        if _storage._viewerState != rhs_storage._viewerState {return false}
         return true
       }
       if !storagesAreEqual {return false}
@@ -1087,7 +1245,7 @@ extension Flipcash_Chat_V1_RosterSummary: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MetadataUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1121,6 +1279,19 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
           self.kind = .lastActivityChanged(v)
         }
       }()
+      case 3: try {
+        var v: Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .viewerStateChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .viewerStateChanged(v)
+        }
+      }()
       default: break
       }
     }
@@ -1139,6 +1310,10 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
     case .lastActivityChanged?: try {
       guard case .lastActivityChanged(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .viewerStateChanged?: try {
+      guard case .viewerStateChanged(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     }()
     case nil: break
     }
@@ -1215,6 +1390,40 @@ extension Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged: SwiftProtobuf.Mes
 
   public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.LastActivityChanged) -> Bool {
     if lhs._newLastActivity != rhs._newLastActivity {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_MetadataUpdate.protoMessageName + ".ViewerStateChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}viewer_state\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._viewerState) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._viewerState {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged) -> Bool {
+    if lhs._viewerState != rhs._viewerState {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1428,6 +1637,165 @@ extension Flipcash_Chat_V1_RosterUpdateBatch: SwiftProtobuf.Message, SwiftProtob
 
   public static func ==(lhs: Flipcash_Chat_V1_RosterUpdateBatch, rhs: Flipcash_Chat_V1_RosterUpdateBatch) -> Bool {
     if lhs.rosterUpdates != rhs.rosterUpdates {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_ViewerState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ViewerState"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{2}\u{9}version\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._settings) }()
+      case 10: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._settings {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 10)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_ViewerState, rhs: Flipcash_Chat_V1_ViewerState) -> Bool {
+    if lhs._settings != rhs._settings {return false}
+    if lhs.version != rhs.version {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".Settings"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}mute\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._mute) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._mute {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_ViewerState.Settings, rhs: Flipcash_Chat_V1_ViewerState.Settings) -> Bool {
+    if lhs._mute != rhs._mute {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MuteState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MuteState"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}until\0\u{1}forever\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: SwiftProtobuf.Google_Protobuf_Timestamp?
+        var hadOneofValue = false
+        if let current = self.duration {
+          hadOneofValue = true
+          if case .until(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.duration = .until(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Chat_V1_MuteState.Forever?
+        var hadOneofValue = false
+        if let current = self.duration {
+          hadOneofValue = true
+          if case .forever(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.duration = .forever(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.duration {
+    case .until?: try {
+      guard case .until(let v)? = self.duration else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .forever?: try {
+      guard case .forever(let v)? = self.duration else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MuteState, rhs: Flipcash_Chat_V1_MuteState) -> Bool {
+    if lhs.duration != rhs.duration {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MuteState.Forever: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_MuteState.protoMessageName + ".Forever"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MuteState.Forever, rhs: Flipcash_Chat_V1_MuteState.Forever) -> Bool {
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

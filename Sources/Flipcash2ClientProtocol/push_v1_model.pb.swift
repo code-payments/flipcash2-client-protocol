@@ -253,6 +253,11 @@ public struct Flipcash_Push_V1_ChatMetadata: Sendable {
   /// Clears the value of `message`. Subsequent reads from it will return its default value.
   public mutating func clearMessage() {self._message = nil}
 
+  /// Whether the recipient had this chat muted when the push was sent.
+  /// The push is still delivered so the client can store the message,
+  /// but the client must not present a notification for it.
+  public var muted: Bool = false
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -464,7 +469,7 @@ extension Flipcash_Push_V1_Navigation: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sending_user_id\0\u{1}type\0\u{1}message\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sending_user_id\0\u{1}type\0\u{1}message\0\u{1}muted\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -475,6 +480,7 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
       case 1: try { try decoder.decodeSingularMessageField(value: &self._sendingUserID) }()
       case 2: try { try decoder.decodeSingularEnumField(value: &self.type) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._message) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.muted) }()
       default: break
       }
     }
@@ -494,6 +500,9 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
     try { if let v = self._message {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
+    if self.muted != false {
+      try visitor.visitSingularBoolField(value: self.muted, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -501,6 +510,7 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
     if lhs._sendingUserID != rhs._sendingUserID {return false}
     if lhs.type != rhs.type {return false}
     if lhs._message != rhs._message {return false}
+    if lhs.muted != rhs.muted {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

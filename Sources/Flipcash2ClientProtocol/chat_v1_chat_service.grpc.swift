@@ -92,6 +92,30 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "LeaveChat"
             )
         }
+        /// Namespace for "MuteChat" metadata.
+        public enum MuteChat {
+            /// Request type for "MuteChat".
+            public typealias Input = Flipcash_Chat_V1_MuteChatRequest
+            /// Response type for "MuteChat".
+            public typealias Output = Flipcash_Chat_V1_MuteChatResponse
+            /// Descriptor for "MuteChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "MuteChat"
+            )
+        }
+        /// Namespace for "UnmuteChat" metadata.
+        public enum UnmuteChat {
+            /// Request type for "UnmuteChat".
+            public typealias Input = Flipcash_Chat_V1_UnmuteChatRequest
+            /// Response type for "UnmuteChat".
+            public typealias Output = Flipcash_Chat_V1_UnmuteChatResponse
+            /// Descriptor for "UnmuteChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "UnmuteChat"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.chat.v1.Chat" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetChat.descriptor,
@@ -99,7 +123,9 @@ public enum Flipcash_Chat_V1_Chat {
             GetGroupChatFeed.descriptor,
             StartChat.descriptor,
             JoinChat.descriptor,
-            LeaveChat.descriptor
+            LeaveChat.descriptor,
+            MuteChat.descriptor,
+            UnmuteChat.descriptor
         ]
     }
 }
@@ -297,6 +323,62 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_LeaveChatResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "MuteChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > MuteChat mutes a chat for the caller, until a time or indefinitely.
+        /// > 
+        /// > Only a member may mute. Muting does not affect the event stream or
+        /// > message delivery: pushes for a muted chat are still sent, flagged with
+        /// > push.v1.ChatMetadata.muted, and the client suppresses the notification.
+        /// > Calling it again with a different duration replaces the mute. An
+        /// > identical request is a no-op. A mute is cleared when the caller leaves
+        /// > the chat. Every real change reaches the caller's other devices as a
+        /// > MetadataUpdate.ViewerStateChanged on the event stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_MuteChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_MuteChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_MuteChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func muteChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_MuteChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_MuteChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_MuteChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_MuteChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "UnmuteChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnmuteChat clears the caller's mute on a chat. Unmuting a chat that is
+        /// > not muted is a no-op. Every real change reaches the caller's other devices
+        /// > as a MetadataUpdate.ViewerStateChanged on the event stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnmuteChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnmuteChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnmuteChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func unmuteChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnmuteChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnmuteChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnmuteChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnmuteChatResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -561,6 +643,84 @@ extension Flipcash_Chat_V1_Chat {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "MuteChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > MuteChat mutes a chat for the caller, until a time or indefinitely.
+        /// > 
+        /// > Only a member may mute. Muting does not affect the event stream or
+        /// > message delivery: pushes for a muted chat are still sent, flagged with
+        /// > push.v1.ChatMetadata.muted, and the client suppresses the notification.
+        /// > Calling it again with a different duration replaces the mute. An
+        /// > identical request is a no-op. A mute is cleared when the caller leaves
+        /// > the chat. Every real change reaches the caller's other devices as a
+        /// > MetadataUpdate.ViewerStateChanged on the event stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_MuteChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_MuteChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_MuteChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func muteChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_MuteChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_MuteChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_MuteChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_MuteChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.MuteChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "UnmuteChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnmuteChat clears the caller's mute on a chat. Unmuting a chat that is
+        /// > not muted is a no-op. Every real change reaches the caller's other devices
+        /// > as a MetadataUpdate.ViewerStateChanged on the event stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnmuteChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnmuteChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnmuteChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func unmuteChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnmuteChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnmuteChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnmuteChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnmuteChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.UnmuteChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -778,6 +938,74 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_LeaveChatRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_LeaveChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "MuteChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MuteChat mutes a chat for the caller, until a time or indefinitely.
+    /// > 
+    /// > Only a member may mute. Muting does not affect the event stream or
+    /// > message delivery: pushes for a muted chat are still sent, flagged with
+    /// > push.v1.ChatMetadata.muted, and the client suppresses the notification.
+    /// > Calling it again with a different duration replaces the mute. An
+    /// > identical request is a no-op. A mute is cleared when the caller leaves
+    /// > the chat. Every real change reaches the caller's other devices as a
+    /// > MetadataUpdate.ViewerStateChanged on the event stream.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_MuteChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func muteChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_MuteChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_MuteChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.muteChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_MuteChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_MuteChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnmuteChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnmuteChat clears the caller's mute on a chat. Unmuting a chat that is
+    /// > not muted is a no-op. Every real change reaches the caller's other devices
+    /// > as a MetadataUpdate.ViewerStateChanged on the event stream.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_UnmuteChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unmuteChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnmuteChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnmuteChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.unmuteChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_UnmuteChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_UnmuteChatResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -1021,6 +1249,82 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.leaveChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "MuteChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > MuteChat mutes a chat for the caller, until a time or indefinitely.
+    /// > 
+    /// > Only a member may mute. Muting does not affect the event stream or
+    /// > message delivery: pushes for a muted chat are still sent, flagged with
+    /// > push.v1.ChatMetadata.muted, and the client suppresses the notification.
+    /// > Calling it again with a different duration replaces the mute. An
+    /// > identical request is a no-op. A mute is cleared when the caller leaves
+    /// > the chat. Every real change reaches the caller's other devices as a
+    /// > MetadataUpdate.ViewerStateChanged on the event stream.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func muteChat<Result>(
+        _ message: Flipcash_Chat_V1_MuteChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_MuteChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_MuteChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.muteChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnmuteChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnmuteChat clears the caller's mute on a chat. Unmuting a chat that is
+    /// > not muted is a no-op. Every real change reaches the caller's other devices
+    /// > as a MetadataUpdate.ViewerStateChanged on the event stream.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unmuteChat<Result>(
+        _ message: Flipcash_Chat_V1_UnmuteChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnmuteChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_UnmuteChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unmuteChat(
             request: request,
             options: options,
             onResponse: handleResponse
