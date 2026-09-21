@@ -56,6 +56,18 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetGroupChatFeed"
             )
         }
+        /// Namespace for "GetRoster" metadata.
+        public enum GetRoster {
+            /// Request type for "GetRoster".
+            public typealias Input = Flipcash_Chat_V1_GetRosterRequest
+            /// Response type for "GetRoster".
+            public typealias Output = Flipcash_Chat_V1_GetRosterResponse
+            /// Descriptor for "GetRoster".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetRoster"
+            )
+        }
         /// Namespace for "StartChat" metadata.
         public enum StartChat {
             /// Request type for "StartChat".
@@ -92,6 +104,18 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "LeaveChat"
             )
         }
+        /// Namespace for "EditChat" metadata.
+        public enum EditChat {
+            /// Request type for "EditChat".
+            public typealias Input = Flipcash_Chat_V1_EditChatRequest
+            /// Response type for "EditChat".
+            public typealias Output = Flipcash_Chat_V1_EditChatResponse
+            /// Descriptor for "EditChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "EditChat"
+            )
+        }
         /// Namespace for "MuteChat" metadata.
         public enum MuteChat {
             /// Request type for "MuteChat".
@@ -121,9 +145,11 @@ public enum Flipcash_Chat_V1_Chat {
             GetChat.descriptor,
             GetDmChatFeed.descriptor,
             GetGroupChatFeed.descriptor,
+            GetRoster.descriptor,
             StartChat.descriptor,
             JoinChat.descriptor,
             LeaveChat.descriptor,
+            EditChat.descriptor,
             MuteChat.descriptor,
             UnmuteChat.descriptor
         ]
@@ -256,6 +282,55 @@ extension Flipcash_Chat_V1_Chat {
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetGroupChatFeedResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
+        /// Call the "GetRoster" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetRoster pages a chat's roster, most recently joined first. Every
+        /// > page carries the chat's RosterSummary, and every member carries the
+        /// > roster version that placed them (see Member.version).
+        /// > 
+        /// > A DM's roster is its participants, and a small group's is read whole:
+        /// > for these a page is the roster at exactly roster_summary.version — a
+        /// > roster that fits one page is member_count members, and a later page
+        /// > is a fresh snapshot at its own summary. A large group's roster is
+        /// > paged from an index that trails membership writes briefly, so a page
+        /// > may lag roster_summary — a member
+        /// > who just joined may be absent, one who just left may be present.
+        /// > Clients do not see which case they are in and must follow the weaker
+        /// > contract: treat roster_summary.version as the staleness watermark
+        /// > described on RosterSummary, and merge each page against what the
+        /// > event stream has told them per member by Member.version, the greater
+        /// > winning. A cached member absent from a fully read roster is gone
+        /// > unless the client holds their join at a version above the page's
+        /// > roster_summary.version. A join during the walk lands ahead of the
+        /// > cursor and arrives only as a RosterUpdate.
+        /// > 
+        /// > Pointers are hydrated for a DM's participants only. A group's members
+        /// > carry none: group pointer advances are never broadcast, so a page of
+        /// > them would be stale as soon as it was served.
+        /// > 
+        /// > Requires that the caller may read the chat: a member, or a non-member
+        /// > a group's listener rules admit. A viewer who may only preview the chat
+        /// > is DENIED.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetRosterRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetRosterResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getRoster<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRosterRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetRosterRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRosterResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRosterResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
         /// Call the "StartChat" method.
         ///
         /// > Source IDL Documentation:
@@ -323,6 +398,45 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_LeaveChatResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "EditChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > EditChat edits a group chat's record. Every editable field is optional;
+        /// > only the ones set in the request are changed, and the edit is atomic:
+        /// > if any part is refused, nothing is applied.
+        /// > 
+        /// > Only a group chat may be edited, and only by a member the server permits
+        /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
+        /// > is DENIED. A new title is moderated like
+        /// > StartChat's. A new picture is a blob the caller has already uploaded via
+        /// > BlobStorage: the client uploads only the ORIGINAL and passes the
+        /// > resulting BlobId once the blob is READY, and the server derives the
+        /// > remaining renditions. Setting a field to the value the chat already has
+        /// > is a no-op for that field, and a request that sets nothing is a no-op
+        /// > that returns OK.
+        /// > 
+        /// > Every real change reaches the chat's members, including the caller's
+        /// > other devices, on the event stream as one MetadataUpdate per field
+        /// > changed: TitleChanged for the title, PictureChanged for the picture.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_EditChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_EditChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func editChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_EditChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_EditChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_EditChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EditChatResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "MuteChat" method.
@@ -542,6 +656,66 @@ extension Flipcash_Chat_V1_Chat {
             )
         }
 
+        /// Call the "GetRoster" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetRoster pages a chat's roster, most recently joined first. Every
+        /// > page carries the chat's RosterSummary, and every member carries the
+        /// > roster version that placed them (see Member.version).
+        /// > 
+        /// > A DM's roster is its participants, and a small group's is read whole:
+        /// > for these a page is the roster at exactly roster_summary.version — a
+        /// > roster that fits one page is member_count members, and a later page
+        /// > is a fresh snapshot at its own summary. A large group's roster is
+        /// > paged from an index that trails membership writes briefly, so a page
+        /// > may lag roster_summary — a member
+        /// > who just joined may be absent, one who just left may be present.
+        /// > Clients do not see which case they are in and must follow the weaker
+        /// > contract: treat roster_summary.version as the staleness watermark
+        /// > described on RosterSummary, and merge each page against what the
+        /// > event stream has told them per member by Member.version, the greater
+        /// > winning. A cached member absent from a fully read roster is gone
+        /// > unless the client holds their join at a version above the page's
+        /// > roster_summary.version. A join during the walk lands ahead of the
+        /// > cursor and arrives only as a RosterUpdate.
+        /// > 
+        /// > Pointers are hydrated for a DM's participants only. A group's members
+        /// > carry none: group pointer advances are never broadcast, so a page of
+        /// > them would be stale as soon as it was served.
+        /// > 
+        /// > Requires that the caller may read the chat: a member, or a non-member
+        /// > a group's listener rules admit. A viewer who may only preview the chat
+        /// > is DENIED.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetRosterRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetRosterResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getRoster<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRosterRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetRosterRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRosterResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRosterResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetRoster.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
         /// Call the "StartChat" method.
         ///
         /// > Source IDL Documentation:
@@ -637,6 +811,56 @@ extension Flipcash_Chat_V1_Chat {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Chat_V1_Chat.Method.LeaveChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "EditChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > EditChat edits a group chat's record. Every editable field is optional;
+        /// > only the ones set in the request are changed, and the edit is atomic:
+        /// > if any part is refused, nothing is applied.
+        /// > 
+        /// > Only a group chat may be edited, and only by a member the server permits
+        /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
+        /// > is DENIED. A new title is moderated like
+        /// > StartChat's. A new picture is a blob the caller has already uploaded via
+        /// > BlobStorage: the client uploads only the ORIGINAL and passes the
+        /// > resulting BlobId once the blob is READY, and the server derives the
+        /// > remaining renditions. Setting a field to the value the chat already has
+        /// > is a no-op for that field, and a request that sets nothing is a no-op
+        /// > that returns OK.
+        /// > 
+        /// > Every real change reaches the chat's members, including the caller's
+        /// > other devices, on the event stream as one MetadataUpdate per field
+        /// > changed: TitleChanged for the title, PictureChanged for the picture.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_EditChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_EditChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func editChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_EditChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_EditChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_EditChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EditChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.EditChat.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -856,6 +1080,61 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
         )
     }
 
+    /// Call the "GetRoster" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetRoster pages a chat's roster, most recently joined first. Every
+    /// > page carries the chat's RosterSummary, and every member carries the
+    /// > roster version that placed them (see Member.version).
+    /// > 
+    /// > A DM's roster is its participants, and a small group's is read whole:
+    /// > for these a page is the roster at exactly roster_summary.version — a
+    /// > roster that fits one page is member_count members, and a later page
+    /// > is a fresh snapshot at its own summary. A large group's roster is
+    /// > paged from an index that trails membership writes briefly, so a page
+    /// > may lag roster_summary — a member
+    /// > who just joined may be absent, one who just left may be present.
+    /// > Clients do not see which case they are in and must follow the weaker
+    /// > contract: treat roster_summary.version as the staleness watermark
+    /// > described on RosterSummary, and merge each page against what the
+    /// > event stream has told them per member by Member.version, the greater
+    /// > winning. A cached member absent from a fully read roster is gone
+    /// > unless the client holds their join at a version above the page's
+    /// > roster_summary.version. A join during the walk lands ahead of the
+    /// > cursor and arrives only as a RosterUpdate.
+    /// > 
+    /// > Pointers are hydrated for a DM's participants only. A group's members
+    /// > carry none: group pointer advances are never broadcast, so a page of
+    /// > them would be stale as soon as it was served.
+    /// > 
+    /// > Requires that the caller may read the chat: a member, or a non-member
+    /// > a group's listener rules admit. A viewer who may only preview the chat
+    /// > is DENIED.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getRoster<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRosterRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRosterResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getRoster(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetRosterRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetRosterResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "StartChat" method.
     ///
     /// > Source IDL Documentation:
@@ -938,6 +1217,51 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_LeaveChatRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_LeaveChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "EditChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > EditChat edits a group chat's record. Every editable field is optional;
+    /// > only the ones set in the request are changed, and the edit is atomic:
+    /// > if any part is refused, nothing is applied.
+    /// > 
+    /// > Only a group chat may be edited, and only by a member the server permits
+    /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
+    /// > is DENIED. A new title is moderated like
+    /// > StartChat's. A new picture is a blob the caller has already uploaded via
+    /// > BlobStorage: the client uploads only the ORIGINAL and passes the
+    /// > resulting BlobId once the blob is READY, and the server derives the
+    /// > remaining renditions. Setting a field to the value the chat already has
+    /// > is a no-op for that field, and a request that sets nothing is a no-op
+    /// > that returns OK.
+    /// > 
+    /// > Every real change reaches the chat's members, including the caller's
+    /// > other devices, on the event stream as one MetadataUpdate per field
+    /// > changed: TitleChanged for the title, PictureChanged for the picture.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func editChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_EditChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EditChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.editChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_EditChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_EditChatResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -1156,6 +1480,65 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
         )
     }
 
+    /// Call the "GetRoster" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetRoster pages a chat's roster, most recently joined first. Every
+    /// > page carries the chat's RosterSummary, and every member carries the
+    /// > roster version that placed them (see Member.version).
+    /// > 
+    /// > A DM's roster is its participants, and a small group's is read whole:
+    /// > for these a page is the roster at exactly roster_summary.version — a
+    /// > roster that fits one page is member_count members, and a later page
+    /// > is a fresh snapshot at its own summary. A large group's roster is
+    /// > paged from an index that trails membership writes briefly, so a page
+    /// > may lag roster_summary — a member
+    /// > who just joined may be absent, one who just left may be present.
+    /// > Clients do not see which case they are in and must follow the weaker
+    /// > contract: treat roster_summary.version as the staleness watermark
+    /// > described on RosterSummary, and merge each page against what the
+    /// > event stream has told them per member by Member.version, the greater
+    /// > winning. A cached member absent from a fully read roster is gone
+    /// > unless the client holds their join at a version above the page's
+    /// > roster_summary.version. A join during the walk lands ahead of the
+    /// > cursor and arrives only as a RosterUpdate.
+    /// > 
+    /// > Pointers are hydrated for a DM's participants only. A group's members
+    /// > carry none: group pointer advances are never broadcast, so a page of
+    /// > them would be stale as soon as it was served.
+    /// > 
+    /// > Requires that the caller may read the chat: a member, or a non-member
+    /// > a group's listener rules admit. A viewer who may only preview the chat
+    /// > is DENIED.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getRoster<Result>(
+        _ message: Flipcash_Chat_V1_GetRosterRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRosterResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRosterRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getRoster(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "StartChat" method.
     ///
     /// > Source IDL Documentation:
@@ -1249,6 +1632,55 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.leaveChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "EditChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > EditChat edits a group chat's record. Every editable field is optional;
+    /// > only the ones set in the request are changed, and the edit is atomic:
+    /// > if any part is refused, nothing is applied.
+    /// > 
+    /// > Only a group chat may be edited, and only by a member the server permits
+    /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
+    /// > is DENIED. A new title is moderated like
+    /// > StartChat's. A new picture is a blob the caller has already uploaded via
+    /// > BlobStorage: the client uploads only the ORIGINAL and passes the
+    /// > resulting BlobId once the blob is READY, and the server derives the
+    /// > remaining renditions. Setting a field to the value the chat already has
+    /// > is a no-op for that field, and a request that sets nothing is a no-op
+    /// > that returns OK.
+    /// > 
+    /// > Every real change reaches the chat's members, including the caller's
+    /// > other devices, on the event stream as one MetadataUpdate per field
+    /// > changed: TitleChanged for the title, PictureChanged for the picture.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func editChat<Result>(
+        _ message: Flipcash_Chat_V1_EditChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EditChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_EditChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.editChat(
             request: request,
             options: options,
             onResponse: handleResponse
