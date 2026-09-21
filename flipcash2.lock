@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: dd5e92db6f76700ab6b565f4eff1f9fb25140c9a
-subject: Add Reporting RPC service (#113)
+commit: 4ccbbe43197ec6cc2d7a3f0681a73f799cdcfb46
+subject: Add EditChat RPC (#116)

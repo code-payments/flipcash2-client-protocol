@@ -8,6 +8,88 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.11.0
+
+Synced to [`flipcash2-protobuf-api@4ccbbe43`](https://github.com/code-payments/flipcash2-protobuf-api/commit/4ccbbe43197ec6cc2d7a3f0681a73f799cdcfb46),
+picking up [#114](https://github.com/code-payments/flipcash2-protobuf-api/pull/114) through
+[#116](https://github.com/code-payments/flipcash2-protobuf-api/pull/116). Only `chat.v1` moved.
+
+Additive throughout: a chat's roster becomes readable page by page, a group chat becomes editable,
+and the server starts telling each viewer what it will let them do. Nothing existing changed number,
+type or meaning, so the upgrade itself is free. Two of the additions carry client obligations that
+are not visible in the generated code; those are under Upgrading.
+
+### Added
+
+Roster paging, on `chat.v1.Chat`:
+
+- `GetRoster(GetRosterRequest) returns (GetRosterResponse)` pages a chat's roster, most recently
+  joined first. Page size comes from `common.v1.QueryOptions` and is capped at 100; ordering is
+  fixed and not client-selectable. The `common.v1.PagingToken` is opaque, server-generated and bound
+  to `chat_id` — it is refused with another chat. `GetRosterResponse.Result` is `OK`, `DENIED`,
+  `NOT_FOUND`. A member may read the roster, as may a non-member the group's listener rules admit; a
+  viewer who may only preview the chat is `DENIED`.
+- Every page carries the chat's `RosterSummary`, so `member_count` and `version` arrive with the
+  members rather than needing a separate read.
+- Pointers are hydrated for a DM's participants only. A group's members carry none, because group
+  pointer advances are never broadcast and a page of them would be stale as soon as it was served.
+- `Member.joined_at` (field 4) and `Member.version` (field 5). `joined_at` is when the member most
+  recently joined, so a member who left and rejoined carries the rejoin time. `version` is the
+  roster version that placed them — equal to `roster_summary.version` on the
+  `RosterUpdate.MemberJoined` that announced it, and zero for a member present at the chat's
+  creation and for every DM participant. Both are set on a `GetRoster` page and on `MemberJoined`,
+  and unset on `Metadata.members`, which carries only the viewer's own entry.
+
+Group chat editing, on `chat.v1.Chat`:
+
+- `EditChat(EditChatRequest) returns (EditChatResponse)` changes a group chat's `title`, `picture`,
+  or both. Every field is optional and only the ones set are changed. The edit is atomic, so a
+  refusal of any part applies none of it, and a request that sets nothing returns `OK`.
+- `EditChatResponse.Result` is `OK`, `DENIED`, `NOT_FOUND`, `TITLE_MODERATED`,
+  `PICTURE_BLOB_NOT_ACCEPTED`. `TITLE_MODERATED` carries the tripped `moderation.v1.FlaggedCategory`
+  in `flagged_category`; every other result leaves it `NONE`. `OK` carries the post-edit `Metadata`
+  in `chat`, including the renditions the server derived.
+- A new picture is a blob the caller has already uploaded through BlobStorage: the client uploads
+  only the ORIGINAL and passes its `BlobId` once the blob is `READY`.
+- `MetadataUpdate.TitleChanged` (oneof case 4) and `MetadataUpdate.PictureChanged` (oneof case 5),
+  one per field actually changed, delivered to the chat's members including the editor's other
+  devices.
+
+Per-viewer permissions:
+
+- `ViewerState.permissions` (field 2) and the nested `ViewerState.Permissions`, whose only flag so
+  far is `can_edit` — whether the viewer may call `EditChat` on this chat. Each flag is named for
+  the RPC it gates and defaults to false, so an unset flag always means the action is not permitted.
+- `ViewerState` is now documented as always present for a member. It remains absent when the chat
+  holds nothing about the viewer.
+
+### Upgrading
+
+Nothing forces a change. Both obligations below arrive only with the features that carry them.
+
+**A `GetRoster` page is not authoritative on its own.** A DM's roster and a small group's are read
+whole, at exactly `roster_summary.version`. A large group's is paged from an index that trails
+membership writes, so a page may lag its own summary: a member who just joined may be absent, one
+who just left may be present. The client cannot see which case it is in, so it must follow the
+weaker contract — merge each page against what the event stream has already delivered, per member,
+by `Member.version`, the greater winning. A member absent from a fully read roster is gone unless
+the client holds their join above that page's `roster_summary.version`, and a join that lands during
+the walk arrives only as a `RosterUpdate`.
+
+**`can_edit` is not derivable.** It is computed from the viewer's standing in the chat and the
+chat's rules, neither of which the client holds in full. Show the edit affordance if and only if the
+flag is set, rather than inferring it from membership or chat kind, and expect it to move: a change
+advances `ViewerState.version` and arrives as `MetadataUpdate.ViewerStateChanged`.
+
+### Unchanged
+
+Nothing was renumbered, and nothing existing changed type or meaning. `Member.joined_at` and
+`Member.version` are appended after `pointers` (field 3); the two `MetadataUpdate` cases are
+appended after `viewer_state_changed` (case 3); `ViewerState.permissions` takes the free field 2
+between `settings` (1) and `version` (10), which does not move. Both new `Result` enums belong to
+new messages, so no positional `rawValue` mapping over an existing enum shifts. No service, RPC,
+message or enum case was removed. Everything else in the diff is comments.
+
 ## 0.10.0
 
 Synced to [`flipcash2-protobuf-api@dd5e92db`](https://github.com/code-payments/flipcash2-protobuf-api/commit/dd5e92db6f76700ab6b565f4eff1f9fb25140c9a),

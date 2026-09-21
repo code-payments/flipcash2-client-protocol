@@ -75,7 +75,8 @@ message Metadata {
     // chats. If not set, the chat has no participation requirements.
     Rules rules = 11;
 
-    // Per-viewer chat state, absent when the chat holds nothing about them.
+    // Per-viewer chat state, including what the viewer may do in the chat.
+    // Absent when the chat holds nothing about them; always set for a member.
     ViewerState viewer_state = 12;
 }
 
@@ -156,10 +157,34 @@ message Member {
     //
     // If set, the list may contain DELIVERED and READ pointers. SENT pointers
     // are only shared between the sender and server, to indicate persistence.
+    // Hydrated for a DM's participants; a group member's are never carried.
     repeated messaging.v1.Pointer pointers = 3 [(validate.rules).repeated = {
         min_items: 0
         max_items: 2
     }];
+
+    // When the member most recently joined the chat. A member who left and
+    // rejoined carries the rejoin time.
+    //
+    // Set for a group's members on a Chat.GetRoster page and on a
+    // RosterUpdate.MemberJoined — the carriers a client builds its member
+    // list from. Unset on Metadata.members, which carries only the viewer's
+    // own entry, and never set for a DM's participants, whose roster is fixed
+    // at creation.
+    google.protobuf.Timestamp joined_at = 4;
+
+    // The roster version at which the member most recently joined: the
+    // version RosterSummary.version moved to on that transition, so it equals
+    // roster_summary.version on the RosterUpdate.MemberJoined that announced
+    // it. Zero for a member joined at the chat's creation and for every DM
+    // participant. In future it moves with any change to what the chat
+    // records about the member (e.g. a role), as RosterSummary.version does.
+    //
+    // A client merges what it holds for a user by this version: the greater
+    // wins, so a GetRoster page that trails the stream (see GetRoster)
+    // cannot resurrect a member the stream has already removed. Set wherever
+    // joined_at is; a DM participant's is zero by that rule too.
+    uint64 version = 5;
 }
 
 // RosterSummary describes a chat's roster — its member list — without
@@ -171,7 +196,8 @@ message Member {
 // this summary.
 message RosterSummary {
     // Number of currently joined members. For a large group chat,
-    // Metadata.members is a subset of the roster; this is its true size.
+    // Metadata.members is a subset of the roster; this is its true size, and
+    // Chat.GetRoster pages the roster itself.
     uint64 member_count = 1;
 
     // Version of the roster: advanced by exactly one on every change to the
@@ -197,6 +223,8 @@ message MetadataUpdate {
         FullRefresh         full_refresh          = 1;
         LastActivityChanged last_activity_changed = 2;
         ViewerStateChanged  viewer_state_changed  = 3;
+        TitleChanged        title_changed         = 4;
+        PictureChanged      picture_changed       = 5;
     }
 
     // Refreshes the entire chat metadata
@@ -212,6 +240,28 @@ message MetadataUpdate {
     // The receiving user's own state for the chat has changed
     message ViewerStateChanged {
         ViewerState viewer_state = 1 [(validate.rules).message.required = true];
+    }
+
+    // The chat's title has changed (e.g. via Chat.EditChat). Delivered to the
+    // chat's members, including the editor's other devices. Best-effort and
+    // applied as received; a client that suspects a miss refetches the chat
+    // via Chat.GetChat.
+    message TitleChanged {
+        // The new title, replacing Metadata.title.
+        string new_title = 1 [(validate.rules).string = {
+            min_len: 1
+            max_len: 64
+        }];
+    }
+
+    // The chat's picture has changed (e.g. via Chat.EditChat). Delivered to
+    // the chat's members, including the editor's other devices. Best-effort
+    // and applied as received; a client that suspects a miss refetches the
+    // chat via Chat.GetChat.
+    message PictureChanged {
+        // The new picture, with the renditions the server derived, replacing
+        // Metadata.picture.
+        blob.v1.Media new_picture = 1 [(validate.rules).message.required = true];
     }
 }
 
@@ -243,8 +293,9 @@ message RosterUpdate {
     // has just become a member of the chat and should insert it into their
     // chat list using metadata.
     message MemberJoined {
-        // The member that joined, with their profile hydrated, so a client
-        // can update its cached member list without a refetch.
+        // The member that joined, with their profile hydrated and joined_at and
+        // version set, so a client can update its cached member list without
+        // a refetch and merge later Chat.GetRoster pages against it.
         Member member = 1 [(validate.rules).message.required = true];
 
         // The full metadata for the chat, so the recipient can insert it into
@@ -276,10 +327,19 @@ message RosterUpdateBatch {
 
 // ViewerState is what this chat holds about the requesting user,
 // independent of whether they are a member. It is per-viewer and never
-// shared with other members.
+// shared with other members. Absent when the chat holds nothing about the
+// viewer; always present for a member, whose permissions it carries.
 message ViewerState {
     // State the viewer set for themselves through their own RPCs.
     Settings settings = 1;
+
+    // What the viewer may do in this chat. Server-computed from the viewer's
+    // standing in the chat and its rules, and never derivable by the client:
+    // a client shows an affordance if and only if its flag is set. A change
+    // to any flag (e.g. the viewer being granted or losing the ability to
+    // edit) advances version and reaches the viewer's devices as a
+    // MetadataUpdate.ViewerStateChanged.
+    Permissions permissions = 2;
 
     // Advanced by exactly one on every real change to any field of this
     // message, never by a no-op. Compared like RosterSummary.version: apply
@@ -292,6 +352,16 @@ message ViewerState {
         // are still delivered, flagged with push.v1.ChatMetadata.muted, and the
         // client suppresses the notification.
         MuteState mute = 1;
+    }
+
+    // Permissions are the actions the viewer may take in the chat. Each flag
+    // is named for the RPC it gates and defaults to false, so an unset flag
+    // always means the action is not permitted.
+    message Permissions {
+        // Whether the viewer may call Chat.EditChat on this chat. False for
+        // every DM, and for a group member the server does not permit to
+        // edit it.
+        bool can_edit = 1;
     }
 }
 
