@@ -225,12 +225,12 @@ public struct Flipcash_Push_V1_ChatMetadata: Sendable {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// The user ID that sent a chat message
+  /// The user ID that sent a chat message. Set whether the push carries the
+  /// full message or only its ID, so a push without the message can still be
+  /// attributed to its sender.
   ///
   /// Note: This will not be set for system messages OR for notifications that
   ///       don't relate to a user
-  ///
-  /// Deprecated: Infer from message instead
   public var sendingUserID: Flipcash_Common_V1_UserId {
     get {return _sendingUserID ?? Flipcash_Common_V1_UserId()}
     set {_sendingUserID = newValue}
@@ -243,15 +243,34 @@ public struct Flipcash_Push_V1_ChatMetadata: Sendable {
   /// The type of chat
   public var type: Flipcash_Chat_V1_ChatType = .unknown
 
-  /// The chat message that was sent, if the push is for a message
+  /// The chat message that was sent, if the push is for a message. Neither is
+  /// set for a chat push that isn't for a message. The push's title and body
+  /// are set either way, so the notification can be presented without the
+  /// message.
+  public var messageRef: Flipcash_Push_V1_ChatMetadata.OneOf_MessageRef? = nil
+
+  /// The full message, when it fits in the push.
   public var message: Flipcash_Messaging_V1_Message {
-    get {return _message ?? Flipcash_Messaging_V1_Message()}
-    set {_message = newValue}
+    get {
+      if case .message(let v)? = messageRef {return v}
+      return Flipcash_Messaging_V1_Message()
+    }
+    set {messageRef = .message(newValue)}
   }
-  /// Returns true if `message` has been explicitly set.
-  public var hasMessage: Bool {return self._message != nil}
-  /// Clears the value of `message`. Subsequent reads from it will return its default value.
-  public mutating func clearMessage() {self._message = nil}
+
+  /// Only the message's ID, when the full message would put the push over
+  /// the push provider's payload size limit (4KB for both FCM and APNs),
+  /// which a long message can reach. A client that needs the message
+  /// (e.g. to decrypt EncryptedContent, or to store the message for a
+  /// muted chat) fetches it with Messaging.GetMessage, using this ID and
+  /// the chat ID in Payload.navigation.
+  public var messageID: Flipcash_Messaging_V1_MessageId {
+    get {
+      if case .messageID(let v)? = messageRef {return v}
+      return Flipcash_Messaging_V1_MessageId()
+    }
+    set {messageRef = .messageID(newValue)}
+  }
 
   /// Whether the recipient had this chat muted when the push was sent.
   /// The push is still delivered so the client can store the message,
@@ -260,10 +279,26 @@ public struct Flipcash_Push_V1_ChatMetadata: Sendable {
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
+  /// The chat message that was sent, if the push is for a message. Neither is
+  /// set for a chat push that isn't for a message. The push's title and body
+  /// are set either way, so the notification can be presented without the
+  /// message.
+  public enum OneOf_MessageRef: Equatable, Sendable {
+    /// The full message, when it fits in the push.
+    case message(Flipcash_Messaging_V1_Message)
+    /// Only the message's ID, when the full message would put the push over
+    /// the push provider's payload size limit (4KB for both FCM and APNs),
+    /// which a long message can reach. A client that needs the message
+    /// (e.g. to decrypt EncryptedContent, or to store the message for a
+    /// muted chat) fetches it with Messaging.GetMessage, using this ID and
+    /// the chat ID in Payload.navigation.
+    case messageID(Flipcash_Messaging_V1_MessageId)
+
+  }
+
   public init() {}
 
   fileprivate var _sendingUserID: Flipcash_Common_V1_UserId? = nil
-  fileprivate var _message: Flipcash_Messaging_V1_Message? = nil
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -469,7 +504,7 @@ extension Flipcash_Push_V1_Navigation: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sending_user_id\0\u{1}type\0\u{1}message\0\u{1}muted\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}sending_user_id\0\u{1}type\0\u{1}message\0\u{1}muted\0\u{3}message_id\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -479,8 +514,33 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._sendingUserID) }()
       case 2: try { try decoder.decodeSingularEnumField(value: &self.type) }()
-      case 3: try { try decoder.decodeSingularMessageField(value: &self._message) }()
+      case 3: try {
+        var v: Flipcash_Messaging_V1_Message?
+        var hadOneofValue = false
+        if let current = self.messageRef {
+          hadOneofValue = true
+          if case .message(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.messageRef = .message(v)
+        }
+      }()
       case 4: try { try decoder.decodeSingularBoolField(value: &self.muted) }()
+      case 5: try {
+        var v: Flipcash_Messaging_V1_MessageId?
+        var hadOneofValue = false
+        if let current = self.messageRef {
+          hadOneofValue = true
+          if case .messageID(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.messageRef = .messageID(v)
+        }
+      }()
       default: break
       }
     }
@@ -497,19 +557,22 @@ extension Flipcash_Push_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
     if self.type != .unknown {
       try visitor.visitSingularEnumField(value: self.type, fieldNumber: 2)
     }
-    try { if let v = self._message {
+    try { if case .message(let v)? = self.messageRef {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
     if self.muted != false {
       try visitor.visitSingularBoolField(value: self.muted, fieldNumber: 4)
     }
+    try { if case .messageID(let v)? = self.messageRef {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Push_V1_ChatMetadata, rhs: Flipcash_Push_V1_ChatMetadata) -> Bool {
     if lhs._sendingUserID != rhs._sendingUserID {return false}
     if lhs.type != rhs.type {return false}
-    if lhs._message != rhs._message {return false}
+    if lhs.messageRef != rhs.messageRef {return false}
     if lhs.muted != rhs.muted {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true

@@ -42,8 +42,12 @@ public struct Flipcash_Chat_V1_GetChatRequest: Sendable {
   /// withheld from a viewer who may not read the chat under it. Unset (FULL)
   /// is the pre-redaction contract: messaging state for a viewer who may
   /// read the chat in full, the bare record for anyone else.
+  ///
+  /// Must be REDACTED when auth is unset; any other mode is DENIED.
   public var viewMode: Flipcash_Messaging_V1_ViewMode = .full
 
+  /// Optional. Unset requests the chat's public view (see Chat.GetChat),
+  /// which requires view_mode REDACTED.
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
     set {_auth = newValue}

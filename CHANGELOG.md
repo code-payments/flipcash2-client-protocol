@@ -8,6 +8,87 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.12.0
+
+Synced to [`flipcash2-protobuf-api@9ebf55fe`](https://github.com/code-payments/flipcash2-protobuf-api/commit/9ebf55fef834c1a47ae995ae22cad28d79080f2c),
+picking up [#117](https://github.com/code-payments/flipcash2-protobuf-api/pull/117) through
+[#122](https://github.com/code-payments/flipcash2-protobuf-api/pull/122). `blob.v1`, `chat.v1`,
+`messaging.v1` and `push.v1` moved.
+
+Most of this release is end-to-end encryption for DMs: an encrypted content type, encrypted blob
+uploads for DM media, and a per-chat flag for migrating DMs over. It is additive on the wire, but
+one existing Swift accessor is gone and pushes can now arrive without the message, so the upgrade is
+not free on iOS. Both are under Upgrading.
+
+### Added
+
+End-to-end encrypted DMs, in `messaging.v1`:
+
+- `EncryptedContent`, a new `Content.type` case (`encrypted = 7`), carrying `scheme` (field 1),
+  a 24-byte `nonce` (field 2) and `ciphertext` (field 3, up to 17408 bytes including the 16-byte
+  tag). The plaintext is a serialized `Content` holding a `TextContent`, a `MediaContent`, or a
+  `ReplyContent` of either. `EncryptedContent.Scheme` has `UNKNOWN = 0` and
+  `X25519_XCHACHA20POLY1305 = 1`. The proto comment on `EncryptedContent` specifies the key
+  derivation, AAD and blob format in full; follow it rather than this summary.
+- `SendMessageResponse.Result.ENCRYPTION_NOT_ALLOWED = 2` and
+  `EditMessageResponse.Result.ENCRYPTION_NOT_ALLOWED = 5`, returned when `EncryptedContent` is sent
+  to a chat that is not a DM.
+
+Encrypted blobs, in `blob.v1`:
+
+- `InitiateExternalUploadRequest.end_to_end_encrypted_for`, a oneof whose only case is
+  `chat = 4` (`common.v1.ChatId`). The caller must be a member of that DM. `mime_type` must be
+  `application/octet-stream`, and the server checks only the size.
+- `EncryptedBlobMetadata`, a new empty message and a new `BlobMetadata.kind` case
+  (`encrypted = 5`), marking a blob uploaded that way.
+- `UploadPolicy.encrypted` (field 4) and the new `EncryptedConstraints`, with `max_size_bytes`
+  (field 1, the only enforced limit) and advisory `image` bounds (field 2). Unset when the caller
+  may not upload encrypted blobs.
+
+Chat metadata, in `chat.v1.Metadata`:
+
+- `creator` (field 13, `common.v1.UserId`), set for group chats only.
+- `use_e2ee` (field 100, `bool`), true when clients should send new content in this DM as
+  `EncryptedContent`. Always false for group chats. It is transitional and will be deprecated once
+  E2EE launches. The Swift accessor is `useE2Ee`.
+
+Push, in `push.v1.ChatMetadata`:
+
+- `message_id` (field 5, `messaging.v1.MessageId`), sent in place of the full message when the
+  message would push the payload over the 4KB FCM/APNs limit.
+
+### Changed
+
+- `ChatMetadata.message` (field 3) now sits inside a new `message_ref` oneof alongside
+  `message_id`. The field number and type are unchanged, so this is wire-compatible. In Swift the
+  generated `hasMessage` and `clearMessage()` are gone; read `messageRef` instead. Kotlin keeps
+  `hasMessage()` and gains `getMessageRefCase()`.
+- `ChatMetadata.sending_user_id` is no longer deprecated. It is set whether the push carries the
+  message or only its ID.
+- `Chat.GetChat` documents an unauthenticated read: with `auth` unset, the caller gets the chat's
+  public view, and `view_mode` must be `REDACTED`. Any other mode, or a DM, is `DENIED`. No field
+  changed.
+
+### Upgrading
+
+**A chat push may no longer carry the message.** This applies to every client, including one that
+never upgrades: the server now omits the message from a push for a long message and sends
+`message_id` instead, which an older client sees as `message` simply unset. The push's title and
+body are still set, so the notification can be shown either way. A client that needs the message,
+to decrypt it or to store it for a muted chat, fetches it with `Messaging.GetMessage` using
+`message_id` and the chat ID from `Payload.navigation`.
+
+**`EncryptedContent` needs handling before a DM turns on `use_e2ee`.** The server cannot read,
+moderate or preview it. A client that cannot decrypt a message, or decrypts a type outside the
+allowed three, renders it as unsupported rather than failing.
+
+### Unchanged
+
+Nothing was renumbered. Both new `Result` cases are appended after the last existing case (`DENIED`
+and `CONFLICT` respectively), so no positional `rawValue` mapping shifts. `Content.encrypted` and
+`BlobMetadata.encrypted` are appended to their oneofs, and every new field takes a free number. No
+service, RPC, message or enum case was removed. Everything else in the diff is comments.
+
 ## 0.11.0
 
 Synced to [`flipcash2-protobuf-api@4ccbbe43`](https://github.com/code-payments/flipcash2-protobuf-api/commit/4ccbbe43197ec6cc2d7a3f0681a73f799cdcfb46),

@@ -32,7 +32,7 @@ public enum Flipcash_Blob_V1_BlobStatus: SwiftProtobuf.Enum, Swift.CaseIterable 
   /// bytes present; deriving metadata / transcoding / moderating
   case processing // = 2
 
-  /// available; metadata populated and moderation passed
+  /// available; metadata populated and moderation passed (encrypted: size checked)
   case ready // = 3
 
   /// failed validation or moderation; not servable
@@ -78,7 +78,8 @@ public enum Flipcash_Blob_V1_BlobStatus: SwiftProtobuf.Enum, Swift.CaseIterable 
 
 /// Why a blob failed finalization, after its bytes were uploaded. Distinct from
 /// the pre-upload denials in InitiateExternalUploadResponse.Result, which reject
-/// before any bytes are stored.
+/// before any bytes are stored. An end-to-end encrypted blob is only ever
+/// rejected with TOO_LARGE or INTERNAL, since the server cannot read its bytes.
 public enum Flipcash_Blob_V1_RejectionReason: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case unknown // = 0
@@ -239,9 +240,11 @@ public struct Flipcash_Blob_V1_BlobBatch: Sendable {
   public init() {}
 }
 
-/// Server-authoritative metadata describing a stored blob. Never set by clients.
-/// With the exception of download_url, every field is intrinsic to the stored
-/// bytes and immutable, derived once by the server.
+/// Server-authoritative metadata describing a stored blob. Never set by clients,
+/// except inside messaging.v1.EncryptedContent, where the sender sets it to
+/// describe the plaintext of an end-to-end encrypted blob and the server never
+/// sees it. With the exception of download_url, every field is intrinsic to the
+/// stored bytes and immutable, derived once by the server.
 public struct Flipcash_Blob_V1_BlobMetadata: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -272,9 +275,9 @@ public struct Flipcash_Blob_V1_BlobMetadata: Sendable {
   public mutating func clearDownloadURL() {self._downloadURL = nil}
 
   /// Kind-specific metadata the server derived from the bytes. Exactly one
-  /// variant is set for a recognized media kind; left unset for opaque blobs.
-  /// Only images are supported today; video/audio/etc. will be added as new
-  /// variants.
+  /// variant is set for a recognized media kind or an end-to-end encrypted
+  /// blob; left unset for opaque blobs. Only images are supported today;
+  /// video/audio/etc. will be added as new variants.
   public var kind: Flipcash_Blob_V1_BlobMetadata.OneOf_Kind? = nil
 
   public var image: Flipcash_Blob_V1_ImageMetadata {
@@ -285,20 +288,45 @@ public struct Flipcash_Blob_V1_BlobMetadata: Sendable {
     set {kind = .image(newValue)}
   }
 
+  public var encrypted: Flipcash_Blob_V1_EncryptedBlobMetadata {
+    get {
+      if case .encrypted(let v)? = kind {return v}
+      return Flipcash_Blob_V1_EncryptedBlobMetadata()
+    }
+    set {kind = .encrypted(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Kind-specific metadata the server derived from the bytes. Exactly one
-  /// variant is set for a recognized media kind; left unset for opaque blobs.
-  /// Only images are supported today; video/audio/etc. will be added as new
-  /// variants.
+  /// variant is set for a recognized media kind or an end-to-end encrypted
+  /// blob; left unset for opaque blobs. Only images are supported today;
+  /// video/audio/etc. will be added as new variants.
   public enum OneOf_Kind: Equatable, Sendable {
     case image(Flipcash_Blob_V1_ImageMetadata)
+    case encrypted(Flipcash_Blob_V1_EncryptedBlobMetadata)
 
   }
 
   public init() {}
 
   fileprivate var _downloadURL: Flipcash_Blob_V1_DownloadUrl? = nil
+}
+
+/// Marks a blob uploaded with
+/// InitiateExternalUploadRequest.end_to_end_encrypted_for. Its BlobMetadata
+/// describes the encrypted bytes: mime_type is "application/octet-stream" and
+/// size_bytes is the size of the encrypted blob. The plaintext's type, size and
+/// image metadata are set by the sender inside the messaging.v1.EncryptedContent
+/// that references the blob, and clients render from those instead.
+public struct Flipcash_Blob_V1_EncryptedBlobMetadata: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
 }
 
 /// Intrinsic descriptors for a still image.
@@ -337,6 +365,10 @@ public struct Flipcash_Blob_V1_Media: Sendable {
   /// exactly one ORIGINAL rendition (its blob_id); the server fills that
   /// rendition's metadata and appends any derived renditions (e.g. a
   /// downscaled DISPLAY and a THUMBNAIL).
+  ///
+  /// Inside messaging.v1.EncryptedContent, the server never sees the media:
+  /// the sender supplies the single ORIGINAL rendition with its metadata
+  /// already set, and there are no derived renditions.
   public var renditions: [Flipcash_Blob_V1_Rendition] = []
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -370,6 +402,9 @@ public struct Flipcash_Blob_V1_Rendition: Sendable {
   ///
   /// If unavailable at the time the media is retrieved, the client can use
   /// GetBlobs to query for the blob metadata.
+  ///
+  /// Inside messaging.v1.EncryptedContent, the sender sets this to describe
+  /// the plaintext, without a download_url; see BlobMetadata.
   public var blob: Flipcash_Blob_V1_BlobMetadata {
     get {return _blob ?? Flipcash_Blob_V1_BlobMetadata()}
     set {_blob = newValue}
@@ -473,12 +508,54 @@ public struct Flipcash_Blob_V1_UploadPolicy: Sendable {
   /// upload whose type matches no entry is not accepted.
   public var mimeTypeConstraints: [Flipcash_Blob_V1_MimeTypeConstraints] = []
 
+  /// Constraints on end-to-end encrypted uploads (see
+  /// InitiateExternalUploadRequest.end_to_end_encrypted_for), which are
+  /// governed by this instead of mime_type_constraints. Unset when the caller
+  /// may not upload encrypted blobs.
+  public var encrypted: Flipcash_Blob_V1_EncryptedConstraints {
+    get {return _encrypted ?? Flipcash_Blob_V1_EncryptedConstraints()}
+    set {_encrypted = newValue}
+  }
+  /// Returns true if `encrypted` has been explicitly set.
+  public var hasEncrypted: Bool {return self._encrypted != nil}
+  /// Clears the value of `encrypted`. Subsequent reads from it will return its default value.
+  public mutating func clearEncrypted() {self._encrypted = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 
   fileprivate var _version: Flipcash_Blob_V1_PolicyVersion? = nil
   fileprivate var _ttl: SwiftProtobuf.Google_Protobuf_Duration? = nil
+  fileprivate var _encrypted: Flipcash_Blob_V1_EncryptedConstraints? = nil
+}
+
+/// Upload constraints for end-to-end encrypted blobs.
+public struct Flipcash_Blob_V1_EncryptedConstraints: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// Hard ceiling on the encrypted blob's byte size, including the 24-byte
+  /// nonce and 16-byte tag. This is the only constraint the server enforces.
+  public var maxSizeBytes: UInt64 = 0
+
+  /// Bounds the sender should downscale an image to before encrypting it. The
+  /// server cannot read the bytes, so these are advisory.
+  public var image: Flipcash_Blob_V1_ImageConstraints {
+    get {return _image ?? Flipcash_Blob_V1_ImageConstraints()}
+    set {_image = newValue}
+  }
+  /// Returns true if `image` has been explicitly set.
+  public var hasImage: Bool {return self._image != nil}
+  /// Clears the value of `image`. Subsequent reads from it will return its default value.
+  public mutating func clearImage() {self._image = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _image: Flipcash_Blob_V1_ImageConstraints? = nil
 }
 
 /// Opaque generation token identifying a snapshot of an UploadPolicy. Compared
@@ -718,6 +795,9 @@ public struct Flipcash_Blob_V1_AccessContext: Sendable {
 
   /// The caller is accessing these blobs from within this chat. Authorized
   /// iff the caller is a member of the chat and the blob was shared into it.
+  /// An end-to-end encrypted blob is shared into the chat it was uploaded
+  /// for (InitiateExternalUploadRequest.end_to_end_encrypted_for) once it
+  /// is READY, not by the message that references it.
   public var chat: Flipcash_Common_V1_ChatId {
     get {
       if case .chat(let v)? = scope {return v}
@@ -758,6 +838,9 @@ public struct Flipcash_Blob_V1_AccessContext: Sendable {
   public enum OneOf_Scope: Equatable, Sendable {
     /// The caller is accessing these blobs from within this chat. Authorized
     /// iff the caller is a member of the chat and the blob was shared into it.
+    /// An end-to-end encrypted blob is shared into the chat it was uploaded
+    /// for (InitiateExternalUploadRequest.end_to_end_encrypted_for) once it
+    /// is READY, not by the message that references it.
     case chat(Flipcash_Common_V1_ChatId)
     /// The caller is accessing these blobs from this user's public profile.
     /// Authorized iff the blob is a rendition of that user's CURRENT profile
@@ -931,7 +1014,7 @@ extension Flipcash_Blob_V1_BlobBatch: SwiftProtobuf.Message, SwiftProtobuf._Mess
 
 extension Flipcash_Blob_V1_BlobMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".BlobMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}mime_type\0\u{3}size_bytes\0\u{3}download_url\0\u{1}image\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}mime_type\0\u{3}size_bytes\0\u{3}download_url\0\u{1}image\0\u{1}encrypted\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -955,6 +1038,19 @@ extension Flipcash_Blob_V1_BlobMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
           self.kind = .image(v)
         }
       }()
+      case 5: try {
+        var v: Flipcash_Blob_V1_EncryptedBlobMetadata?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .encrypted(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .encrypted(v)
+        }
+      }()
       default: break
       }
     }
@@ -974,9 +1070,17 @@ extension Flipcash_Blob_V1_BlobMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
     try { if let v = self._downloadURL {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
-    try { if case .image(let v)? = self.kind {
+    switch self.kind {
+    case .image?: try {
+      guard case .image(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
-    } }()
+    }()
+    case .encrypted?: try {
+      guard case .encrypted(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
+    case nil: break
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -985,6 +1089,25 @@ extension Flipcash_Blob_V1_BlobMetadata: SwiftProtobuf.Message, SwiftProtobuf._M
     if lhs.sizeBytes != rhs.sizeBytes {return false}
     if lhs._downloadURL != rhs._downloadURL {return false}
     if lhs.kind != rhs.kind {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Blob_V1_EncryptedBlobMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EncryptedBlobMetadata"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Blob_V1_EncryptedBlobMetadata, rhs: Flipcash_Blob_V1_EncryptedBlobMetadata) -> Bool {
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1110,7 +1233,7 @@ extension Flipcash_Blob_V1_Rendition.Role: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Blob_V1_UploadPolicy: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UploadPolicy"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}version\0\u{1}ttl\0\u{3}mime_type_constraints\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}version\0\u{1}ttl\0\u{3}mime_type_constraints\0\u{1}encrypted\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1121,6 +1244,7 @@ extension Flipcash_Blob_V1_UploadPolicy: SwiftProtobuf.Message, SwiftProtobuf._M
       case 1: try { try decoder.decodeSingularMessageField(value: &self._version) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._ttl) }()
       case 3: try { try decoder.decodeRepeatedMessageField(value: &self.mimeTypeConstraints) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._encrypted) }()
       default: break
       }
     }
@@ -1140,6 +1264,9 @@ extension Flipcash_Blob_V1_UploadPolicy: SwiftProtobuf.Message, SwiftProtobuf._M
     if !self.mimeTypeConstraints.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.mimeTypeConstraints, fieldNumber: 3)
     }
+    try { if let v = self._encrypted {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1147,6 +1274,46 @@ extension Flipcash_Blob_V1_UploadPolicy: SwiftProtobuf.Message, SwiftProtobuf._M
     if lhs._version != rhs._version {return false}
     if lhs._ttl != rhs._ttl {return false}
     if lhs.mimeTypeConstraints != rhs.mimeTypeConstraints {return false}
+    if lhs._encrypted != rhs._encrypted {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Blob_V1_EncryptedConstraints: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EncryptedConstraints"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}max_size_bytes\0\u{1}image\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.maxSizeBytes) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._image) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.maxSizeBytes != 0 {
+      try visitor.visitSingularUInt64Field(value: self.maxSizeBytes, fieldNumber: 1)
+    }
+    try { if let v = self._image {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Blob_V1_EncryptedConstraints, rhs: Flipcash_Blob_V1_EncryptedConstraints) -> Bool {
+    if lhs.maxSizeBytes != rhs.maxSizeBytes {return false}
+    if lhs._image != rhs._image {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
