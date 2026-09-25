@@ -78,6 +78,23 @@ message Metadata {
     // Per-viewer chat state, including what the viewer may do in the chat.
     // Absent when the chat holds nothing about them; always set for a member.
     ViewerState viewer_state = 12;
+
+    // The user that created this chat. Set only for group chats.
+    common.v1.UserId creator = 13;
+
+    // Whether messages in this chat are end-to-end encrypted (see
+    // messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or
+    // TIP_DM); always false for group chats.
+    //
+    // Used to migrate DMs to E2EE: when true, clients send all new content in
+    // the chat as EncryptedContent. When false, clients send content in the
+    // clear. Existing messages are not re-encrypted, so a chat may hold a mix
+    // of both.
+    //
+    // This is a transitional flag. Once E2EE has launched, clients should
+    // always end-to-end encrypt DMs regardless of this value, and it will be
+    // deprecated.
+    bool use_e2ee = 100;
 }
 
 // Rules define the requirements a user must satisfy to participate in a chat.

@@ -176,6 +176,12 @@ extension Flipcash_Chat_V1_Chat {
         /// > Source IDL Documentation:
         /// >
         /// > GetChat returns the metadata for a specific chat
+        /// > 
+        /// > Auth is optional. An unauthenticated caller gets the chat's public view:
+        /// > the same group record a registered non-member previewing it receives,
+        /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
+        /// > viewer_state). An unauthenticated read under any other view_mode, or of
+        /// > a DM, is DENIED.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatRequest` message.
@@ -517,6 +523,12 @@ extension Flipcash_Chat_V1_Chat {
         /// > Source IDL Documentation:
         /// >
         /// > GetChat returns the metadata for a specific chat
+        /// > 
+        /// > Auth is optional. An unauthenticated caller gets the chat's public view:
+        /// > the same group record a registered non-member previewing it receives,
+        /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
+        /// > viewer_state). An unauthenticated read under any other view_mode, or of
+        /// > a DM, is DENIED.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatRequest` message.
@@ -956,6 +968,12 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > GetChat returns the metadata for a specific chat
+    /// > 
+    /// > Auth is optional. An unauthenticated caller gets the chat's public view:
+    /// > the same group record a registered non-member previewing it receives,
+    /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
+    /// > viewer_state). An unauthenticated read under any other view_mode, or of
+    /// > a DM, is DENIED.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatRequest` message.
@@ -1344,6 +1362,12 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > GetChat returns the metadata for a specific chat
+    /// > 
+    /// > Auth is optional. An unauthenticated caller gets the chat's public view:
+    /// > the same group record a registered non-member previewing it receives,
+    /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
+    /// > viewer_state). An unauthenticated read under any other view_mode, or of
+    /// > a DM, is DENIED.
     ///
     /// - Parameters:
     ///   - message: request message to send.

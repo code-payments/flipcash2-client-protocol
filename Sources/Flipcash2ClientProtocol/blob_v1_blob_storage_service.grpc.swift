@@ -98,7 +98,10 @@ extension Flipcash_Blob_V1_BlobStorage {
     /// > BlobStorage manages direct-to-storage uploads and authorized, time-limited reads
     /// > of the bytes behind MediaItem renditions (and other blobs). Clients upload bytes
     /// > straight to object storage via a presigned target — the server never proxies
-    /// > them — and all blob metadata is server-derived from the stored bytes.
+    /// > them — and all blob metadata is server-derived from the stored bytes. The
+    /// > exception is end-to-end encrypted blobs (see
+    /// > InitiateExternalUploadRequest.end_to_end_encrypted_for), whose bytes the
+    /// > server cannot read.
     public protocol ClientProtocol: Sendable {
         /// Call the "GetUploadPolicy" method.
         ///
@@ -133,7 +136,8 @@ extension Flipcash_Blob_V1_BlobStorage {
         /// >
         /// > InitiateExternalUpload reserves a BlobId and returns a short-lived presigned
         /// > target the client uploads the bytes to directly. Clients only ever upload
-        /// > ORIGINALs; the server derives any additional renditions itself.
+        /// > ORIGINALs; the server derives any additional renditions itself, except
+        /// > for end-to-end encrypted blobs, which have none.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Blob_V1_InitiateExternalUploadRequest` message.
@@ -219,7 +223,10 @@ extension Flipcash_Blob_V1_BlobStorage {
     /// > BlobStorage manages direct-to-storage uploads and authorized, time-limited reads
     /// > of the bytes behind MediaItem renditions (and other blobs). Clients upload bytes
     /// > straight to object storage via a presigned target — the server never proxies
-    /// > them — and all blob metadata is server-derived from the stored bytes.
+    /// > them — and all blob metadata is server-derived from the stored bytes. The
+    /// > exception is end-to-end encrypted blobs (see
+    /// > InitiateExternalUploadRequest.end_to_end_encrypted_for), whose bytes the
+    /// > server cannot read.
     public struct Client<Transport>: ClientProtocol where Transport: GRPCCore.ClientTransport {
         private let client: GRPCCore.GRPCClient<Transport>
 
@@ -275,7 +282,8 @@ extension Flipcash_Blob_V1_BlobStorage {
         /// >
         /// > InitiateExternalUpload reserves a BlobId and returns a short-lived presigned
         /// > target the client uploads the bytes to directly. Clients only ever upload
-        /// > ORIGINALs; the server derives any additional renditions itself.
+        /// > ORIGINALs; the server derives any additional renditions itself, except
+        /// > for end-to-end encrypted blobs, which have none.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Blob_V1_InitiateExternalUploadRequest` message.
@@ -426,7 +434,8 @@ extension Flipcash_Blob_V1_BlobStorage.ClientProtocol {
     /// >
     /// > InitiateExternalUpload reserves a BlobId and returns a short-lived presigned
     /// > target the client uploads the bytes to directly. Clients only ever upload
-    /// > ORIGINALs; the server derives any additional renditions itself.
+    /// > ORIGINALs; the server derives any additional renditions itself, except
+    /// > for end-to-end encrypted blobs, which have none.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Blob_V1_InitiateExternalUploadRequest` message.
@@ -565,7 +574,8 @@ extension Flipcash_Blob_V1_BlobStorage.ClientProtocol {
     /// >
     /// > InitiateExternalUpload reserves a BlobId and returns a short-lived presigned
     /// > target the client uploads the bytes to directly. Clients only ever upload
-    /// > ORIGINALs; the server derives any additional renditions itself.
+    /// > ORIGINALs; the server derives any additional renditions itself, except
+    /// > for end-to-end encrypted blobs, which have none.
     ///
     /// - Parameters:
     ///   - message: request message to send.

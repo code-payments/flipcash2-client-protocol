@@ -123,7 +123,58 @@ public struct Flipcash_Blob_V1_InitiateExternalUploadRequest: Sendable {
   /// content-length-range so storage rejects an upload that exceeds it.
   public var sizeBytes: UInt64 = 0
 
+  /// Set when the bytes are end-to-end encrypted, naming the surface they are
+  /// encrypted for. Unset for an ordinary upload. mime_type must be
+  /// "application/octet-stream", or the upload is denied with
+  /// UNSUPPORTED_TYPE. size_bytes is the size of the whole encrypted blob and
+  /// is checked against UploadPolicy.encrypted.
+  ///
+  /// The server cannot read the bytes, so it checks only their size. It
+  /// derives no metadata or renditions, does not moderate, and does not check
+  /// for privacy metadata. The blob can be referenced only from the surface
+  /// named here, and is rejected anywhere else (unencrypted MediaContent,
+  /// profile or chat pictures).
+  public var endToEndEncryptedFor: Flipcash_Blob_V1_InitiateExternalUploadRequest.OneOf_EndToEndEncryptedFor? = nil
+
+  /// The bytes are encrypted for this DM, as described in
+  /// messaging.v1.EncryptedContent: the 24-byte nonce followed by the
+  /// ciphertext and its 16-byte tag. The caller must be a member of the
+  /// chat and the chat must be a DM, or the upload is DENIED. Once READY,
+  /// the blob is granted to the chat, so the other member can read it
+  /// through AccessContext.chat, and it can be referenced only from
+  /// EncryptedContent in that chat.
+  public var chat: Flipcash_Common_V1_ChatId {
+    get {
+      if case .chat(let v)? = endToEndEncryptedFor {return v}
+      return Flipcash_Common_V1_ChatId()
+    }
+    set {endToEndEncryptedFor = .chat(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// Set when the bytes are end-to-end encrypted, naming the surface they are
+  /// encrypted for. Unset for an ordinary upload. mime_type must be
+  /// "application/octet-stream", or the upload is denied with
+  /// UNSUPPORTED_TYPE. size_bytes is the size of the whole encrypted blob and
+  /// is checked against UploadPolicy.encrypted.
+  ///
+  /// The server cannot read the bytes, so it checks only their size. It
+  /// derives no metadata or renditions, does not moderate, and does not check
+  /// for privacy metadata. The blob can be referenced only from the surface
+  /// named here, and is rejected anywhere else (unencrypted MediaContent,
+  /// profile or chat pictures).
+  public enum OneOf_EndToEndEncryptedFor: Equatable, Sendable {
+    /// The bytes are encrypted for this DM, as described in
+    /// messaging.v1.EncryptedContent: the 24-byte nonce followed by the
+    /// ciphertext and its 16-byte tag. The caller must be a member of the
+    /// chat and the chat must be a DM, or the upload is DENIED. Once READY,
+    /// the blob is granted to the chat, so the other member can read it
+    /// through AccessContext.chat, and it can be referenced only from
+    /// EncryptedContent in that chat.
+    case chat(Flipcash_Common_V1_ChatId)
+
+  }
 
   public init() {}
 
@@ -526,7 +577,7 @@ extension Flipcash_Blob_V1_GetUploadPolicyResponse.Result: SwiftProtobuf._ProtoN
 
 extension Flipcash_Blob_V1_InitiateExternalUploadRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".InitiateExternalUploadRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}auth\0\u{3}mime_type\0\u{3}size_bytes\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}auth\0\u{3}mime_type\0\u{3}size_bytes\0\u{1}chat\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -537,6 +588,19 @@ extension Flipcash_Blob_V1_InitiateExternalUploadRequest: SwiftProtobuf.Message,
       case 1: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.mimeType) }()
       case 3: try { try decoder.decodeSingularUInt64Field(value: &self.sizeBytes) }()
+      case 4: try {
+        var v: Flipcash_Common_V1_ChatId?
+        var hadOneofValue = false
+        if let current = self.endToEndEncryptedFor {
+          hadOneofValue = true
+          if case .chat(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.endToEndEncryptedFor = .chat(v)
+        }
+      }()
       default: break
       }
     }
@@ -556,6 +620,9 @@ extension Flipcash_Blob_V1_InitiateExternalUploadRequest: SwiftProtobuf.Message,
     if self.sizeBytes != 0 {
       try visitor.visitSingularUInt64Field(value: self.sizeBytes, fieldNumber: 3)
     }
+    try { if case .chat(let v)? = self.endToEndEncryptedFor {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -563,6 +630,7 @@ extension Flipcash_Blob_V1_InitiateExternalUploadRequest: SwiftProtobuf.Message,
     if lhs._auth != rhs._auth {return false}
     if lhs.mimeType != rhs.mimeType {return false}
     if lhs.sizeBytes != rhs.sizeBytes {return false}
+    if lhs.endToEndEncryptedFor != rhs.endToEndEncryptedFor {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

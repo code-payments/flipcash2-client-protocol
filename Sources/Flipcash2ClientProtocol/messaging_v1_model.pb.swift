@@ -327,6 +327,14 @@ public struct Flipcash_Messaging_V1_Content: Sendable {
     set {type = .deleted(newValue)}
   }
 
+  public var encrypted: Flipcash_Messaging_V1_EncryptedContent {
+    get {
+      if case .encrypted(let v)? = type {return v}
+      return Flipcash_Messaging_V1_EncryptedContent()
+    }
+    set {type = .encrypted(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
@@ -336,6 +344,7 @@ public struct Flipcash_Messaging_V1_Content: Sendable {
     case media(Flipcash_Messaging_V1_MediaContent)
     case system(Flipcash_Messaging_V1_SystemContent)
     case deleted(Flipcash_Messaging_V1_DeletedContent)
+    case encrypted(Flipcash_Messaging_V1_EncryptedContent)
 
   }
 
@@ -468,6 +477,8 @@ public struct Flipcash_Messaging_V1_MediaContent: Sendable {
   ///
   /// On SendMessage the client supplies exactly one ORIGINAL rendition per
   /// item; the server fills its metadata and appends the derived renditions.
+  /// Inside EncryptedContent, the sender sets the ORIGINAL's metadata itself
+  /// and there are no derived renditions; see EncryptedContent.
   public var items: [Flipcash_Blob_V1_Media] = []
 
   /// Optional caption rendered alongside the media
@@ -541,6 +552,179 @@ public struct Flipcash_Messaging_V1_DeletedContent: Sendable {
 
   fileprivate var _deletedTs: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
   fileprivate var _deletedBy: Flipcash_Common_V1_UserId? = nil
+}
+
+/// End-to-end encrypted content, sent only in DMs (chat.v1.ChatType
+/// CONTACT_DM or TIP_DM). SendMessage and EditMessage reject it in a group
+/// chat. The server stores and relays the ciphertext as-is and cannot read it,
+/// so it cannot moderate it, render a push preview from it, or produce a
+/// placeholder for it.
+///
+/// The plaintext is a serialized Content message. The allowed plaintext types
+/// are:
+///  - TextContent
+///  - MediaContent, as described under "Media" below
+///  - ReplyContent, whose own content is a TextContent or a MediaContent
+/// The server cannot enforce this. A client that decrypts any other type, or
+/// cannot decrypt the payload at all, renders the message as unsupported. A
+/// decrypted Content never itself holds EncryptedContent.
+///
+/// Encryption is between the Ed25519 public keys the two DM members registered
+/// their accounts with, which each member already knows. Neither key is carried
+/// in the message: the sender is Message.sender_id and the recipient is the
+/// other member. For scheme X25519_XCHACHA20POLY1305:
+///
+///  1. Convert keys to X25519. The sender converts its Ed25519 private key to
+///     an X25519 private key, and the recipient's Ed25519 public key to an
+///     X25519 public key, using the standard birational map (libsodium's
+///     crypto_sign_ed25519_sk_to_curve25519 and
+///     crypto_sign_ed25519_pk_to_curve25519). The recipient does the same with
+///     the roles reversed. Reject a public key that is not a valid point, or
+///     that converts to a low-order X25519 point.
+///
+///  2. Compute the shared secret: ss = X25519(own_x25519_priv, peer_x25519_pub).
+///     Abort if ss is all zeros.
+///
+///  3. Derive the chat key with HKDF-SHA256 (RFC 5869):
+///       salt = min(pk_a, pk_b) || max(pk_a, pk_b)
+///       ikm  = ss
+///       info = "flipcash-dm-e2ee-v1" || chat_id
+///       L    = 32
+///     pk_a and pk_b are the two members' 32-byte Ed25519 public keys, ordered
+///     bytewise so that both members derive the same key, and chat_id is the
+///     raw bytes of common.v1.ChatId.value. The key depends only on the two
+///     keys and the chat, so it can be derived once per chat and cached.
+///
+///  4. Encrypt with XChaCha20-Poly1305 (the IETF construction in libsodium's
+///     crypto_aead_xchacha20poly1305_ietf_encrypt):
+///       key       = the chat key from step 3
+///       nonce     = 24 fresh random bytes, set in `nonce` below
+///       plaintext = the serialized Content
+///       aad       = "flipcash-dm-e2ee-v1" || chat_id
+///                   || sender_pk || recipient_pk
+///     The ciphertext, with its 16-byte Poly1305 tag appended, is set in
+///     `ciphertext` below. Both directions use the same key, which is safe
+///     because the nonce is random and 24 bytes long. Never reuse a nonce, and
+///     do not substitute a 12-byte-nonce AEAD.
+///
+/// sender_pk and recipient_pk are the 32-byte Ed25519 public keys of
+/// Message.sender_id and of the other member. The recipient decrypts with the
+/// key from step 3 and the same aad. Both keys are bound into the aad in
+/// sender-then-recipient order, so a ciphertext cannot be replayed as if the
+/// other member sent it, or moved to another chat.
+///
+/// Because both members derive the same key, the sender can also decrypt its
+/// own messages, including on its other devices. Nothing binds the ciphertext
+/// to its MessageId, so a ciphertext re-posted in the same chat by the server
+/// decrypts as a valid message there.
+///
+/// This scheme has no forward secrecy: anyone who later obtains either
+/// member's private key can decrypt every message in the chat, past and
+/// future. A scheme with ephemeral keys or a ratchet can be added as a new
+/// Scheme value without changing this message.
+///
+/// Media
+///
+/// A MediaContent plaintext references blobs the sender uploaded for this chat
+/// with blob.v1.InitiateExternalUploadRequest.end_to_end_encrypted_for. The
+/// scheme also determines the format of every blob the plaintext references.
+/// Clients never take the format from the blob's server-side metadata, which
+/// the server could alter. For scheme X25519_XCHACHA20POLY1305, each blob is
+/// encrypted with the chat key from step 3, using its own aad so that a blob
+/// can never be passed off as a message ciphertext, or the reverse:
+///   nonce = 24 fresh random bytes
+///   aad   = "flipcash-dm-e2ee-blob-v1" || chat_id
+///           || sender_pk || recipient_pk || blob_id
+///   blob  = nonce || XChaCha20-Poly1305(chat key, nonce, image bytes, aad)
+/// blob_id is the raw bytes of blob.v1.BlobId.value, which is known from
+/// InitiateExternalUpload before the bytes are uploaded. Binding it stops the
+/// server from serving one blob's bytes in place of another's. sender_pk is the
+/// key of the member who uploaded the blob, which is always Message.sender_id.
+///
+/// The server never sees the image, so it cannot derive renditions or
+/// metadata, strip privacy metadata, or moderate. Before encrypting, the sender
+/// downscales the image, strips privacy metadata such as EXIF and location,
+/// and computes its dimensions and blurhash. It waits for the blob to be READY
+/// before sending the message.
+///
+/// Each Media item carries exactly one ORIGINAL rendition. Its blob_id is set,
+/// and its BlobMetadata is set by the sender to describe the plaintext image:
+/// mime_type, the plaintext size_bytes, and ImageMetadata. download_url is left
+/// unset. Only image MIME types are allowed; a recipient renders any other as
+/// unsupported.
+///
+/// Decrypting proves the sender wrote this metadata, but nothing checks it
+/// against the image. A recipient validates it with the blob.v1.BlobMetadata
+/// rules after decrypting, renders the message as unsupported if it is invalid,
+/// and treats the decoded image as authoritative: it uses the image's actual
+/// dimensions, and renders an image that fails to decode or whose decrypted
+/// length differs from size_bytes as unsupported.
+///
+/// To display the image, the recipient:
+///  1. Calls blob.v1.GetBlobs with AccessContext.chat to mint a download_url.
+///     The metadata GetBlobs returns describes the ciphertext, so it is used
+///     only for the URL. A blob still PROCESSING is retried later.
+///  2. Downloads the blob, splits off the 24-byte nonce, and decrypts it with
+///     the chat key and the aad above.
+///  3. Renders the image using the metadata from the plaintext, showing the
+///     blurhash until the download completes.
+/// A blob that is missing or fails to decrypt is rendered as unsupported.
+public struct Flipcash_Messaging_V1_EncryptedContent: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The encryption scheme used, which determines how every other field, and
+  /// every blob the plaintext references, is interpreted. Clients render an
+  /// unrecognized scheme as unsupported.
+  public var scheme: Flipcash_Messaging_V1_EncryptedContent.Scheme = .unknown
+
+  /// The random XChaCha20-Poly1305 nonce, unique per encryption.
+  public var nonce: Data = Data()
+
+  /// The encrypted, serialized Content with the 16-byte Poly1305 tag
+  /// appended. The upper bound fits a MediaContent with a maximum-length
+  /// caption (4096 characters of up to 4 bytes each) wrapped in a
+  /// ReplyContent, plus the tag.
+  public var ciphertext: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Scheme: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unknown // = 0
+    case x25519Xchacha20Poly1305 // = 1
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unknown
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unknown
+      case 1: self = .x25519Xchacha20Poly1305
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unknown: return 0
+      case .x25519Xchacha20Poly1305: return 1
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Messaging_V1_EncryptedContent.Scheme] = [
+      .unknown,
+      .x25519Xchacha20Poly1305,
+    ]
+
+  }
+
+  public init() {}
 }
 
 /// Emoji identifies an emoji used in a reaction. The value is a unicode emoji
@@ -1333,7 +1517,7 @@ extension Flipcash_Messaging_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Flipcash_Messaging_V1_Content: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Content"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{1}cash\0\u{1}reply\0\u{1}media\0\u{1}system\0\u{1}deleted\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{1}cash\0\u{1}reply\0\u{1}media\0\u{1}system\0\u{1}deleted\0\u{1}encrypted\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1419,6 +1603,19 @@ extension Flipcash_Messaging_V1_Content: SwiftProtobuf.Message, SwiftProtobuf._M
           self.type = .deleted(v)
         }
       }()
+      case 7: try {
+        var v: Flipcash_Messaging_V1_EncryptedContent?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .encrypted(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .encrypted(v)
+        }
+      }()
       default: break
       }
     }
@@ -1453,6 +1650,10 @@ extension Flipcash_Messaging_V1_Content: SwiftProtobuf.Message, SwiftProtobuf._M
     case .deleted?: try {
       guard case .deleted(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    }()
+    case .encrypted?: try {
+      guard case .encrypted(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     }()
     case nil: break
     }
@@ -1689,6 +1890,50 @@ extension Flipcash_Messaging_V1_DeletedContent: SwiftProtobuf.Message, SwiftProt
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Flipcash_Messaging_V1_EncryptedContent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EncryptedContent"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}scheme\0\u{1}nonce\0\u{1}ciphertext\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.scheme) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self.nonce) }()
+      case 3: try { try decoder.decodeSingularBytesField(value: &self.ciphertext) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.scheme != .unknown {
+      try visitor.visitSingularEnumField(value: self.scheme, fieldNumber: 1)
+    }
+    if !self.nonce.isEmpty {
+      try visitor.visitSingularBytesField(value: self.nonce, fieldNumber: 2)
+    }
+    if !self.ciphertext.isEmpty {
+      try visitor.visitSingularBytesField(value: self.ciphertext, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_EncryptedContent, rhs: Flipcash_Messaging_V1_EncryptedContent) -> Bool {
+    if lhs.scheme != rhs.scheme {return false}
+    if lhs.nonce != rhs.nonce {return false}
+    if lhs.ciphertext != rhs.ciphertext {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_EncryptedContent.Scheme: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}X25519_XCHACHA20POLY1305\0")
 }
 
 extension Flipcash_Messaging_V1_Emoji: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

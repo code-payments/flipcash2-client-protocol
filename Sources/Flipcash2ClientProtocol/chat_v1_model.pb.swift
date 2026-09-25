@@ -185,6 +185,33 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   /// Clears the value of `viewerState`. Subsequent reads from it will return its default value.
   public mutating func clearViewerState() {_uniqueStorage()._viewerState = nil}
 
+  /// The user that created this chat. Set only for group chats.
+  public var creator: Flipcash_Common_V1_UserId {
+    get {return _storage._creator ?? Flipcash_Common_V1_UserId()}
+    set {_uniqueStorage()._creator = newValue}
+  }
+  /// Returns true if `creator` has been explicitly set.
+  public var hasCreator: Bool {return _storage._creator != nil}
+  /// Clears the value of `creator`. Subsequent reads from it will return its default value.
+  public mutating func clearCreator() {_uniqueStorage()._creator = nil}
+
+  /// Whether messages in this chat are end-to-end encrypted (see
+  /// messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or
+  /// TIP_DM); always false for group chats.
+  ///
+  /// Used to migrate DMs to E2EE: when true, clients send all new content in
+  /// the chat as EncryptedContent. When false, clients send content in the
+  /// clear. Existing messages are not re-encrypted, so a chat may hold a mix
+  /// of both.
+  ///
+  /// This is a transitional flag. Once E2EE has launched, clients should
+  /// always end-to-end encrypt DMs regardless of this value, and it will be
+  /// deprecated.
+  public var useE2Ee: Bool {
+    get {return _storage._useE2Ee}
+    set {_uniqueStorage()._useE2Ee = newValue}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -925,7 +952,7 @@ extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Metadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{4}W\u{1}use_e2ee\0")
 
   fileprivate class _StorageClass {
     var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -940,6 +967,8 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
     var _rosterSummary: Flipcash_Chat_V1_RosterSummary? = nil
     var _rules: Flipcash_Chat_V1_Rules? = nil
     var _viewerState: Flipcash_Chat_V1_ViewerState? = nil
+    var _creator: Flipcash_Common_V1_UserId? = nil
+    var _useE2Ee: Bool = false
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -962,6 +991,8 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _rosterSummary = source._rosterSummary
       _rules = source._rules
       _viewerState = source._viewerState
+      _creator = source._creator
+      _useE2Ee = source._useE2Ee
     }
   }
 
@@ -992,6 +1023,8 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 10: try { try decoder.decodeSingularMessageField(value: &_storage._rosterSummary) }()
         case 11: try { try decoder.decodeSingularMessageField(value: &_storage._rules) }()
         case 12: try { try decoder.decodeSingularMessageField(value: &_storage._viewerState) }()
+        case 13: try { try decoder.decodeSingularMessageField(value: &_storage._creator) }()
+        case 100: try { try decoder.decodeSingularBoolField(value: &_storage._useE2Ee) }()
         default: break
         }
       }
@@ -1040,6 +1073,12 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       try { if let v = _storage._viewerState {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 12)
       } }()
+      try { if let v = _storage._creator {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
+      } }()
+      if _storage._useE2Ee != false {
+        try visitor.visitSingularBoolField(value: _storage._useE2Ee, fieldNumber: 100)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1061,6 +1100,8 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._rosterSummary != rhs_storage._rosterSummary {return false}
         if _storage._rules != rhs_storage._rules {return false}
         if _storage._viewerState != rhs_storage._viewerState {return false}
+        if _storage._creator != rhs_storage._creator {return false}
+        if _storage._useE2Ee != rhs_storage._useE2Ee {return false}
         return true
       }
       if !storagesAreEqual {return false}
