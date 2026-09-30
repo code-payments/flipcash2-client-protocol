@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: df1cb04e71fef7ce77a6a537e0a106fde6452a8f
-subject: Add is_username_auto_assigned to UserProfile (#128)
+commit: d082b0a3dd268f884f75402ccd355b6548612221
+subject: Add a creator requirement for speaker rules (#129)

@@ -312,12 +312,21 @@ public struct Flipcash_Chat_V1_SpeakerRules: Sendable {
     set {kind = .never(newValue)}
   }
 
+  public var creator: Flipcash_Chat_V1_CreatorRequirement {
+    get {
+      if case .creator(let v)? = kind {return v}
+      return Flipcash_Chat_V1_CreatorRequirement()
+    }
+    set {kind = .creator(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Kind: Equatable, Sendable {
     case minimumBalance(Flipcash_Chat_V1_MinimumBalanceRequirement)
     case staff(Flipcash_Chat_V1_StaffRequirement)
     case never(Flipcash_Chat_V1_Never)
+    case creator(Flipcash_Chat_V1_CreatorRequirement)
 
   }
 
@@ -338,6 +347,18 @@ public struct Flipcash_Chat_V1_StaffRequirement: Sendable {
 
 /// A special rule indicating that an action can never be taken.
 public struct Flipcash_Chat_V1_Never: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// CreatorRequirement requires the user to be the chat's creator, as indicated
+/// by Metadata.creator.
+public struct Flipcash_Chat_V1_CreatorRequirement: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -1235,7 +1256,7 @@ extension Flipcash_Chat_V1_ListenerRules: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SpeakerRules"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}minimum_balance\0\u{1}staff\0\u{1}never\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}minimum_balance\0\u{1}staff\0\u{1}never\0\u{1}creator\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1282,6 +1303,19 @@ extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._M
           self.kind = .never(v)
         }
       }()
+      case 4: try {
+        var v: Flipcash_Chat_V1_CreatorRequirement?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .creator(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .creator(v)
+        }
+      }()
       default: break
       }
     }
@@ -1304,6 +1338,10 @@ extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._M
     case .never?: try {
       guard case .never(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case .creator?: try {
+      guard case .creator(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
     }()
     case nil: break
     }
@@ -1350,6 +1388,25 @@ extension Flipcash_Chat_V1_Never: SwiftProtobuf.Message, SwiftProtobuf._MessageI
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_Never, rhs: Flipcash_Chat_V1_Never) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_CreatorRequirement: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".CreatorRequirement"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_CreatorRequirement, rhs: Flipcash_Chat_V1_CreatorRequirement) -> Bool {
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

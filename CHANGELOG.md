@@ -8,6 +8,24 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.14.1
+
+Synced to [`flipcash2-protobuf-api@d082b0a3`](https://github.com/code-payments/flipcash2-protobuf-api/commit/d082b0a3dd268f884f75402ccd355b6548612221),
+picking up [#129](https://github.com/code-payments/flipcash2-protobuf-api/pull/129). Only `chat.v1`
+moved.
+
+### Added
+
+- `chat.v1.CreatorRequirement`, a new empty message and a new `SpeakerRules` rule case
+  (`creator = 4`): only the chat's creator, as given by `Metadata.creator`, may speak.
+
+### Upgrading
+
+Nothing existing changed: no renames, and no field or enum renumbering. A client that switches
+exhaustively over the `SpeakerRules` rule needs a case for `creator`. Until it has one, a chat with
+this rule reaches that client as an unset or unknown rule, so decide what an unrecognized speaker
+rule does before the server starts sending it.
+
 ## 0.14.0
 
 Synced to [`flipcash2-protobuf-api@df1cb04e`](https://github.com/code-payments/flipcash2-protobuf-api/commit/df1cb04e71fef7ce77a6a537e0a106fde6452a8f),
