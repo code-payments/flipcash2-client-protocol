@@ -449,12 +449,12 @@ public struct Flipcash_Profile_V1_SetProfilePictureResponse: Sendable {
   fileprivate var _profilePicture: Flipcash_Blob_V1_Media? = nil
 }
 
-public struct Flipcash_Profile_V1_UpdateTipCardRequest: Sendable {
+public struct Flipcash_Profile_V1_UpdateFlipcardRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// The new colour of the Tip Card. Left unchanged when unset.
+  /// The new colour of the Flipcard. Left unchanged when unset.
   public var color: Flipcash_Common_V1_Color {
     get {return _color ?? Flipcash_Common_V1_Color()}
     set {_color = newValue}
@@ -481,12 +481,12 @@ public struct Flipcash_Profile_V1_UpdateTipCardRequest: Sendable {
   fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
 }
 
-public struct Flipcash_Profile_V1_UpdateTipCardResponse: Sendable {
+public struct Flipcash_Profile_V1_UpdateFlipcardResponse: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var result: Flipcash_Profile_V1_UpdateTipCardResponse.Result = .ok
+  public var result: Flipcash_Profile_V1_UpdateFlipcardResponse.Result = .ok
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -520,7 +520,7 @@ public struct Flipcash_Profile_V1_UpdateTipCardResponse: Sendable {
     }
 
     // The compiler won't synthesize support with the UNRECOGNIZED case.
-    public static let allCases: [Flipcash_Profile_V1_UpdateTipCardResponse.Result] = [
+    public static let allCases: [Flipcash_Profile_V1_UpdateFlipcardResponse.Result] = [
       .ok,
       .denied,
       .invalidColor,
@@ -1192,8 +1192,8 @@ extension Flipcash_Profile_V1_SetProfilePictureResponse.Result: SwiftProtobuf._P
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}BLOB_NOT_FOUND\0\u{1}BLOB_NOT_READY\0\u{1}BLOB_REJECTED\0\u{1}INVALID_BLOB\0")
 }
 
-extension Flipcash_Profile_V1_UpdateTipCardRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".UpdateTipCardRequest"
+extension Flipcash_Profile_V1_UpdateFlipcardRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".UpdateFlipcardRequest"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}color\0\u{2}\u{9}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1223,7 +1223,7 @@ extension Flipcash_Profile_V1_UpdateTipCardRequest: SwiftProtobuf.Message, Swift
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Flipcash_Profile_V1_UpdateTipCardRequest, rhs: Flipcash_Profile_V1_UpdateTipCardRequest) -> Bool {
+  public static func ==(lhs: Flipcash_Profile_V1_UpdateFlipcardRequest, rhs: Flipcash_Profile_V1_UpdateFlipcardRequest) -> Bool {
     if lhs._color != rhs._color {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -1231,8 +1231,8 @@ extension Flipcash_Profile_V1_UpdateTipCardRequest: SwiftProtobuf.Message, Swift
   }
 }
 
-extension Flipcash_Profile_V1_UpdateTipCardResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".UpdateTipCardResponse"
+extension Flipcash_Profile_V1_UpdateFlipcardResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".UpdateFlipcardResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1254,14 +1254,14 @@ extension Flipcash_Profile_V1_UpdateTipCardResponse: SwiftProtobuf.Message, Swif
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Flipcash_Profile_V1_UpdateTipCardResponse, rhs: Flipcash_Profile_V1_UpdateTipCardResponse) -> Bool {
+  public static func ==(lhs: Flipcash_Profile_V1_UpdateFlipcardResponse, rhs: Flipcash_Profile_V1_UpdateFlipcardResponse) -> Bool {
     if lhs.result != rhs.result {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Flipcash_Profile_V1_UpdateTipCardResponse.Result: SwiftProtobuf._ProtoNameProviding {
+extension Flipcash_Profile_V1_UpdateFlipcardResponse.Result: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}INVALID_COLOR\0")
 }
 
