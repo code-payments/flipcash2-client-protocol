@@ -8,6 +8,63 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.13.0
+
+Synced to [`flipcash2-protobuf-api@3d6de707`](https://github.com/code-payments/flipcash2-protobuf-api/commit/3d6de707e8b013435b802ea3c37ddf6fff21ba6d),
+picking up [#123](https://github.com/code-payments/flipcash2-protobuf-api/pull/123) through
+[#126](https://github.com/code-payments/flipcash2-protobuf-api/pull/126). `chat.v1`, `intent.v1`,
+`messaging.v1` and `profile.v1` moved.
+
+The binary wire format is unchanged, but tip DMs are now plain DMs, and that rename breaks source in
+both languages. Every other change is additive.
+
+### Added
+
+- `messaging.v1.WidgetContent`, a new `Content.type` case (`widget = 8`), for messages that clients
+  render as a native widget. Its required `type` oneof has one case, `share_profile = 1`, holding
+  the new `ShareProfileWidget` with a required `username` (field 1, `common.v1.Username`). A client
+  that does not recognize the widget variant renders the message as unsupported.
+- `chat.v1.Never`, a new empty message and a new `SpeakerRules` rule case (`never = 3`): nobody may
+  speak.
+- `profile.v1.SetDisplayNameResponse.username` (field 3, `common.v1.Username`). The server may now
+  auto-assign a username derived from the display name, so this carries the caller's current
+  username. It is set only when `result == OK`, and unset if the caller has no username.
+
+### Changed
+
+Renamed, with numbers unchanged:
+
+| Before | After | Swift | Kotlin |
+|---|---|---|---|
+| `chat.v1.ChatType.TIP_DM = 2` | `DM = 2` | `.tipDm` → `.dm` | `TIP_DM` → `DM` |
+| `intent.v1.ChatMetadata.TipDmPayment` | `DmPayment` | `.TipDmPayment` → `.DmPayment` | `TipDmPayment` → `DmPayment` |
+| `ChatMetadata.tip_dm_payment = 3` | `dm_payment = 3` | `tipDmPayment` / `.tipDmPayment` → `dmPayment` / `.dmPayment` | `getTipDmPayment()` / `TIP_DM_PAYMENT` → `getDmPayment()` / `DM_PAYMENT` |
+| `DmPayment.Location.TIPCARD = 0` | `FLIPCARD = 0` | `.tipcard` → `.flipcard` | `TIPCARD` → `FLIPCARD` |
+
+`DmPayment.Action.DEFAULT` is now documented as meaning `SEND`: the payment shows as sent, not
+tipped. The value did not change.
+
+### Upgrading
+
+**The renames are compile errors, not wire changes.** Binary protobuf carries field and enum
+numbers, so an old client and a new one still read each other's messages. Code that names any of
+the four symbols above has to be updated before it builds. Proto JSON encodes enums by name, so
+anything that serializes these enums as JSON sees `DM` and `FLIPCARD` in place of the old names.
+
+**Read `username` back after `SetDisplayName`.** Setting a display name can now change the
+caller's username. A client that caches the username should replace it with the response's value
+on `OK`.
+
+**`WidgetContent` needs a fallback before the server sends it.** A client that switches
+exhaustively over `Content.type` needs a case for `widget`, and an unknown widget variant renders
+as unsupported.
+
+### Unchanged
+
+Nothing was renumbered. `Content.widget` and `SpeakerRules.never` are appended to their oneofs, and
+`SetDisplayNameResponse.username` takes a free number. No service, RPC or enum case was removed.
+Everything else in the diff is comments.
+
 ## 0.12.0
 
 Synced to [`flipcash2-protobuf-api@9ebf55fe`](https://github.com/code-payments/flipcash2-protobuf-api/commit/9ebf55fef834c1a47ae995ae22cad28d79080f2c),
