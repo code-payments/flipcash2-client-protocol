@@ -8,6 +8,56 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.14.0
+
+Synced to [`flipcash2-protobuf-api@df1cb04e`](https://github.com/code-payments/flipcash2-protobuf-api/commit/df1cb04e71fef7ce77a6a537e0a106fde6452a8f),
+picking up [#127](https://github.com/code-payments/flipcash2-protobuf-api/pull/127) and
+[#128](https://github.com/code-payments/flipcash2-protobuf-api/pull/128). `account.v1` and
+`profile.v1` moved; `messaging.v1` changed only in a comment.
+
+One RPC is renamed, which changes its gRPC method path, so this release is not wire-compatible with a
+server that still serves the old name. The other renames break source only. No field or enum number
+changed.
+
+### Added
+
+- `profile.v1.UserProfile.is_username_auto_assigned` (field 11, `bool`): true when the server
+  assigned the current username from the display name, rather than the user choosing it with
+  `SetUsername`. Choosing a different username clears it. It is private: set only on the caller's
+  own profile, and false for anyone else's and when there is no username.
+
+### Changed
+
+Renamed, with numbers unchanged:
+
+| Before | After | Swift | Kotlin |
+|---|---|---|---|
+| `profile.v1.TipCardCustomization` | `FlipcardCustomization` | `Flipcash_Profile_V1_TipCardCustomization` → `…FlipcardCustomization` | `TipCardCustomization` → `FlipcardCustomization` |
+| `UserProfile.tip_card_customization = 7` | `flipcard_customization = 7` | `tipCardCustomization` → `flipcardCustomization` | `getTipCardCustomization()` → `getFlipcardCustomization()` |
+| `account.v1.TipPresets` | `SendPresets` | `Flipcash_Account_V1_TipPresets` → `…SendPresets` | `TipPresets` → `SendPresets` |
+| `UserFlags.tip_presets = 15` | `send_presets = 15` | `tipPresets` → `sendPresets` | `getTipPresetsList()` → `getSendPresetsList()` |
+| rpc `Profile.UpdateTipCard` | `UpdateFlipcard` | `updateTipCard` → `updateFlipcard` | `updateTipCard` → `updateFlipcard` |
+| `UpdateTipCardRequest` / `UpdateTipCardResponse` | `UpdateFlipcardRequest` / `UpdateFlipcardResponse` | same rename | same rename |
+
+`SendPresets.minimum` is now documented as the least a payment that opens a DM may be when the
+recipient has set no `min_dm_chat_init_fee`, and the least such a fee may be. `low`, `medium` and
+`high` are one-tap amounts. The fields did not change.
+
+### Upgrading
+
+**`UpdateFlipcard` is a wire change.** gRPC calls a method by name, so the path moves from
+`/flipcash.profile.v1.Profile/UpdateTipCard` to `/flipcash.profile.v1.Profile/UpdateFlipcard`. A
+client on 0.14.0 fails against a server that only serves `UpdateTipCard`, and an older client fails
+against a server that only serves `UpdateFlipcard`. The request and response shapes, and the
+`Result` enum, are unchanged.
+
+**The other renames are compile errors, not wire changes.** Code that names any of the message or
+field symbols above has to be updated before it builds. Proto JSON encodes field names, so anything
+serializing `UserProfile` or `UserFlags` as JSON sees `flipcardCustomization` and `sendPresets`.
+
+**`is_username_auto_assigned` is free to ignore.** It defaults to false, so a client that does not
+read it behaves as before.
+
 ## 0.13.0
 
 Synced to [`flipcash2-protobuf-api@3d6de707`](https://github.com/code-payments/flipcash2-protobuf-api/commit/3d6de707e8b013435b802ea3c37ddf6fff21ba6d),
