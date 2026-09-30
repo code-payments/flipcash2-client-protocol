@@ -25,7 +25,7 @@ public enum Flipcash_Chat_V1_ChatType: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case unknown // = 0
   case contactDm // = 1
-  case tipDm // = 2
+  case dm // = 2
   case group // = 3
   case UNRECOGNIZED(Int)
 
@@ -37,7 +37,7 @@ public enum Flipcash_Chat_V1_ChatType: SwiftProtobuf.Enum, Swift.CaseIterable {
     switch rawValue {
     case 0: self = .unknown
     case 1: self = .contactDm
-    case 2: self = .tipDm
+    case 2: self = .dm
     case 3: self = .group
     default: self = .UNRECOGNIZED(rawValue)
     }
@@ -47,7 +47,7 @@ public enum Flipcash_Chat_V1_ChatType: SwiftProtobuf.Enum, Swift.CaseIterable {
     switch self {
     case .unknown: return 0
     case .contactDm: return 1
-    case .tipDm: return 2
+    case .dm: return 2
     case .group: return 3
     case .UNRECOGNIZED(let i): return i
     }
@@ -57,7 +57,7 @@ public enum Flipcash_Chat_V1_ChatType: SwiftProtobuf.Enum, Swift.CaseIterable {
   public static let allCases: [Flipcash_Chat_V1_ChatType] = [
     .unknown,
     .contactDm,
-    .tipDm,
+    .dm,
     .group,
   ]
 
@@ -196,8 +196,8 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   public mutating func clearCreator() {_uniqueStorage()._creator = nil}
 
   /// Whether messages in this chat are end-to-end encrypted (see
-  /// messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or
-  /// TIP_DM); always false for group chats.
+  /// messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or DM);
+  /// always false for group chats.
   ///
   /// Used to migrate DMs to E2EE: when true, clients send all new content in
   /// the chat as EncryptedContent. When false, clients send content in the
@@ -304,11 +304,20 @@ public struct Flipcash_Chat_V1_SpeakerRules: Sendable {
     set {kind = .staff(newValue)}
   }
 
+  public var never: Flipcash_Chat_V1_Never {
+    get {
+      if case .never(let v)? = kind {return v}
+      return Flipcash_Chat_V1_Never()
+    }
+    set {kind = .never(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Kind: Equatable, Sendable {
     case minimumBalance(Flipcash_Chat_V1_MinimumBalanceRequirement)
     case staff(Flipcash_Chat_V1_StaffRequirement)
+    case never(Flipcash_Chat_V1_Never)
 
   }
 
@@ -318,6 +327,17 @@ public struct Flipcash_Chat_V1_SpeakerRules: Sendable {
 /// StaffRequirement requires the user to be a Flipcash staff member, as
 /// indicated by UserFlags.is_staff.
 public struct Flipcash_Chat_V1_StaffRequirement: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// A special rule indicating that an action can never be taken.
+public struct Flipcash_Chat_V1_Never: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -947,7 +967,7 @@ public struct Flipcash_Chat_V1_IdempotencyKey: Sendable {
 fileprivate let _protobuf_package = "flipcash.chat.v1"
 
 extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}CONTACT_DM\0\u{1}TIP_DM\0\u{1}GROUP\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}CONTACT_DM\0\u{1}DM\0\u{1}GROUP\0")
 }
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -1215,7 +1235,7 @@ extension Flipcash_Chat_V1_ListenerRules: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SpeakerRules"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}minimum_balance\0\u{1}staff\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}minimum_balance\0\u{1}staff\0\u{1}never\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1249,6 +1269,19 @@ extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._M
           self.kind = .staff(v)
         }
       }()
+      case 3: try {
+        var v: Flipcash_Chat_V1_Never?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .never(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .never(v)
+        }
+      }()
       default: break
       }
     }
@@ -1267,6 +1300,10 @@ extension Flipcash_Chat_V1_SpeakerRules: SwiftProtobuf.Message, SwiftProtobuf._M
     case .staff?: try {
       guard case .staff(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .never?: try {
+      guard case .never(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     }()
     case nil: break
     }
@@ -1294,6 +1331,25 @@ extension Flipcash_Chat_V1_StaffRequirement: SwiftProtobuf.Message, SwiftProtobu
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_StaffRequirement, rhs: Flipcash_Chat_V1_StaffRequirement) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_Never: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Never"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_Never, rhs: Flipcash_Chat_V1_Never) -> Bool {
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 9ebf55fef834c1a47ae995ae22cad28d79080f2c
-subject: Add use_e2ee to chat Metadata (#122)
+commit: 3d6de707e8b013435b802ea3c37ddf6fff21ba6d
+subject: Move towards a send to start chatting paradigm (#126)

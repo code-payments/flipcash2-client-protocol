@@ -167,6 +167,19 @@ public struct Flipcash_Profile_V1_SetDisplayNameResponse: Sendable {
   /// otherwise.
   public var flaggedCategory: Flipcash_Moderation_V1_FlaggedCategory = .none
 
+  /// The caller's current username, if they have one. The server may
+  /// auto-assign a username derived from the display name, so clients should
+  /// use this value rather than assuming their username is unchanged. Set
+  /// only when result == OK; unset if the caller has no username.
+  public var username: Flipcash_Common_V1_Username {
+    get {return _username ?? Flipcash_Common_V1_Username()}
+    set {_username = newValue}
+  }
+  /// Returns true if `username` has been explicitly set.
+  public var hasUsername: Bool {return self._username != nil}
+  /// Clears the value of `username`. Subsequent reads from it will return its default value.
+  public mutating func clearUsername() {self._username = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
@@ -212,6 +225,8 @@ public struct Flipcash_Profile_V1_SetDisplayNameResponse: Sendable {
   }
 
   public init() {}
+
+  fileprivate var _username: Flipcash_Common_V1_Username? = nil
 }
 
 public struct Flipcash_Profile_V1_SetUsernameRequest: Sendable {
@@ -971,7 +986,7 @@ extension Flipcash_Profile_V1_SetDisplayNameRequest: SwiftProtobuf.Message, Swif
 
 extension Flipcash_Profile_V1_SetDisplayNameResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".SetDisplayNameResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}flagged_category\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}flagged_category\0\u{1}username\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -981,24 +996,33 @@ extension Flipcash_Profile_V1_SetDisplayNameResponse: SwiftProtobuf.Message, Swi
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
       case 2: try { try decoder.decodeSingularEnumField(value: &self.flaggedCategory) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._username) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.result != .ok {
       try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
     }
     if self.flaggedCategory != .none {
       try visitor.visitSingularEnumField(value: self.flaggedCategory, fieldNumber: 2)
     }
+    try { if let v = self._username {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Profile_V1_SetDisplayNameResponse, rhs: Flipcash_Profile_V1_SetDisplayNameResponse) -> Bool {
     if lhs.result != rhs.result {return false}
     if lhs.flaggedCategory != rhs.flaggedCategory {return false}
+    if lhs._username != rhs._username {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
