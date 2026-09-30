@@ -335,6 +335,14 @@ public struct Flipcash_Messaging_V1_Content: Sendable {
     set {type = .encrypted(newValue)}
   }
 
+  public var widget: Flipcash_Messaging_V1_WidgetContent {
+    get {
+      if case .widget(let v)? = type {return v}
+      return Flipcash_Messaging_V1_WidgetContent()
+    }
+    set {type = .widget(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
@@ -345,6 +353,7 @@ public struct Flipcash_Messaging_V1_Content: Sendable {
     case system(Flipcash_Messaging_V1_SystemContent)
     case deleted(Flipcash_Messaging_V1_DeletedContent)
     case encrypted(Flipcash_Messaging_V1_EncryptedContent)
+    case widget(Flipcash_Messaging_V1_WidgetContent)
 
   }
 
@@ -516,6 +525,57 @@ public struct Flipcash_Messaging_V1_SystemContent: Sendable {
   public init() {}
 }
 
+/// Content that clients render as a native widget rather than as plain text
+/// or media. Clients that don't recognize the variant render the message as
+/// unsupported.
+public struct Flipcash_Messaging_V1_WidgetContent: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var type: Flipcash_Messaging_V1_WidgetContent.OneOf_Type? = nil
+
+  public var shareProfile: Flipcash_Messaging_V1_ShareProfileWidget {
+    get {
+      if case .shareProfile(let v)? = type {return v}
+      return Flipcash_Messaging_V1_ShareProfileWidget()
+    }
+    set {type = .shareProfile(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Type: Equatable, Sendable {
+    case shareProfile(Flipcash_Messaging_V1_ShareProfileWidget)
+
+  }
+
+  public init() {}
+}
+
+/// A widget with a button that shares the profile of the user with the given
+/// username.
+public struct Flipcash_Messaging_V1_ShareProfileWidget: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var username: Flipcash_Common_V1_Username {
+    get {return _username ?? Flipcash_Common_V1_Username()}
+    set {_username = newValue}
+  }
+  /// Returns true if `username` has been explicitly set.
+  public var hasUsername: Bool {return self._username != nil}
+  /// Clears the value of `username`. Subsequent reads from it will return its default value.
+  public mutating func clearUsername() {self._username = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _username: Flipcash_Common_V1_Username? = nil
+}
+
 /// Deleted message content
 public struct Flipcash_Messaging_V1_DeletedContent: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
@@ -555,7 +615,7 @@ public struct Flipcash_Messaging_V1_DeletedContent: Sendable {
 }
 
 /// End-to-end encrypted content, sent only in DMs (chat.v1.ChatType
-/// CONTACT_DM or TIP_DM). SendMessage and EditMessage reject it in a group
+/// CONTACT_DM or DM). SendMessage and EditMessage reject it in a group
 /// chat. The server stores and relays the ciphertext as-is and cannot read it,
 /// so it cannot moderate it, render a push preview from it, or produce a
 /// placeholder for it.
@@ -1517,7 +1577,7 @@ extension Flipcash_Messaging_V1_Message: SwiftProtobuf.Message, SwiftProtobuf._M
 
 extension Flipcash_Messaging_V1_Content: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Content"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{1}cash\0\u{1}reply\0\u{1}media\0\u{1}system\0\u{1}deleted\0\u{1}encrypted\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{1}cash\0\u{1}reply\0\u{1}media\0\u{1}system\0\u{1}deleted\0\u{1}encrypted\0\u{1}widget\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1616,6 +1676,19 @@ extension Flipcash_Messaging_V1_Content: SwiftProtobuf.Message, SwiftProtobuf._M
           self.type = .encrypted(v)
         }
       }()
+      case 8: try {
+        var v: Flipcash_Messaging_V1_WidgetContent?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .widget(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .widget(v)
+        }
+      }()
       default: break
       }
     }
@@ -1654,6 +1727,10 @@ extension Flipcash_Messaging_V1_Content: SwiftProtobuf.Message, SwiftProtobuf._M
     case .encrypted?: try {
       guard case .encrypted(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    }()
+    case .widget?: try {
+      guard case .widget(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
     }()
     case nil: break
     }
@@ -1848,6 +1925,86 @@ extension Flipcash_Messaging_V1_SystemContent: SwiftProtobuf.Message, SwiftProto
 
   public static func ==(lhs: Flipcash_Messaging_V1_SystemContent, rhs: Flipcash_Messaging_V1_SystemContent) -> Bool {
     if lhs.fallbackText != rhs.fallbackText {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_WidgetContent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".WidgetContent"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}share_profile\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Flipcash_Messaging_V1_ShareProfileWidget?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .shareProfile(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .shareProfile(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if case .shareProfile(let v)? = self.type {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_WidgetContent, rhs: Flipcash_Messaging_V1_WidgetContent) -> Bool {
+    if lhs.type != rhs.type {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_ShareProfileWidget: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ShareProfileWidget"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}username\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._username) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._username {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_ShareProfileWidget, rhs: Flipcash_Messaging_V1_ShareProfileWidget) -> Bool {
+    if lhs._username != rhs._username {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

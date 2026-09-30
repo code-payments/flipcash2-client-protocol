@@ -181,6 +181,7 @@ message Content {
         SystemContent    system    = 5;
         DeletedContent   deleted   = 6;
         EncryptedContent encrypted = 7;
+        WidgetContent    widget    = 8;
     }
 }
 
@@ -261,6 +262,23 @@ message SystemContent {
     // todo: Define events once we have them
 }
 
+// Content that clients render as a native widget rather than as plain text
+// or media. Clients that don't recognize the variant render the message as
+// unsupported.
+message WidgetContent {
+    oneof type {
+        option (validate.required) = true;
+
+        ShareProfileWidget share_profile = 1;
+    }
+}
+
+// A widget with a button that shares the profile of the user with the given
+// username.
+message ShareProfileWidget {
+    common.v1.Username username = 1 [(validate.rules).message.required = true];
+}
+
 // Deleted message content
 message DeletedContent {
     // Timestamp the message was deleted. Set whenever a message is tombstoned;
@@ -275,7 +293,7 @@ message DeletedContent {
 }
 
 // End-to-end encrypted content, sent only in DMs (chat.v1.ChatType
-// CONTACT_DM or TIP_DM). SendMessage and EditMessage reject it in a group
+// CONTACT_DM or DM). SendMessage and EditMessage reject it in a group
 // chat. The server stores and relays the ciphertext as-is and cannot read it,
 // so it cannot moderate it, render a push preview from it, or produce a
 // placeholder for it.
