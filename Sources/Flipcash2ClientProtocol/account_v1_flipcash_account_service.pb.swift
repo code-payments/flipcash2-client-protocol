@@ -484,10 +484,12 @@ public struct Flipcash_Account_V1_UserFlags: @unchecked Sendable {
     set {_uniqueStorage()._requireCoinbaseEmailVerification = newValue}
   }
 
-  /// Tip presets for all currencies
-  public var tipPresets: [Flipcash_Account_V1_TipPresets] {
-    get {return _storage._tipPresets}
-    set {_uniqueStorage()._tipPresets = newValue}
+  /// Payment amount presets for all currencies. minimum is the least a payment
+  /// that opens a DM may be when the recipient has set no min_dm_chat_init_fee,
+  /// and the least such a fee may be; low, medium and high are one-tap amounts.
+  public var sendPresets: [Flipcash_Account_V1_SendPresets] {
+    get {return _storage._sendPresets}
+    set {_uniqueStorage()._sendPresets = newValue}
   }
 
   /// USDF amount, in quarks, that must be held across all currencies in order to set a username
@@ -623,7 +625,7 @@ public struct Flipcash_Account_V1_UserFlags: @unchecked Sendable {
   fileprivate var _storage = _StorageClass.defaultInstance
 }
 
-public struct Flipcash_Account_V1_TipPresets: Sendable {
+public struct Flipcash_Account_V1_SendPresets: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -996,7 +998,7 @@ extension Flipcash_Account_V1_GetUnauthenticatedUserFlagsResponse.Result: SwiftP
 
 extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserFlags"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}is_registered_account\0\u{3}is_staff\0\u{3}requires_iap_for_registration\0\u{3}supported_on_ramp_providers\0\u{3}preferred_on_ramp_provider\0\u{3}min_build_number\0\u{3}bill_exchange_data_timeout\0\u{3}new_currency_purchase_amount\0\u{3}new_currency_fee_amount\0\u{3}withdrawal_fee_amount\0\u{3}preferred_on_ramp_usdc_liquidity_pool\0\u{3}enable_phone_number_send\0\u{3}minimum_holder_value\0\u{3}require_coinbase_email_verification\0\u{3}tip_presets\0\u{3}username_min_balance\0\u{3}message_edit_window\0\u{3}message_delete_window\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}is_registered_account\0\u{3}is_staff\0\u{3}requires_iap_for_registration\0\u{3}supported_on_ramp_providers\0\u{3}preferred_on_ramp_provider\0\u{3}min_build_number\0\u{3}bill_exchange_data_timeout\0\u{3}new_currency_purchase_amount\0\u{3}new_currency_fee_amount\0\u{3}withdrawal_fee_amount\0\u{3}preferred_on_ramp_usdc_liquidity_pool\0\u{3}enable_phone_number_send\0\u{3}minimum_holder_value\0\u{3}require_coinbase_email_verification\0\u{3}send_presets\0\u{3}username_min_balance\0\u{3}message_edit_window\0\u{3}message_delete_window\0")
 
   fileprivate class _StorageClass {
     var _isRegisteredAccount: Bool = false
@@ -1013,7 +1015,7 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
     var _enablePhoneNumberSend: Bool = false
     var _minimumHolderValue: UInt64 = 0
     var _requireCoinbaseEmailVerification: Bool = false
-    var _tipPresets: [Flipcash_Account_V1_TipPresets] = []
+    var _sendPresets: [Flipcash_Account_V1_SendPresets] = []
     var _usernameMinBalance: UInt64 = 0
     var _messageEditWindow: SwiftProtobuf.Google_Protobuf_Duration? = nil
     var _messageDeleteWindow: SwiftProtobuf.Google_Protobuf_Duration? = nil
@@ -1041,7 +1043,7 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
       _enablePhoneNumberSend = source._enablePhoneNumberSend
       _minimumHolderValue = source._minimumHolderValue
       _requireCoinbaseEmailVerification = source._requireCoinbaseEmailVerification
-      _tipPresets = source._tipPresets
+      _sendPresets = source._sendPresets
       _usernameMinBalance = source._usernameMinBalance
       _messageEditWindow = source._messageEditWindow
       _messageDeleteWindow = source._messageDeleteWindow
@@ -1077,7 +1079,7 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
         case 12: try { try decoder.decodeSingularBoolField(value: &_storage._enablePhoneNumberSend) }()
         case 13: try { try decoder.decodeSingularUInt64Field(value: &_storage._minimumHolderValue) }()
         case 14: try { try decoder.decodeSingularBoolField(value: &_storage._requireCoinbaseEmailVerification) }()
-        case 15: try { try decoder.decodeRepeatedMessageField(value: &_storage._tipPresets) }()
+        case 15: try { try decoder.decodeRepeatedMessageField(value: &_storage._sendPresets) }()
         case 16: try { try decoder.decodeSingularUInt64Field(value: &_storage._usernameMinBalance) }()
         case 17: try { try decoder.decodeSingularMessageField(value: &_storage._messageEditWindow) }()
         case 18: try { try decoder.decodeSingularMessageField(value: &_storage._messageDeleteWindow) }()
@@ -1135,8 +1137,8 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
       if _storage._requireCoinbaseEmailVerification != false {
         try visitor.visitSingularBoolField(value: _storage._requireCoinbaseEmailVerification, fieldNumber: 14)
       }
-      if !_storage._tipPresets.isEmpty {
-        try visitor.visitRepeatedMessageField(value: _storage._tipPresets, fieldNumber: 15)
+      if !_storage._sendPresets.isEmpty {
+        try visitor.visitRepeatedMessageField(value: _storage._sendPresets, fieldNumber: 15)
       }
       if _storage._usernameMinBalance != 0 {
         try visitor.visitSingularUInt64Field(value: _storage._usernameMinBalance, fieldNumber: 16)
@@ -1170,7 +1172,7 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
         if _storage._enablePhoneNumberSend != rhs_storage._enablePhoneNumberSend {return false}
         if _storage._minimumHolderValue != rhs_storage._minimumHolderValue {return false}
         if _storage._requireCoinbaseEmailVerification != rhs_storage._requireCoinbaseEmailVerification {return false}
-        if _storage._tipPresets != rhs_storage._tipPresets {return false}
+        if _storage._sendPresets != rhs_storage._sendPresets {return false}
         if _storage._usernameMinBalance != rhs_storage._usernameMinBalance {return false}
         if _storage._messageEditWindow != rhs_storage._messageEditWindow {return false}
         if _storage._messageDeleteWindow != rhs_storage._messageDeleteWindow {return false}
@@ -1191,8 +1193,8 @@ extension Flipcash_Account_V1_UserFlags.UsdcLiquidityPool: SwiftProtobuf._ProtoN
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN_USDC_LIQUIDITY_POOL\0\u{1}FLIPCASH\0\u{1}COINBASE_STABLE_SWAPPER\0")
 }
 
-extension Flipcash_Account_V1_TipPresets: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".TipPresets"
+extension Flipcash_Account_V1_SendPresets: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SendPresets"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}region\0\u{1}minimum\0\u{1}low\0\u{1}medium\0\u{1}high\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1234,7 +1236,7 @@ extension Flipcash_Account_V1_TipPresets: SwiftProtobuf.Message, SwiftProtobuf._
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Flipcash_Account_V1_TipPresets, rhs: Flipcash_Account_V1_TipPresets) -> Bool {
+  public static func ==(lhs: Flipcash_Account_V1_SendPresets, rhs: Flipcash_Account_V1_SendPresets) -> Bool {
     if lhs._region != rhs._region {return false}
     if lhs.minimum != rhs.minimum {return false}
     if lhs.low != rhs.low {return false}

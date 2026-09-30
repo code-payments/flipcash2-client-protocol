@@ -68,16 +68,16 @@ public enum Flipcash_Profile_V1_Profile {
                 method: "SetProfilePicture"
             )
         }
-        /// Namespace for "UpdateTipCard" metadata.
-        public enum UpdateTipCard {
-            /// Request type for "UpdateTipCard".
-            public typealias Input = Flipcash_Profile_V1_UpdateTipCardRequest
-            /// Response type for "UpdateTipCard".
-            public typealias Output = Flipcash_Profile_V1_UpdateTipCardResponse
-            /// Descriptor for "UpdateTipCard".
+        /// Namespace for "UpdateFlipcard" metadata.
+        public enum UpdateFlipcard {
+            /// Request type for "UpdateFlipcard".
+            public typealias Input = Flipcash_Profile_V1_UpdateFlipcardRequest
+            /// Response type for "UpdateFlipcard".
+            public typealias Output = Flipcash_Profile_V1_UpdateFlipcardResponse
+            /// Descriptor for "UpdateFlipcard".
             public static let descriptor = GRPCCore.MethodDescriptor(
                 service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.profile.v1.Profile"),
-                method: "UpdateTipCard"
+                method: "UpdateFlipcard"
             )
         }
         /// Namespace for "SetMinDmChatInitFee" metadata.
@@ -122,7 +122,7 @@ public enum Flipcash_Profile_V1_Profile {
             SetDisplayName.descriptor,
             SetUsername.descriptor,
             SetProfilePicture.descriptor,
-            UpdateTipCard.descriptor,
+            UpdateFlipcard.descriptor,
             SetMinDmChatInitFee.descriptor,
             LinkSocialAccount.descriptor,
             UnlinkSocialAccount.descriptor
@@ -236,28 +236,28 @@ extension Flipcash_Profile_V1_Profile {
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetProfilePictureResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
-        /// Call the "UpdateTipCard" method.
+        /// Call the "UpdateFlipcard" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > UpdateTipCard updates the caller's Tip Card customization. Every field is
+        /// > UpdateFlipcard updates the caller's Flipcard customization. Every field is
         /// > optional; only the ones set in the request are changed.
         ///
         /// - Parameters:
-        ///   - request: A request containing a single `Flipcash_Profile_V1_UpdateTipCardRequest` message.
-        ///   - serializer: A serializer for `Flipcash_Profile_V1_UpdateTipCardRequest` messages.
-        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_UpdateTipCardResponse` messages.
+        ///   - request: A request containing a single `Flipcash_Profile_V1_UpdateFlipcardRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_UpdateFlipcardRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_UpdateFlipcardResponse` messages.
         ///   - options: Options to apply to this RPC.
         ///   - handleResponse: A closure which handles the response, the result of which is
         ///       returned to the caller. Returning from the closure will cancel the RPC if it
         ///       hasn't already finished.
         /// - Returns: The result of `handleResponse`.
-        func updateTipCard<Result>(
-            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateTipCardRequest>,
-            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_UpdateTipCardRequest>,
-            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_UpdateTipCardResponse>,
+        func updateFlipcard<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateFlipcardRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_UpdateFlipcardRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_UpdateFlipcardResponse>,
             options: GRPCCore.CallOptions,
-            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateTipCardResponse>) async throws -> Result
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateFlipcardResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "SetMinDmChatInitFee" method.
@@ -482,34 +482,34 @@ extension Flipcash_Profile_V1_Profile {
             )
         }
 
-        /// Call the "UpdateTipCard" method.
+        /// Call the "UpdateFlipcard" method.
         ///
         /// > Source IDL Documentation:
         /// >
-        /// > UpdateTipCard updates the caller's Tip Card customization. Every field is
+        /// > UpdateFlipcard updates the caller's Flipcard customization. Every field is
         /// > optional; only the ones set in the request are changed.
         ///
         /// - Parameters:
-        ///   - request: A request containing a single `Flipcash_Profile_V1_UpdateTipCardRequest` message.
-        ///   - serializer: A serializer for `Flipcash_Profile_V1_UpdateTipCardRequest` messages.
-        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_UpdateTipCardResponse` messages.
+        ///   - request: A request containing a single `Flipcash_Profile_V1_UpdateFlipcardRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_UpdateFlipcardRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_UpdateFlipcardResponse` messages.
         ///   - options: Options to apply to this RPC.
         ///   - handleResponse: A closure which handles the response, the result of which is
         ///       returned to the caller. Returning from the closure will cancel the RPC if it
         ///       hasn't already finished.
         /// - Returns: The result of `handleResponse`.
-        public func updateTipCard<Result>(
-            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateTipCardRequest>,
-            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_UpdateTipCardRequest>,
-            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_UpdateTipCardResponse>,
+        public func updateFlipcard<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateFlipcardRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_UpdateFlipcardRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_UpdateFlipcardResponse>,
             options: GRPCCore.CallOptions = .defaults,
-            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateTipCardResponse>) async throws -> Result = { response in
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateFlipcardResponse>) async throws -> Result = { response in
                 try response.message
             }
         ) async throws -> Result where Result: Sendable {
             try await self.client.unary(
                 request: request,
-                descriptor: Flipcash_Profile_V1_Profile.Method.UpdateTipCard.descriptor,
+                descriptor: Flipcash_Profile_V1_Profile.Method.UpdateFlipcard.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -740,31 +740,31 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
         )
     }
 
-    /// Call the "UpdateTipCard" method.
+    /// Call the "UpdateFlipcard" method.
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > UpdateTipCard updates the caller's Tip Card customization. Every field is
+    /// > UpdateFlipcard updates the caller's Flipcard customization. Every field is
     /// > optional; only the ones set in the request are changed.
     ///
     /// - Parameters:
-    ///   - request: A request containing a single `Flipcash_Profile_V1_UpdateTipCardRequest` message.
+    ///   - request: A request containing a single `Flipcash_Profile_V1_UpdateFlipcardRequest` message.
     ///   - options: Options to apply to this RPC.
     ///   - handleResponse: A closure which handles the response, the result of which is
     ///       returned to the caller. Returning from the closure will cancel the RPC if it
     ///       hasn't already finished.
     /// - Returns: The result of `handleResponse`.
-    public func updateTipCard<Result>(
-        request: GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateTipCardRequest>,
+    public func updateFlipcard<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateFlipcardRequest>,
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateTipCardResponse>) async throws -> Result = { response in
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateFlipcardResponse>) async throws -> Result = { response in
             try response.message
         }
     ) async throws -> Result where Result: Sendable {
-        try await self.updateTipCard(
+        try await self.updateFlipcard(
             request: request,
-            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Profile_V1_UpdateTipCardRequest>(),
-            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Profile_V1_UpdateTipCardResponse>(),
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Profile_V1_UpdateFlipcardRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Profile_V1_UpdateFlipcardResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -993,11 +993,11 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
         )
     }
 
-    /// Call the "UpdateTipCard" method.
+    /// Call the "UpdateFlipcard" method.
     ///
     /// > Source IDL Documentation:
     /// >
-    /// > UpdateTipCard updates the caller's Tip Card customization. Every field is
+    /// > UpdateFlipcard updates the caller's Flipcard customization. Every field is
     /// > optional; only the ones set in the request are changed.
     ///
     /// - Parameters:
@@ -1008,19 +1008,19 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
     ///       returned to the caller. Returning from the closure will cancel the RPC if it
     ///       hasn't already finished.
     /// - Returns: The result of `handleResponse`.
-    public func updateTipCard<Result>(
-        _ message: Flipcash_Profile_V1_UpdateTipCardRequest,
+    public func updateFlipcard<Result>(
+        _ message: Flipcash_Profile_V1_UpdateFlipcardRequest,
         metadata: GRPCCore.Metadata = [:],
         options: GRPCCore.CallOptions = .defaults,
-        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateTipCardResponse>) async throws -> Result = { response in
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_UpdateFlipcardResponse>) async throws -> Result = { response in
             try response.message
         }
     ) async throws -> Result where Result: Sendable {
-        let request = GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateTipCardRequest>(
+        let request = GRPCCore.ClientRequest<Flipcash_Profile_V1_UpdateFlipcardRequest>(
             message: message,
             metadata: metadata
         )
-        return try await self.updateTipCard(
+        return try await self.updateFlipcard(
             request: request,
             options: options,
             onResponse: handleResponse

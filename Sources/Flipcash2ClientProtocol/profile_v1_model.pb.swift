@@ -50,6 +50,14 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   /// Clears the value of `username`. Subsequent reads from it will return its default value.
   public mutating func clearUsername() {self._username = nil}
 
+  /// Whether the user's current username was assigned by the server, derived
+  /// from their display name, rather than chosen with SetUsername. Choosing a
+  /// different username with SetUsername clears it; setting the username
+  /// already held leaves it as it was. This is private and will only be
+  /// returned when the requesting user asks for their own profile; false
+  /// otherwise, and false when the user has no username.
+  public var isUsernameAutoAssigned: Bool = false
+
   /// Social profiles are links to external social accounts
   public var socialProfiles: [Flipcash_Profile_V1_SocialProfile] = []
 
@@ -103,17 +111,17 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   /// Clears the value of `joinTs`. Subsequent reads from it will return its default value.
   public mutating func clearJoinTs() {self._joinTs = nil}
 
-  /// How the user has customized their Tip Card. Public, so it is returned for
+  /// How the user has customized their Flipcard. Public, so it is returned for
   /// any user, not just the caller. Always set — the server resolves defaults
-  /// for anything the user hasn't customized. Update it with UpdateTipCard.
-  public var tipCardCustomization: Flipcash_Profile_V1_TipCardCustomization {
-    get {return _tipCardCustomization ?? Flipcash_Profile_V1_TipCardCustomization()}
-    set {_tipCardCustomization = newValue}
+  /// for anything the user hasn't customized. Update it with UpdateFlipcard.
+  public var flipcardCustomization: Flipcash_Profile_V1_FlipcardCustomization {
+    get {return _flipcardCustomization ?? Flipcash_Profile_V1_FlipcardCustomization()}
+    set {_flipcardCustomization = newValue}
   }
-  /// Returns true if `tipCardCustomization` has been explicitly set.
-  public var hasTipCardCustomization: Bool {return self._tipCardCustomization != nil}
-  /// Clears the value of `tipCardCustomization`. Subsequent reads from it will return its default value.
-  public mutating func clearTipCardCustomization() {self._tipCardCustomization = nil}
+  /// Returns true if `flipcardCustomization` has been explicitly set.
+  public var hasFlipcardCustomization: Bool {return self._flipcardCustomization != nil}
+  /// Clears the value of `flipcardCustomization`. Subsequent reads from it will return its default value.
+  public mutating func clearFlipcardCustomization() {self._flipcardCustomization = nil}
 
   /// The minimum fee another user must pay to initialize a DM chat with this
   /// user. Public, so it is returned for any user, not just the caller. Unset
@@ -138,7 +146,7 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   fileprivate var _emailAddress: Flipcash_Common_V1_EmailAddress? = nil
   fileprivate var _profilePicture: Flipcash_Blob_V1_Media? = nil
   fileprivate var _joinTs: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
-  fileprivate var _tipCardCustomization: Flipcash_Profile_V1_TipCardCustomization? = nil
+  fileprivate var _flipcardCustomization: Flipcash_Profile_V1_FlipcardCustomization? = nil
   fileprivate var _minDmChatInitFee: Flipcash_Common_V1_FiatPaymentAmount? = nil
 }
 
@@ -240,13 +248,13 @@ public struct Flipcash_Profile_V1_XProfile: Sendable {
   public init() {}
 }
 
-/// Customization for a Tip Card
-public struct Flipcash_Profile_V1_TipCardCustomization: Sendable {
+/// Customization for a Flipcard
+public struct Flipcash_Profile_V1_FlipcardCustomization: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// The colour of the Tip Card. Always set — the server falls back to the
+  /// The colour of the Flipcard. Always set — the server falls back to the
   /// default colour when the user hasn't picked one.
   public var color: Flipcash_Common_V1_Color {
     get {return _color ?? Flipcash_Common_V1_Color()}
@@ -270,7 +278,7 @@ fileprivate let _protobuf_package = "flipcash.profile.v1"
 
 extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserProfile"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}display_name\0\u{3}social_profiles\0\u{3}phone_number\0\u{3}email_address\0\u{3}profile_picture\0\u{3}join_ts\0\u{3}tip_card_customization\0\u{1}username\0\u{3}user_id\0\u{3}min_dm_chat_init_fee\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}display_name\0\u{3}social_profiles\0\u{3}phone_number\0\u{3}email_address\0\u{3}profile_picture\0\u{3}join_ts\0\u{3}flipcard_customization\0\u{1}username\0\u{3}user_id\0\u{3}min_dm_chat_init_fee\0\u{3}is_username_auto_assigned\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -284,10 +292,11 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
       case 4: try { try decoder.decodeSingularMessageField(value: &self._emailAddress) }()
       case 5: try { try decoder.decodeSingularMessageField(value: &self._profilePicture) }()
       case 6: try { try decoder.decodeSingularMessageField(value: &self._joinTs) }()
-      case 7: try { try decoder.decodeSingularMessageField(value: &self._tipCardCustomization) }()
+      case 7: try { try decoder.decodeSingularMessageField(value: &self._flipcardCustomization) }()
       case 8: try { try decoder.decodeSingularMessageField(value: &self._username) }()
       case 9: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._minDmChatInitFee) }()
+      case 11: try { try decoder.decodeSingularBoolField(value: &self.isUsernameAutoAssigned) }()
       default: break
       }
     }
@@ -316,7 +325,7 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     try { if let v = self._joinTs {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     } }()
-    try { if let v = self._tipCardCustomization {
+    try { if let v = self._flipcardCustomization {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     } }()
     try { if let v = self._username {
@@ -328,6 +337,9 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     try { if let v = self._minDmChatInitFee {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
+    if self.isUsernameAutoAssigned != false {
+      try visitor.visitSingularBoolField(value: self.isUsernameAutoAssigned, fieldNumber: 11)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -335,12 +347,13 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     if lhs._userID != rhs._userID {return false}
     if lhs.displayName != rhs.displayName {return false}
     if lhs._username != rhs._username {return false}
+    if lhs.isUsernameAutoAssigned != rhs.isUsernameAutoAssigned {return false}
     if lhs.socialProfiles != rhs.socialProfiles {return false}
     if lhs._phoneNumber != rhs._phoneNumber {return false}
     if lhs._emailAddress != rhs._emailAddress {return false}
     if lhs._profilePicture != rhs._profilePicture {return false}
     if lhs._joinTs != rhs._joinTs {return false}
-    if lhs._tipCardCustomization != rhs._tipCardCustomization {return false}
+    if lhs._flipcardCustomization != rhs._flipcardCustomization {return false}
     if lhs._minDmChatInitFee != rhs._minDmChatInitFee {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -457,8 +470,8 @@ extension Flipcash_Profile_V1_XProfile.VerifiedType: SwiftProtobuf._ProtoNamePro
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0NONE\0\u{1}BLUE\0\u{1}BUSINESS\0\u{1}GOVERNMENT\0")
 }
 
-extension Flipcash_Profile_V1_TipCardCustomization: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = _protobuf_package + ".TipCardCustomization"
+extension Flipcash_Profile_V1_FlipcardCustomization: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".FlipcardCustomization"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}color\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -484,7 +497,7 @@ extension Flipcash_Profile_V1_TipCardCustomization: SwiftProtobuf.Message, Swift
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Flipcash_Profile_V1_TipCardCustomization, rhs: Flipcash_Profile_V1_TipCardCustomization) -> Bool {
+  public static func ==(lhs: Flipcash_Profile_V1_FlipcardCustomization, rhs: Flipcash_Profile_V1_FlipcardCustomization) -> Bool {
     if lhs._color != rhs._color {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true

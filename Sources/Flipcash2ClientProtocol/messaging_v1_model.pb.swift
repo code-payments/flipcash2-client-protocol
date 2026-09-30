@@ -403,7 +403,7 @@ public struct Flipcash_Messaging_V1_CashContent: Sendable {
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  /// Verb for how the cash was sent. Clietns should always show SENT as a
+  /// Verb for how the cash was sent. Clients should always show SENT as a
   /// fallback.
   public enum Verb: SwiftProtobuf.Enum, Swift.CaseIterable {
     public typealias RawValue = Int

@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 3d6de707e8b013435b802ea3c37ddf6fff21ba6d
-subject: Move towards a send to start chatting paradigm (#126)
+commit: df1cb04e71fef7ce77a6a537e0a106fde6452a8f
+subject: Add is_username_auto_assigned to UserProfile (#128)
