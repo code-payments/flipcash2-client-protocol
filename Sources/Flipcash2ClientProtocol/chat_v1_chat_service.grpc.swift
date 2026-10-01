@@ -68,6 +68,18 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetRoster"
             )
         }
+        /// Namespace for "GetMentionSuggestions" metadata.
+        public enum GetMentionSuggestions {
+            /// Request type for "GetMentionSuggestions".
+            public typealias Input = Flipcash_Chat_V1_GetMentionSuggestionsRequest
+            /// Response type for "GetMentionSuggestions".
+            public typealias Output = Flipcash_Chat_V1_GetMentionSuggestionsResponse
+            /// Descriptor for "GetMentionSuggestions".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetMentionSuggestions"
+            )
+        }
         /// Namespace for "StartChat" metadata.
         public enum StartChat {
             /// Request type for "StartChat".
@@ -146,6 +158,7 @@ public enum Flipcash_Chat_V1_Chat {
             GetDmChatFeed.descriptor,
             GetGroupChatFeed.descriptor,
             GetRoster.descriptor,
+            GetMentionSuggestions.descriptor,
             StartChat.descriptor,
             JoinChat.descriptor,
             LeaveChat.descriptor,
@@ -335,6 +348,46 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRosterResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRosterResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetMentionSuggestions" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetMentionSuggestions returns people the caller may want to @mention in
+        /// > a group chat, ranked by the server, most relevant first. Today that is
+        /// > the group's most recent senders, most recent first, including people
+        /// > who have since left the group.
+        /// > 
+        /// > The response is a ranked pool of suggestions, not the set of people who
+        /// > may be mentioned, and it is neither complete nor paged. The server
+        /// > decides how many to return, up to 200; the client filters the whole
+        /// > pool locally as the user types, however few rows it displays, and keeps
+        /// > it fresh from the event stream by moving the sender of each new message
+        /// > to the front. It fetches the pool once per composing session. The
+        /// > ranking and the pool's size may change without notice; clients must
+        /// > not depend on either beyond the order given.
+        /// > 
+        /// > The caller, users the caller has blocked, and users without a username
+        /// > are never suggested. A user who has blocked the caller may still be.
+        /// > 
+        /// > Requires that the caller may speak in the chat. A DM is DENIED.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetMentionSuggestionsRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetMentionSuggestionsRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetMentionSuggestionsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getMentionSuggestions<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetMentionSuggestionsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetMentionSuggestionsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetMentionSuggestionsResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetMentionSuggestionsResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "StartChat" method.
@@ -721,6 +774,57 @@ extension Flipcash_Chat_V1_Chat {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Chat_V1_Chat.Method.GetRoster.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetMentionSuggestions" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetMentionSuggestions returns people the caller may want to @mention in
+        /// > a group chat, ranked by the server, most relevant first. Today that is
+        /// > the group's most recent senders, most recent first, including people
+        /// > who have since left the group.
+        /// > 
+        /// > The response is a ranked pool of suggestions, not the set of people who
+        /// > may be mentioned, and it is neither complete nor paged. The server
+        /// > decides how many to return, up to 200; the client filters the whole
+        /// > pool locally as the user types, however few rows it displays, and keeps
+        /// > it fresh from the event stream by moving the sender of each new message
+        /// > to the front. It fetches the pool once per composing session. The
+        /// > ranking and the pool's size may change without notice; clients must
+        /// > not depend on either beyond the order given.
+        /// > 
+        /// > The caller, users the caller has blocked, and users without a username
+        /// > are never suggested. A user who has blocked the caller may still be.
+        /// > 
+        /// > Requires that the caller may speak in the chat. A DM is DENIED.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetMentionSuggestionsRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetMentionSuggestionsRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetMentionSuggestionsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getMentionSuggestions<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetMentionSuggestionsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetMentionSuggestionsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetMentionSuggestionsResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetMentionSuggestionsResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetMentionSuggestions.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -1153,6 +1257,52 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
         )
     }
 
+    /// Call the "GetMentionSuggestions" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetMentionSuggestions returns people the caller may want to @mention in
+    /// > a group chat, ranked by the server, most relevant first. Today that is
+    /// > the group's most recent senders, most recent first, including people
+    /// > who have since left the group.
+    /// > 
+    /// > The response is a ranked pool of suggestions, not the set of people who
+    /// > may be mentioned, and it is neither complete nor paged. The server
+    /// > decides how many to return, up to 200; the client filters the whole
+    /// > pool locally as the user types, however few rows it displays, and keeps
+    /// > it fresh from the event stream by moving the sender of each new message
+    /// > to the front. It fetches the pool once per composing session. The
+    /// > ranking and the pool's size may change without notice; clients must
+    /// > not depend on either beyond the order given.
+    /// > 
+    /// > The caller, users the caller has blocked, and users without a username
+    /// > are never suggested. A user who has blocked the caller may still be.
+    /// > 
+    /// > Requires that the caller may speak in the chat. A DM is DENIED.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetMentionSuggestionsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getMentionSuggestions<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetMentionSuggestionsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetMentionSuggestionsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getMentionSuggestions(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetMentionSuggestionsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetMentionSuggestionsResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "StartChat" method.
     ///
     /// > Source IDL Documentation:
@@ -1557,6 +1707,56 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getRoster(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetMentionSuggestions" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetMentionSuggestions returns people the caller may want to @mention in
+    /// > a group chat, ranked by the server, most relevant first. Today that is
+    /// > the group's most recent senders, most recent first, including people
+    /// > who have since left the group.
+    /// > 
+    /// > The response is a ranked pool of suggestions, not the set of people who
+    /// > may be mentioned, and it is neither complete nor paged. The server
+    /// > decides how many to return, up to 200; the client filters the whole
+    /// > pool locally as the user types, however few rows it displays, and keeps
+    /// > it fresh from the event stream by moving the sender of each new message
+    /// > to the front. It fetches the pool once per composing session. The
+    /// > ranking and the pool's size may change without notice; clients must
+    /// > not depend on either beyond the order given.
+    /// > 
+    /// > The caller, users the caller has blocked, and users without a username
+    /// > are never suggested. A user who has blocked the caller may still be.
+    /// > 
+    /// > Requires that the caller may speak in the chat. A DM is DENIED.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getMentionSuggestions<Result>(
+        _ message: Flipcash_Chat_V1_GetMentionSuggestionsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetMentionSuggestionsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetMentionSuggestionsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getMentionSuggestions(
             request: request,
             options: options,
             onResponse: handleResponse

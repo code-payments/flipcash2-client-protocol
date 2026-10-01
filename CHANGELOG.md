@@ -8,6 +8,29 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.15.0
+
+Synced to [`flipcash2-protobuf-api@993127b5`](https://github.com/code-payments/flipcash2-protobuf-api/commit/993127b50e42046ee2f290f122b05625774a0661),
+picking up [#130](https://github.com/code-payments/flipcash2-protobuf-api/pull/130) and
+[#131](https://github.com/code-payments/flipcash2-protobuf-api/pull/131). Only `chat.v1` moved.
+
+### Added
+
+- `Chat.GetMentionSuggestions`, a new RPC: a ranked pool of people to suggest after an @ in a group
+  chat, most relevant first. Today that's the group's most recent senders, including people who
+  have since left. It is not paged and not complete; the server returns up to 200, and the client
+  filters the pool locally as the user types. A DM is `DENIED`.
+- `GetMentionSuggestionsRequest` (`chat_id`, `auth`) and `GetMentionSuggestionsResponse`
+  (`result`: `OK`, `DENIED`, `NOT_FOUND`; repeated `suggestions`).
+- `chat.v1.MentionSuggestion`: a `UserProfile` with `user_id` and `username` always set, and
+  `last_sent_at`, unset for someone suggested for another reason. It is not a `Member`.
+
+### Upgrading
+
+Nothing existing changed: no renames, and no field or enum renumbering. The server already drops
+the caller, users the caller blocked, and users without a username from the pool, so a client
+doesn't need its own username filter on these results.
+
 ## 0.14.1
 
 Synced to [`flipcash2-protobuf-api@d082b0a3`](https://github.com/code-payments/flipcash2-protobuf-api/commit/d082b0a3dd268f884f75402ccd355b6548612221),
