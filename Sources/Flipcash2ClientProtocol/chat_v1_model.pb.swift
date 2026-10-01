@@ -474,6 +474,46 @@ public struct Flipcash_Chat_V1_Member: @unchecked Sendable {
   fileprivate var _storage = _StorageClass.defaultInstance
 }
 
+/// MentionSuggestion is one person the caller may want to @mention in a chat,
+/// as returned by Chat.GetMentionSuggestions. It is not a Member: a suggestion
+/// may name someone who has since left the chat.
+public struct Flipcash_Chat_V1_MentionSuggestion: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The suggested user's public profile. user_id and username are always
+  /// set.
+  public var userProfile: Flipcash_Profile_V1_UserProfile {
+    get {return _userProfile ?? Flipcash_Profile_V1_UserProfile()}
+    set {_userProfile = newValue}
+  }
+  /// Returns true if `userProfile` has been explicitly set.
+  public var hasUserProfile: Bool {return self._userProfile != nil}
+  /// Clears the value of `userProfile`. Subsequent reads from it will return its default value.
+  public mutating func clearUserProfile() {self._userProfile = nil}
+
+  /// When the user last sent a message in this chat, as the server records
+  /// it: it may trail their latest message by up to a minute. A client
+  /// merging new messages from the event stream into its list compares
+  /// against it. Unset for a user suggested for another reason.
+  public var lastSentAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _lastSentAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_lastSentAt = newValue}
+  }
+  /// Returns true if `lastSentAt` has been explicitly set.
+  public var hasLastSentAt: Bool {return self._lastSentAt != nil}
+  /// Clears the value of `lastSentAt`. Subsequent reads from it will return its default value.
+  public mutating func clearLastSentAt() {self._lastSentAt = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _userProfile: Flipcash_Profile_V1_UserProfile? = nil
+  fileprivate var _lastSentAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+}
+
 /// RosterSummary describes a chat's roster — its member list — without
 /// containing it: what a client needs in order to know whether its copy of
 /// that list is stale, without holding the list.
@@ -1544,6 +1584,45 @@ extension Flipcash_Chat_V1_Member: SwiftProtobuf.Message, SwiftProtobuf._Message
       }
       if !storagesAreEqual {return false}
     }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MentionSuggestion: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".MentionSuggestion"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_profile\0\u{3}last_sent_at\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._userProfile) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._lastSentAt) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._userProfile {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._lastSentAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MentionSuggestion, rhs: Flipcash_Chat_V1_MentionSuggestion) -> Bool {
+    if lhs._userProfile != rhs._userProfile {return false}
+    if lhs._lastSentAt != rhs._lastSentAt {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
