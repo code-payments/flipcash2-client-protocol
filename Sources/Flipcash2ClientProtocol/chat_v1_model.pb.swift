@@ -225,6 +225,17 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
     set {_uniqueStorage()._inLobby = newValue}
   }
 
+  /// A short free-form description of this chat, written by its creator.
+  /// Only supported for group chats. Empty when none is set. Part of the
+  /// group's record, like title, so it is returned to every viewer who can
+  /// see the chat, including in its public view.
+  ///
+  /// Set it on creation (see StartChatRequest) or with Chat.EditChat.
+  public var description_p: String {
+    get {return _storage._description_p}
+    set {_uniqueStorage()._description_p = newValue}
+  }
+
   /// Whether messages in this chat are end-to-end encrypted (see
   /// messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or DM);
   /// always false for group chats. A private group is always end-to-end
@@ -628,6 +639,14 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     set {kind = .pictureChanged(newValue)}
   }
 
+  public var descriptionChanged: Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged {
+    get {
+      if case .descriptionChanged(let v)? = kind {return v}
+      return Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged()
+    }
+    set {kind = .descriptionChanged(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Kind: Equatable, Sendable {
@@ -636,6 +655,7 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     case viewerStateChanged(Flipcash_Chat_V1_MetadataUpdate.ViewerStateChanged)
     case titleChanged(Flipcash_Chat_V1_MetadataUpdate.TitleChanged)
     case pictureChanged(Flipcash_Chat_V1_MetadataUpdate.PictureChanged)
+    case descriptionChanged(Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged)
 
   }
 
@@ -747,6 +767,24 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     public init() {}
 
     fileprivate var _newPicture: Flipcash_Blob_V1_Media? = nil
+  }
+
+  /// The chat's description has changed (e.g. via Chat.EditChat). Delivered
+  /// to the chat's members, including the editor's other devices.
+  /// Best-effort and applied as received; a client that suspects a miss
+  /// refetches the chat via Chat.GetChat.
+  public struct DescriptionChanged: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The new description, replacing Metadata.description. Empty when the
+    /// description was cleared.
+    public var newDescription: String = String()
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
   }
 
   public init() {}
@@ -1389,7 +1427,7 @@ extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Metadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{3}is_private\0\u{3}in_lobby\0\u{4}U\u{1}use_e2ee\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{1}picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{3}is_private\0\u{3}in_lobby\0\u{1}description\0\u{4}T\u{1}use_e2ee\0")
 
   fileprivate class _StorageClass {
     var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -1407,6 +1445,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
     var _creator: Flipcash_Common_V1_UserId? = nil
     var _isPrivate: Bool = false
     var _inLobby: Bool = false
+    var _description_p: String = String()
     var _useE2Ee: Bool = false
 
       // This property is used as the initial default value for new instances of the type.
@@ -1433,6 +1472,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _creator = source._creator
       _isPrivate = source._isPrivate
       _inLobby = source._inLobby
+      _description_p = source._description_p
       _useE2Ee = source._useE2Ee
     }
   }
@@ -1467,6 +1507,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 13: try { try decoder.decodeSingularMessageField(value: &_storage._creator) }()
         case 14: try { try decoder.decodeSingularBoolField(value: &_storage._isPrivate) }()
         case 15: try { try decoder.decodeSingularBoolField(value: &_storage._inLobby) }()
+        case 16: try { try decoder.decodeSingularStringField(value: &_storage._description_p) }()
         case 100: try { try decoder.decodeSingularBoolField(value: &_storage._useE2Ee) }()
         default: break
         }
@@ -1525,6 +1566,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       if _storage._inLobby != false {
         try visitor.visitSingularBoolField(value: _storage._inLobby, fieldNumber: 15)
       }
+      if !_storage._description_p.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._description_p, fieldNumber: 16)
+      }
       if _storage._useE2Ee != false {
         try visitor.visitSingularBoolField(value: _storage._useE2Ee, fieldNumber: 100)
       }
@@ -1552,6 +1596,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._creator != rhs_storage._creator {return false}
         if _storage._isPrivate != rhs_storage._isPrivate {return false}
         if _storage._inLobby != rhs_storage._inLobby {return false}
+        if _storage._description_p != rhs_storage._description_p {return false}
         if _storage._useE2Ee != rhs_storage._useE2Ee {return false}
         return true
       }
@@ -2073,7 +2118,7 @@ extension Flipcash_Chat_V1_RosterSummary: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MetadataUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0\u{3}title_changed\0\u{3}picture_changed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0\u{3}title_changed\0\u{3}picture_changed\0\u{3}description_changed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2146,6 +2191,19 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
           self.kind = .pictureChanged(v)
         }
       }()
+      case 6: try {
+        var v: Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .descriptionChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .descriptionChanged(v)
+        }
+      }()
       default: break
       }
     }
@@ -2176,6 +2234,10 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
     case .pictureChanged?: try {
       guard case .pictureChanged(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
+    case .descriptionChanged?: try {
+      guard case .descriptionChanged(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     }()
     case nil: break
     }
@@ -2350,6 +2412,36 @@ extension Flipcash_Chat_V1_MetadataUpdate.PictureChanged: SwiftProtobuf.Message,
 
   public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.PictureChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.PictureChanged) -> Bool {
     if lhs._newPicture != rhs._newPicture {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_MetadataUpdate.protoMessageName + ".DescriptionChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}new_description\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.newDescription) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.newDescription.isEmpty {
+      try visitor.visitSingularStringField(value: self.newDescription, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged) -> Bool {
+    if lhs.newDescription != rhs.newDescription {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

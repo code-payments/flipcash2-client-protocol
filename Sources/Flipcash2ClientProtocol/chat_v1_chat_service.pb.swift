@@ -37,11 +37,11 @@ public struct Flipcash_Chat_V1_GetChatRequest: Sendable {
   /// What the client intends to render of the chat's messaging state — its
   /// last_message and latest_event_sequence — and so whether they may be
   /// returned redacted (see messaging.v1.ViewMode). A group's record (title,
-  /// picture, rules, roster summary) is returned to every registered user
-  /// whatever the mode; the mode decides only the messaging state, which is
-  /// withheld from a viewer who may not read the chat under it. Unset (FULL)
-  /// is the pre-redaction contract: messaging state for a viewer who may
-  /// read the chat in full, the bare record for anyone else.
+  /// description, picture, rules, roster summary) is returned to every
+  /// registered user whatever the mode; the mode decides only the messaging
+  /// state, which is withheld from a viewer who may not read the chat under
+  /// it. Unset (FULL) is the pre-redaction contract: messaging state for a
+  /// viewer who may read the chat in full, the bare record for anyone else.
   ///
   /// Must be REDACTED when auth is unset; any other mode is DENIED.
   public var viewMode: Flipcash_Messaging_V1_ViewMode = .full
@@ -678,6 +678,10 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
     /// Clears the value of `rules`. Subsequent reads from it will return its default value.
     public mutating func clearRules() {self._rules = nil}
 
+    /// Description for the chat. Optional; empty sets none. Moderated like
+    /// the title.
+    public var description_p: String = String()
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     public init() {}
@@ -726,6 +730,10 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
     /// Clears the value of `picture`. Subsequent reads from it will return its default value.
     public mutating func clearPicture() {self._picture = nil}
 
+    /// Description for the chat. Optional; empty sets none. Moderated like
+    /// the title.
+    public var description_p: String = String()
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     public init() {}
@@ -759,8 +767,8 @@ public struct Flipcash_Chat_V1_StartChatResponse: Sendable {
   public mutating func clearChat() {self._chat = nil}
 
   /// The best-fit category that tripped moderation, mirroring the Moderation
-  /// service's vocabulary. Set only when result == TITLE_MODERATED; NONE
-  /// otherwise.
+  /// service's vocabulary. Set only when result == TITLE_MODERATED or
+  /// DESCRIPTION_MODERATED; NONE otherwise.
   public var flaggedCategory: Flipcash_Moderation_V1_FlaggedCategory = .none
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -773,6 +781,7 @@ public struct Flipcash_Chat_V1_StartChatResponse: Sendable {
     case pictureBlobNotAccepted // = 3
     case invalidRules // = 4
     case rulesNotSatisfied // = 5
+    case descriptionModerated // = 6
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -787,6 +796,7 @@ public struct Flipcash_Chat_V1_StartChatResponse: Sendable {
       case 3: self = .pictureBlobNotAccepted
       case 4: self = .invalidRules
       case 5: self = .rulesNotSatisfied
+      case 6: self = .descriptionModerated
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -799,6 +809,7 @@ public struct Flipcash_Chat_V1_StartChatResponse: Sendable {
       case .pictureBlobNotAccepted: return 3
       case .invalidRules: return 4
       case .rulesNotSatisfied: return 5
+      case .descriptionModerated: return 6
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -811,6 +822,7 @@ public struct Flipcash_Chat_V1_StartChatResponse: Sendable {
       .pictureBlobNotAccepted,
       .invalidRules,
       .rulesNotSatisfied,
+      .descriptionModerated,
     ]
 
   }
@@ -1033,6 +1045,16 @@ public struct Flipcash_Chat_V1_EditChatRequest: Sendable {
   /// Clears the value of `picture`. Subsequent reads from it will return its default value.
   public mutating func clearPicture() {self._picture = nil}
 
+  /// The new description. Left unchanged when unset.
+  public var description_p: Flipcash_Chat_V1_EditChatRequest.Description {
+    get {return _description_p ?? Flipcash_Chat_V1_EditChatRequest.Description()}
+    set {_description_p = newValue}
+  }
+  /// Returns true if `description_p` has been explicitly set.
+  public var hasDescription_p: Bool {return self._description_p != nil}
+  /// Clears the value of `description_p`. Subsequent reads from it will return its default value.
+  public mutating func clearDescription_p() {self._description_p = nil}
+
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
     set {_auth = newValue}
@@ -1080,11 +1102,25 @@ public struct Flipcash_Chat_V1_EditChatRequest: Sendable {
     fileprivate var _blobID: Flipcash_Blob_V1_BlobId? = nil
   }
 
+  public struct Description: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The new description. Empty clears it.
+    public var value: String = String()
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+  }
+
   public init() {}
 
   fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
   fileprivate var _title: Flipcash_Chat_V1_EditChatRequest.Title? = nil
   fileprivate var _picture: Flipcash_Chat_V1_EditChatRequest.Picture? = nil
+  fileprivate var _description_p: Flipcash_Chat_V1_EditChatRequest.Description? = nil
   fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
 }
 
@@ -1108,8 +1144,8 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
   public mutating func clearChat() {self._chat = nil}
 
   /// The best-fit category that tripped moderation, mirroring the Moderation
-  /// service's vocabulary. Set only when result == TITLE_MODERATED; NONE
-  /// otherwise.
+  /// service's vocabulary. Set only when result == TITLE_MODERATED or
+  /// DESCRIPTION_MODERATED; NONE otherwise.
   public var flaggedCategory: Flipcash_Moderation_V1_FlaggedCategory = .none
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -1121,6 +1157,7 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
     case notFound // = 2
     case titleModerated // = 3
     case pictureBlobNotAccepted // = 4
+    case descriptionModerated // = 5
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -1134,6 +1171,7 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
       case 2: self = .notFound
       case 3: self = .titleModerated
       case 4: self = .pictureBlobNotAccepted
+      case 5: self = .descriptionModerated
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -1145,6 +1183,7 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
       case .notFound: return 2
       case .titleModerated: return 3
       case .pictureBlobNotAccepted: return 4
+      case .descriptionModerated: return 5
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -1156,6 +1195,7 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
       .notFound,
       .titleModerated,
       .pictureBlobNotAccepted,
+      .descriptionModerated,
     ]
 
   }
@@ -2648,7 +2688,7 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
 
 extension Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Chat_V1_StartChatRequest.protoMessageName + ".PublicGroupChatParameters"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}title\0\u{1}picture\0\u{1}rules\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}title\0\u{1}picture\0\u{1}rules\0\u{1}description\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2659,6 +2699,7 @@ extension Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters: SwiftProt
       case 1: try { try decoder.decodeSingularStringField(value: &self.title) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._picture) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._rules) }()
+      case 4: try { try decoder.decodeSingularStringField(value: &self.description_p) }()
       default: break
       }
     }
@@ -2678,6 +2719,9 @@ extension Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters: SwiftProt
     try { if let v = self._rules {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
+    if !self.description_p.isEmpty {
+      try visitor.visitSingularStringField(value: self.description_p, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2685,6 +2729,7 @@ extension Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters: SwiftProt
     if lhs.title != rhs.title {return false}
     if lhs._picture != rhs._picture {return false}
     if lhs._rules != rhs._rules {return false}
+    if lhs.description_p != rhs.description_p {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2692,7 +2737,7 @@ extension Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters: SwiftProt
 
 extension Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Chat_V1_StartChatRequest.protoMessageName + ".PrivateGroupChatParameters"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}title\0\u{1}picture\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}title\0\u{1}picture\0\u{1}description\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2702,6 +2747,7 @@ extension Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters: SwiftPro
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.title) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._picture) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self.description_p) }()
       default: break
       }
     }
@@ -2718,12 +2764,16 @@ extension Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters: SwiftPro
     try { if let v = self._picture {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    if !self.description_p.isEmpty {
+      try visitor.visitSingularStringField(value: self.description_p, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters, rhs: Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters) -> Bool {
     if lhs.title != rhs.title {return false}
     if lhs._picture != rhs._picture {return false}
+    if lhs.description_p != rhs.description_p {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2774,7 +2824,7 @@ extension Flipcash_Chat_V1_StartChatResponse: SwiftProtobuf.Message, SwiftProtob
 }
 
 extension Flipcash_Chat_V1_StartChatResponse.Result: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}TITLE_MODERATED\0\u{1}PICTURE_BLOB_NOT_ACCEPTED\0\u{1}INVALID_RULES\0\u{1}RULES_NOT_SATISFIED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}TITLE_MODERATED\0\u{1}PICTURE_BLOB_NOT_ACCEPTED\0\u{1}INVALID_RULES\0\u{1}RULES_NOT_SATISFIED\0\u{1}DESCRIPTION_MODERATED\0")
 }
 
 extension Flipcash_Chat_V1_JoinChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -2934,7 +2984,7 @@ extension Flipcash_Chat_V1_LeaveChatResponse.Result: SwiftProtobuf._ProtoNamePro
 
 extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".EditChatRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}title\0\u{1}picture\0\u{2}\u{7}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}title\0\u{1}picture\0\u{1}description\0\u{2}\u{6}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2945,6 +2995,7 @@ extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf
       case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._title) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._picture) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._description_p) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       default: break
       }
@@ -2965,6 +3016,9 @@ extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf
     try { if let v = self._picture {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     } }()
+    try { if let v = self._description_p {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
@@ -2975,6 +3029,7 @@ extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf
     if lhs._chatID != rhs._chatID {return false}
     if lhs._title != rhs._title {return false}
     if lhs._picture != rhs._picture {return false}
+    if lhs._description_p != rhs._description_p {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -3045,6 +3100,36 @@ extension Flipcash_Chat_V1_EditChatRequest.Picture: SwiftProtobuf.Message, Swift
   }
 }
 
+extension Flipcash_Chat_V1_EditChatRequest.Description: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_EditChatRequest.protoMessageName + ".Description"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.value.isEmpty {
+      try visitor.visitSingularStringField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_EditChatRequest.Description, rhs: Flipcash_Chat_V1_EditChatRequest.Description) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Flipcash_Chat_V1_EditChatResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".EditChatResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{1}chat\0\u{3}flagged_category\0")
@@ -3090,7 +3175,7 @@ extension Flipcash_Chat_V1_EditChatResponse: SwiftProtobuf.Message, SwiftProtobu
 }
 
 extension Flipcash_Chat_V1_EditChatResponse.Result: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}TITLE_MODERATED\0\u{1}PICTURE_BLOB_NOT_ACCEPTED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}TITLE_MODERATED\0\u{1}PICTURE_BLOB_NOT_ACCEPTED\0\u{1}DESCRIPTION_MODERATED\0")
 }
 
 extension Flipcash_Chat_V1_MuteChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

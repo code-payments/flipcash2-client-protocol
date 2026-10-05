@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: ec66e6b12c59d7eae3281341e74fe8853c90a306
-subject: Add support for bios and cover pictures for user profiles (#133)
+commit: 3bb442d359dd8452b4e3eca5f5c1ca463e7f5a4b
+subject: Add support for group descriptions (#134)
