@@ -407,7 +407,12 @@ public struct Flipcash_Messaging_V1_SendMessageRequest: Sendable {
   ///  - TextContent
   ///  - ReplyContent
   ///  - MediaContent
-  ///  - EncryptedContent, in DMs only
+  ///  - EncryptedContent, in DMs and private groups only. A private group
+  ///    accepts nothing else.
+  ///
+  /// A private group whose creator has not stored its key yet (see
+  /// chat.v1.StartChatRequest.PrivateGroupChatParameters) accepts nothing
+  /// at all, and the send is DENIED.
   public var content: [Flipcash_Messaging_V1_Content] = []
 
   /// Client-generated idempotency token for this send. Used to dedup retried
@@ -465,8 +470,12 @@ public struct Flipcash_Messaging_V1_SendMessageResponse: Sendable {
     case ok // = 0
     case denied // = 1
 
-    /// The content is EncryptedContent and the chat is not a DM.
+    /// The content is EncryptedContent and the chat is neither a DM nor a
+    /// private group, or its scheme is not the one the chat uses.
     case encryptionNotAllowed // = 2
+
+    /// The chat is a private group and the content is not EncryptedContent.
+    case encryptionRequired // = 3
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -478,6 +487,7 @@ public struct Flipcash_Messaging_V1_SendMessageResponse: Sendable {
       case 0: self = .ok
       case 1: self = .denied
       case 2: self = .encryptionNotAllowed
+      case 3: self = .encryptionRequired
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -487,6 +497,7 @@ public struct Flipcash_Messaging_V1_SendMessageResponse: Sendable {
       case .ok: return 0
       case .denied: return 1
       case .encryptionNotAllowed: return 2
+      case .encryptionRequired: return 3
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -496,6 +507,7 @@ public struct Flipcash_Messaging_V1_SendMessageResponse: Sendable {
       .ok,
       .denied,
       .encryptionNotAllowed,
+      .encryptionRequired,
     ]
 
   }
@@ -532,7 +544,9 @@ public struct Flipcash_Messaging_V1_EditMessageRequest: Sendable {
   ///  - TextContent
   ///  - ReplyContent
   ///  - MediaContent
-  ///  - EncryptedContent, in DMs only
+  ///  - EncryptedContent, in DMs and private groups only. A private group
+  ///    accepts nothing else, and nothing at all before its creator has
+  ///    stored its key, as for SendMessage.
   public var content: [Flipcash_Messaging_V1_Content] = []
 
   /// Required optimistic-concurrency guard: the message's event_sequence as the
@@ -593,8 +607,12 @@ public struct Flipcash_Messaging_V1_EditMessageResponse: Sendable {
     /// current state for the client to reconcile against and retry.
     case conflict // = 4
 
-    /// The content is EncryptedContent and the chat is not a DM.
+    /// The content is EncryptedContent and the chat is neither a DM nor a
+    /// private group, or its scheme is not the one the chat uses.
     case encryptionNotAllowed // = 5
+
+    /// The chat is a private group and the content is not EncryptedContent.
+    case encryptionRequired // = 6
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -609,6 +627,7 @@ public struct Flipcash_Messaging_V1_EditMessageResponse: Sendable {
       case 3: self = .cannotEdit
       case 4: self = .conflict
       case 5: self = .encryptionNotAllowed
+      case 6: self = .encryptionRequired
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -621,6 +640,7 @@ public struct Flipcash_Messaging_V1_EditMessageResponse: Sendable {
       case .cannotEdit: return 3
       case .conflict: return 4
       case .encryptionNotAllowed: return 5
+      case .encryptionRequired: return 6
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -633,6 +653,7 @@ public struct Flipcash_Messaging_V1_EditMessageResponse: Sendable {
       .cannotEdit,
       .conflict,
       .encryptionNotAllowed,
+      .encryptionRequired,
     ]
 
   }
@@ -1958,7 +1979,7 @@ extension Flipcash_Messaging_V1_SendMessageResponse: SwiftProtobuf.Message, Swif
 }
 
 extension Flipcash_Messaging_V1_SendMessageResponse.Result: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}ENCRYPTION_NOT_ALLOWED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}ENCRYPTION_NOT_ALLOWED\0\u{1}ENCRYPTION_REQUIRED\0")
 }
 
 extension Flipcash_Messaging_V1_EditMessageRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -2055,7 +2076,7 @@ extension Flipcash_Messaging_V1_EditMessageResponse: SwiftProtobuf.Message, Swif
 }
 
 extension Flipcash_Messaging_V1_EditMessageResponse.Result: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}MESSAGE_NOT_FOUND\0\u{1}CANNOT_EDIT\0\u{1}CONFLICT\0\u{1}ENCRYPTION_NOT_ALLOWED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}MESSAGE_NOT_FOUND\0\u{1}CANNOT_EDIT\0\u{1}CONFLICT\0\u{1}ENCRYPTION_NOT_ALLOWED\0\u{1}ENCRYPTION_REQUIRED\0")
 }
 
 extension Flipcash_Messaging_V1_DeleteMessageRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

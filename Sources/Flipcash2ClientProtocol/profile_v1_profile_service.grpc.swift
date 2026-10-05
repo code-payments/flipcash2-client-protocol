@@ -68,6 +68,30 @@ public enum Flipcash_Profile_V1_Profile {
                 method: "SetProfilePicture"
             )
         }
+        /// Namespace for "SetCoverPicture" metadata.
+        public enum SetCoverPicture {
+            /// Request type for "SetCoverPicture".
+            public typealias Input = Flipcash_Profile_V1_SetCoverPictureRequest
+            /// Response type for "SetCoverPicture".
+            public typealias Output = Flipcash_Profile_V1_SetCoverPictureResponse
+            /// Descriptor for "SetCoverPicture".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.profile.v1.Profile"),
+                method: "SetCoverPicture"
+            )
+        }
+        /// Namespace for "SetBio" metadata.
+        public enum SetBio {
+            /// Request type for "SetBio".
+            public typealias Input = Flipcash_Profile_V1_SetBioRequest
+            /// Response type for "SetBio".
+            public typealias Output = Flipcash_Profile_V1_SetBioResponse
+            /// Descriptor for "SetBio".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.profile.v1.Profile"),
+                method: "SetBio"
+            )
+        }
         /// Namespace for "UpdateFlipcard" metadata.
         public enum UpdateFlipcard {
             /// Request type for "UpdateFlipcard".
@@ -122,6 +146,8 @@ public enum Flipcash_Profile_V1_Profile {
             SetDisplayName.descriptor,
             SetUsername.descriptor,
             SetProfilePicture.descriptor,
+            SetCoverPicture.descriptor,
+            SetBio.descriptor,
             UpdateFlipcard.descriptor,
             SetMinDmChatInitFee.descriptor,
             LinkSocialAccount.descriptor,
@@ -234,6 +260,57 @@ extension Flipcash_Profile_V1_Profile {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetProfilePictureResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetProfilePictureResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetCoverPicture" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetCoverPicture sets the caller's cover picture to a blob they have
+        /// > already uploaded via BlobStorage, replacing any cover picture already
+        /// > set. The upload flow and the server-derived renditions are exactly those
+        /// > of SetProfilePicture; only the surface the picture is shown on differs.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Profile_V1_SetCoverPictureRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_SetCoverPictureRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_SetCoverPictureResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setCoverPicture<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetCoverPictureRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_SetCoverPictureRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetCoverPictureResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetCoverPictureResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetBio" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetBio sets the caller's bio, replacing any bio already set. An empty
+        /// > bio clears it. The bio is moderated before it is set, like a display
+        /// > name.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Profile_V1_SetBioRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_SetBioRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_SetBioResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setBio<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetBioRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_SetBioRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetBioResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetBioResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "UpdateFlipcard" method.
@@ -475,6 +552,79 @@ extension Flipcash_Profile_V1_Profile {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Profile_V1_Profile.Method.SetProfilePicture.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetCoverPicture" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetCoverPicture sets the caller's cover picture to a blob they have
+        /// > already uploaded via BlobStorage, replacing any cover picture already
+        /// > set. The upload flow and the server-derived renditions are exactly those
+        /// > of SetProfilePicture; only the surface the picture is shown on differs.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Profile_V1_SetCoverPictureRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_SetCoverPictureRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_SetCoverPictureResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setCoverPicture<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetCoverPictureRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_SetCoverPictureRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetCoverPictureResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetCoverPictureResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Profile_V1_Profile.Method.SetCoverPicture.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetBio" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetBio sets the caller's bio, replacing any bio already set. An empty
+        /// > bio clears it. The bio is moderated before it is set, like a display
+        /// > name.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Profile_V1_SetBioRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Profile_V1_SetBioRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Profile_V1_SetBioResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setBio<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetBioRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Profile_V1_SetBioRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Profile_V1_SetBioResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetBioResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Profile_V1_Profile.Method.SetBio.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -740,6 +890,69 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
         )
     }
 
+    /// Call the "SetCoverPicture" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetCoverPicture sets the caller's cover picture to a blob they have
+    /// > already uploaded via BlobStorage, replacing any cover picture already
+    /// > set. The upload flow and the server-derived renditions are exactly those
+    /// > of SetProfilePicture; only the surface the picture is shown on differs.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Profile_V1_SetCoverPictureRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setCoverPicture<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetCoverPictureRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetCoverPictureResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setCoverPicture(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Profile_V1_SetCoverPictureRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Profile_V1_SetCoverPictureResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetBio" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetBio sets the caller's bio, replacing any bio already set. An empty
+    /// > bio clears it. The bio is moderated before it is set, like a display
+    /// > name.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Profile_V1_SetBioRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setBio<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Profile_V1_SetBioRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetBioResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setBio(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Profile_V1_SetBioRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Profile_V1_SetBioResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
     /// Call the "UpdateFlipcard" method.
     ///
     /// > Source IDL Documentation:
@@ -987,6 +1200,77 @@ extension Flipcash_Profile_V1_Profile.ClientProtocol {
             metadata: metadata
         )
         return try await self.setProfilePicture(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetCoverPicture" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetCoverPicture sets the caller's cover picture to a blob they have
+    /// > already uploaded via BlobStorage, replacing any cover picture already
+    /// > set. The upload flow and the server-derived renditions are exactly those
+    /// > of SetProfilePicture; only the surface the picture is shown on differs.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setCoverPicture<Result>(
+        _ message: Flipcash_Profile_V1_SetCoverPictureRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetCoverPictureResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Profile_V1_SetCoverPictureRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setCoverPicture(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetBio" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetBio sets the caller's bio, replacing any bio already set. An empty
+    /// > bio clears it. The bio is moderated before it is set, like a display
+    /// > name.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setBio<Result>(
+        _ message: Flipcash_Profile_V1_SetBioRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Profile_V1_SetBioResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Profile_V1_SetBioRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setBio(
             request: request,
             options: options,
             onResponse: handleResponse

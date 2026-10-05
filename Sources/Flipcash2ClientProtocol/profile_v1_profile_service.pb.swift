@@ -449,6 +449,206 @@ public struct Flipcash_Profile_V1_SetProfilePictureResponse: Sendable {
   fileprivate var _profilePicture: Flipcash_Blob_V1_Media? = nil
 }
 
+public struct Flipcash_Profile_V1_SetCoverPictureRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The blob holding the ORIGINAL image the caller uploaded. It must be owned
+  /// by the caller and READY; the server derives the remaining renditions from
+  /// it, as for SetProfilePicture.
+  public var blobID: Flipcash_Blob_V1_BlobId {
+    get {return _blobID ?? Flipcash_Blob_V1_BlobId()}
+    set {_blobID = newValue}
+  }
+  /// Returns true if `blobID` has been explicitly set.
+  public var hasBlobID: Bool {return self._blobID != nil}
+  /// Clears the value of `blobID`. Subsequent reads from it will return its default value.
+  public mutating func clearBlobID() {self._blobID = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _blobID: Flipcash_Blob_V1_BlobId? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Profile_V1_SetCoverPictureResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Profile_V1_SetCoverPictureResponse.Result = .ok
+
+  /// The caller's new cover picture, including the renditions the server
+  /// derived. Set only when result == OK.
+  public var coverPicture: Flipcash_Blob_V1_Media {
+    get {return _coverPicture ?? Flipcash_Blob_V1_Media()}
+    set {_coverPicture = newValue}
+  }
+  /// Returns true if `coverPicture` has been explicitly set.
+  public var hasCoverPicture: Bool {return self._coverPicture != nil}
+  /// Clears the value of `coverPicture`. Subsequent reads from it will return its default value.
+  public mutating func clearCoverPicture() {self._coverPicture = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+    case denied // = 1
+
+    /// no such blob, or it is not owned by the caller
+    case blobNotFound // = 2
+
+    /// blob is still PENDING/PROCESSING; retry once READY
+    case blobNotReady // = 3
+
+    /// blob failed validation or moderation; terminal for this id, so the client must upload again
+    case blobRejected // = 4
+
+    /// blob is READY but unusable as a picture (e.g. not an image)
+    case invalidBlob // = 5
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .blobNotFound
+      case 3: self = .blobNotReady
+      case 4: self = .blobRejected
+      case 5: self = .invalidBlob
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .blobNotFound: return 2
+      case .blobNotReady: return 3
+      case .blobRejected: return 4
+      case .invalidBlob: return 5
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Profile_V1_SetCoverPictureResponse.Result] = [
+      .ok,
+      .denied,
+      .blobNotFound,
+      .blobNotReady,
+      .blobRejected,
+      .invalidBlob,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _coverPicture: Flipcash_Blob_V1_Media? = nil
+}
+
+public struct Flipcash_Profile_V1_SetBioRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The new bio to set. Empty clears the bio.
+  public var bio: String = String()
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Profile_V1_SetBioResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Profile_V1_SetBioResponse.Result = .ok
+
+  /// The best-fit category that tripped moderation, mirroring the Moderation
+  /// service's vocabulary. Set only when result == FAILED_MODERATED; NONE
+  /// otherwise.
+  public var flaggedCategory: Flipcash_Moderation_V1_FlaggedCategory = .none
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+    case invalidBio // = 1
+    case denied // = 2
+    case failedModerated // = 3
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .invalidBio
+      case 2: self = .denied
+      case 3: self = .failedModerated
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .invalidBio: return 1
+      case .denied: return 2
+      case .failedModerated: return 3
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Profile_V1_SetBioResponse.Result] = [
+      .ok,
+      .invalidBio,
+      .denied,
+      .failedModerated,
+    ]
+
+  }
+
+  public init() {}
+}
+
 public struct Flipcash_Profile_V1_UpdateFlipcardRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -1190,6 +1390,166 @@ extension Flipcash_Profile_V1_SetProfilePictureResponse: SwiftProtobuf.Message, 
 
 extension Flipcash_Profile_V1_SetProfilePictureResponse.Result: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}BLOB_NOT_FOUND\0\u{1}BLOB_NOT_READY\0\u{1}BLOB_REJECTED\0\u{1}INVALID_BLOB\0")
+}
+
+extension Flipcash_Profile_V1_SetCoverPictureRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetCoverPictureRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}blob_id\0\u{2}\u{9}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._blobID) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._blobID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Profile_V1_SetCoverPictureRequest, rhs: Flipcash_Profile_V1_SetCoverPictureRequest) -> Bool {
+    if lhs._blobID != rhs._blobID {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Profile_V1_SetCoverPictureResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetCoverPictureResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}cover_picture\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._coverPicture) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try { if let v = self._coverPicture {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Profile_V1_SetCoverPictureResponse, rhs: Flipcash_Profile_V1_SetCoverPictureResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs._coverPicture != rhs._coverPicture {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Profile_V1_SetCoverPictureResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}BLOB_NOT_FOUND\0\u{1}BLOB_NOT_READY\0\u{1}BLOB_REJECTED\0\u{1}INVALID_BLOB\0")
+}
+
+extension Flipcash_Profile_V1_SetBioRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetBioRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}bio\0\u{2}\u{9}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.bio) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.bio.isEmpty {
+      try visitor.visitSingularStringField(value: self.bio, fieldNumber: 1)
+    }
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Profile_V1_SetBioRequest, rhs: Flipcash_Profile_V1_SetBioRequest) -> Bool {
+    if lhs.bio != rhs.bio {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Profile_V1_SetBioResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetBioResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}flagged_category\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.flaggedCategory) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    if self.flaggedCategory != .none {
+      try visitor.visitSingularEnumField(value: self.flaggedCategory, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Profile_V1_SetBioResponse, rhs: Flipcash_Profile_V1_SetBioResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.flaggedCategory != rhs.flaggedCategory {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Profile_V1_SetBioResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}INVALID_BIO\0\u{1}DENIED\0\u{1}FAILED_MODERATED\0")
 }
 
 extension Flipcash_Profile_V1_UpdateFlipcardRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

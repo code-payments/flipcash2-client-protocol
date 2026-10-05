@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 993127b50e42046ee2f290f122b05625774a0661
-subject: Update GetMentionSuggestions comment (#131)
+commit: ec66e6b12c59d7eae3281341e74fe8853c90a306
+subject: Add support for bios and cover pictures for user profiles (#133)

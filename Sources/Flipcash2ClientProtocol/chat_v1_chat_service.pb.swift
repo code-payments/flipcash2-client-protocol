@@ -593,15 +593,24 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
   // methods supported on all messages.
 
   /// Parameters for the kind of chat being created. The variant selects the
-  /// chat type.
+  /// kind of chat. Both create a chat of type GROUP: one public, one
+  /// private.
   public var parameters: Flipcash_Chat_V1_StartChatRequest.OneOf_Parameters? = nil
 
-  public var group: Flipcash_Chat_V1_StartChatRequest.GroupChatParameters {
+  public var publicGroup: Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters {
     get {
-      if case .group(let v)? = parameters {return v}
-      return Flipcash_Chat_V1_StartChatRequest.GroupChatParameters()
+      if case .publicGroup(let v)? = parameters {return v}
+      return Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters()
     }
-    set {parameters = .group(newValue)}
+    set {parameters = .publicGroup(newValue)}
+  }
+
+  public var privateGroup: Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters {
+    get {
+      if case .privateGroup(let v)? = parameters {return v}
+      return Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters()
+    }
+    set {parameters = .privateGroup(newValue)}
   }
 
   /// Key for retrying this request safely. A retry with the same key from the
@@ -628,14 +637,17 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Parameters for the kind of chat being created. The variant selects the
-  /// chat type.
+  /// kind of chat. Both create a chat of type GROUP: one public, one
+  /// private.
   public enum OneOf_Parameters: Equatable, Sendable {
-    case group(Flipcash_Chat_V1_StartChatRequest.GroupChatParameters)
+    case publicGroup(Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters)
+    case privateGroup(Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters)
 
   }
 
-  /// Parameters for creating a group chat
-  public struct GroupChatParameters: Sendable {
+  /// Parameters for creating a public group chat: one that users join with
+  /// JoinChat, subject to its rules.
+  public struct PublicGroupChatParameters: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
@@ -672,6 +684,53 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
 
     fileprivate var _picture: Flipcash_Blob_V1_BlobId? = nil
     fileprivate var _rules: Flipcash_Chat_V1_Rules? = nil
+  }
+
+  /// Parameters for creating a private group chat (see Metadata.is_private):
+  /// one whose creator admits each member from its lobby, and whose messages
+  /// are end-to-end encrypted. Whether a group is private is fixed for the
+  /// life of the chat. A private group has no rules.
+  ///
+  /// Creating a private group takes two steps. A key envelope is bound to
+  /// the chat's ID, which the caller learns only from the response, so the
+  /// caller generates the chat key once StartChat returns and stores its own
+  /// envelope with SetKeyEnvelope (see KeyEnvelope).
+  ///
+  /// Until the creator's envelope is stored, the group has no key. It
+  /// exists and is visible like any other private group: GetChat returns
+  /// it, and it appears in the creator's GetGroupChatFeed. But nothing can
+  /// happen in it, and the server refuses each of these as DENIED:
+  ///  - EnterLobby, by anyone
+  ///  - AdmitLobbyMember
+  ///  - Messaging.SendMessage and Messaging.EditMessage
+  ///  - BlobStorage.InitiateExternalUpload of a blob encrypted for the chat
+  /// The creator's client must keep attempting SetKeyEnvelope until it
+  /// succeeds. Storing the envelope lifts every refusal above, and it is
+  /// never undone: the creator's envelope is kept even if they leave.
+  public struct PrivateGroupChatParameters: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Title for the chat.
+    public var title: String = String()
+
+    /// The blob holding the ORIGINAL picture the caller uploaded. Optional.
+    /// If set, it must be owned by the caller and READY.
+    public var picture: Flipcash_Blob_V1_BlobId {
+      get {return _picture ?? Flipcash_Blob_V1_BlobId()}
+      set {_picture = newValue}
+    }
+    /// Returns true if `picture` has been explicitly set.
+    public var hasPicture: Bool {return self._picture != nil}
+    /// Clears the value of `picture`. Subsequent reads from it will return its default value.
+    public mutating func clearPicture() {self._picture = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _picture: Flipcash_Blob_V1_BlobId? = nil
   }
 
   public init() {}
@@ -1307,6 +1366,749 @@ public struct Flipcash_Chat_V1_UnmuteChatResponse: Sendable {
   fileprivate var _viewerState: Flipcash_Chat_V1_ViewerState? = nil
 }
 
+public struct Flipcash_Chat_V1_EnterLobbyRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_EnterLobbyResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_EnterLobbyResponse.Result = .ok
+
+  /// The caller's place in the lobby, so the client can record the chat it
+  /// is now waiting in without a refetch. Set only when result == OK.
+  public var lobby: Flipcash_Chat_V1_Lobby {
+    get {return _lobby ?? Flipcash_Chat_V1_Lobby()}
+    set {_lobby = newValue}
+  }
+  /// Returns true if `lobby` has been explicitly set.
+  public var hasLobby: Bool {return self._lobby != nil}
+  /// Clears the value of `lobby`. Subsequent reads from it will return its default value.
+  public mutating func clearLobby() {self._lobby = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// The chat is not a private group, or has no key yet (see EnterLobby)
+    case denied // = 1
+    case notFound // = 2
+
+    /// Caller is already a member of the chat
+    case alreadyMember // = 3
+
+    /// The chat's lobby holds as many users as the server allows
+    case lobbyFull // = 4
+
+    /// Caller is waiting in as many lobbies as the server allows
+    case tooManyLobbies // = 5
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      case 3: self = .alreadyMember
+      case 4: self = .lobbyFull
+      case 5: self = .tooManyLobbies
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .alreadyMember: return 3
+      case .lobbyFull: return 4
+      case .tooManyLobbies: return 5
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_EnterLobbyResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+      .alreadyMember,
+      .lobbyFull,
+      .tooManyLobbies,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _lobby: Flipcash_Chat_V1_Lobby? = nil
+}
+
+public struct Flipcash_Chat_V1_LeaveLobbyRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_LeaveLobbyResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_LeaveLobbyResponse.Result = .ok
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// The chat is not a private group
+    case denied // = 1
+    case notFound // = 2
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_LeaveLobbyResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+    ]
+
+  }
+
+  public init() {}
+}
+
+public struct Flipcash_Chat_V1_GetLobbyMembersRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// QueryOptions controls page_size, capped at 100. Ordering is fixed to
+  /// earliest entered first and is not client-selectable.
+  ///
+  /// Leave query_options.paging_token unset on the first request. On every
+  /// subsequent request, set it to the paging_token from the most recent
+  /// response. The token is opaque and server-generated; do not construct
+  /// it. It is bound to chat_id and refused with another chat.
+  public var queryOptions: Flipcash_Common_V1_QueryOptions {
+    get {return _queryOptions ?? Flipcash_Common_V1_QueryOptions()}
+    set {_queryOptions = newValue}
+  }
+  /// Returns true if `queryOptions` has been explicitly set.
+  public var hasQueryOptions: Bool {return self._queryOptions != nil}
+  /// Clears the value of `queryOptions`. Subsequent reads from it will return its default value.
+  public mutating func clearQueryOptions() {self._queryOptions = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _queryOptions: Flipcash_Common_V1_QueryOptions? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_GetLobbyMembersResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_GetLobbyMembersResponse.Result = .ok
+
+  /// The page, earliest entered first. Set when result is OK.
+  public var members: [Flipcash_Chat_V1_LobbyMember] = []
+
+  /// PagingToken carries the cursor after the last member returned. The
+  /// client MUST send it back in query_options.paging_token on the next
+  /// GetLobbyMembersRequest. Set when result is OK and has_more is true.
+  public var pagingToken: Flipcash_Common_V1_PagingToken {
+    get {return _pagingToken ?? Flipcash_Common_V1_PagingToken()}
+    set {_pagingToken = newValue}
+  }
+  /// Returns true if `pagingToken` has been explicitly set.
+  public var hasPagingToken: Bool {return self._pagingToken != nil}
+  /// Clears the value of `pagingToken`. Subsequent reads from it will return its default value.
+  public mutating func clearPagingToken() {self._pagingToken = nil}
+
+  /// HasMore indicates whether further pages remain. When true, the client
+  /// should issue another GetLobbyMembersRequest with the returned
+  /// paging_token.
+  public var hasMore_p: Bool = false
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// Caller is not the chat's creator, or the chat is not a private group
+    case denied // = 1
+    case notFound // = 2
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_GetLobbyMembersResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _pagingToken: Flipcash_Common_V1_PagingToken? = nil
+}
+
+public struct Flipcash_Chat_V1_AdmitLobbyMemberRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The user to admit, who must be waiting in the chat's lobby.
+  public var userID: Flipcash_Common_V1_UserId {
+    get {return _userID ?? Flipcash_Common_V1_UserId()}
+    set {_userID = newValue}
+  }
+  /// Returns true if `userID` has been explicitly set.
+  public var hasUserID: Bool {return self._userID != nil}
+  /// Clears the value of `userID`. Subsequent reads from it will return its default value.
+  public mutating func clearUserID() {self._userID = nil}
+
+  /// The chat key wrapped by the caller for that user's public key, as
+  /// given by LobbyMember.public_key (see KeyEnvelope). The server cannot
+  /// check its contents: an envelope the user cannot open leaves them a
+  /// member who cannot read the chat.
+  public var keyEnvelope: Flipcash_Chat_V1_KeyEnvelope {
+    get {return _keyEnvelope ?? Flipcash_Chat_V1_KeyEnvelope()}
+    set {_keyEnvelope = newValue}
+  }
+  /// Returns true if `keyEnvelope` has been explicitly set.
+  public var hasKeyEnvelope: Bool {return self._keyEnvelope != nil}
+  /// Clears the value of `keyEnvelope`. Subsequent reads from it will return its default value.
+  public mutating func clearKeyEnvelope() {self._keyEnvelope = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _userID: Flipcash_Common_V1_UserId? = nil
+  fileprivate var _keyEnvelope: Flipcash_Chat_V1_KeyEnvelope? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_AdmitLobbyMemberResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_AdmitLobbyMemberResponse.Result = .ok
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// Caller may not admit users to this chat (see AdmitLobbyMember)
+    case denied // = 1
+    case notFound // = 2
+
+    /// The user is neither waiting in the lobby nor a member
+    case notInLobby // = 3
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      case 3: self = .notInLobby
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .notInLobby: return 3
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_AdmitLobbyMemberResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+      .notInLobby,
+    ]
+
+  }
+
+  public init() {}
+}
+
+public struct Flipcash_Chat_V1_DenyLobbyMemberRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The user to remove from the chat's lobby.
+  public var userID: Flipcash_Common_V1_UserId {
+    get {return _userID ?? Flipcash_Common_V1_UserId()}
+    set {_userID = newValue}
+  }
+  /// Returns true if `userID` has been explicitly set.
+  public var hasUserID: Bool {return self._userID != nil}
+  /// Clears the value of `userID`. Subsequent reads from it will return its default value.
+  public mutating func clearUserID() {self._userID = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _userID: Flipcash_Common_V1_UserId? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_DenyLobbyMemberResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_DenyLobbyMemberResponse.Result = .ok
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// Caller is not the chat's creator, or the chat is not a private group
+    case denied // = 1
+    case notFound // = 2
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_DenyLobbyMemberResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+    ]
+
+  }
+
+  public init() {}
+}
+
+public struct Flipcash_Chat_V1_SetKeyEnvelopeRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The chat key wrapped by the caller for themself (see KeyEnvelope).
+  public var keyEnvelope: Flipcash_Chat_V1_KeyEnvelope {
+    get {return _keyEnvelope ?? Flipcash_Chat_V1_KeyEnvelope()}
+    set {_keyEnvelope = newValue}
+  }
+  /// Returns true if `keyEnvelope` has been explicitly set.
+  public var hasKeyEnvelope: Bool {return self._keyEnvelope != nil}
+  /// Clears the value of `keyEnvelope`. Subsequent reads from it will return its default value.
+  public mutating func clearKeyEnvelope() {self._keyEnvelope = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _keyEnvelope: Flipcash_Chat_V1_KeyEnvelope? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_SetKeyEnvelopeResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_SetKeyEnvelopeResponse.Result = .ok
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// Caller is not a member, or the chat is not a private group
+    case denied // = 1
+    case notFound // = 2
+
+    /// Caller already stored a different envelope of their own, which stands
+    case alreadySet // = 3
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      case 3: self = .alreadySet
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .alreadySet: return 3
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_SetKeyEnvelopeResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+      .alreadySet,
+    ]
+
+  }
+
+  public init() {}
+}
+
+public struct Flipcash_Chat_V1_GetKeyEnvelopeRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  public var auth: Flipcash_Common_V1_Auth {
+    get {return _auth ?? Flipcash_Common_V1_Auth()}
+    set {_auth = newValue}
+  }
+  /// Returns true if `auth` has been explicitly set.
+  public var hasAuth: Bool {return self._auth != nil}
+  /// Clears the value of `auth`. Subsequent reads from it will return its default value.
+  public mutating func clearAuth() {self._auth = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
+}
+
+public struct Flipcash_Chat_V1_GetKeyEnvelopeResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var result: Flipcash_Chat_V1_GetKeyEnvelopeResponse.Result = .ok
+
+  /// The caller's key envelope. Set only when result == OK.
+  public var keyEnvelope: Flipcash_Chat_V1_KeyEnvelope {
+    get {return _keyEnvelope ?? Flipcash_Chat_V1_KeyEnvelope()}
+    set {_keyEnvelope = newValue}
+  }
+  /// Returns true if `keyEnvelope` has been explicitly set.
+  public var hasKeyEnvelope: Bool {return self._keyEnvelope != nil}
+  /// Clears the value of `keyEnvelope`. Subsequent reads from it will return its default value.
+  public mutating func clearKeyEnvelope() {self._keyEnvelope = nil}
+
+  /// The user who stored the envelope, as the server authenticated them:
+  /// the caller, or the chat's creator. It tells the client whose public
+  /// key to open the envelope against (see KeyEnvelope), and is only a
+  /// hint: an envelope that does not open against that key is rejected. Set
+  /// only when result == OK.
+  public var wrappedBy: Flipcash_Common_V1_UserId {
+    get {return _wrappedBy ?? Flipcash_Common_V1_UserId()}
+    set {_wrappedBy = newValue}
+  }
+  /// Returns true if `wrappedBy` has been explicitly set.
+  public var hasWrappedBy: Bool {return self._wrappedBy != nil}
+  /// Clears the value of `wrappedBy`. Subsequent reads from it will return its default value.
+  public mutating func clearWrappedBy() {self._wrappedBy = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Result: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case ok // = 0
+
+    /// Caller is not a member, or the chat is not a private group
+    case denied // = 1
+    case notFound // = 2
+
+    /// Caller is a member with no envelope stored
+    case noEnvelope // = 3
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .ok
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .ok
+      case 1: self = .denied
+      case 2: self = .notFound
+      case 3: self = .noEnvelope
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .ok: return 0
+      case .denied: return 1
+      case .notFound: return 2
+      case .noEnvelope: return 3
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_GetKeyEnvelopeResponse.Result] = [
+      .ok,
+      .denied,
+      .notFound,
+      .noEnvelope,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _keyEnvelope: Flipcash_Chat_V1_KeyEnvelope? = nil
+  fileprivate var _wrappedBy: Flipcash_Common_V1_UserId? = nil
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "flipcash.chat.v1"
@@ -1769,7 +2571,7 @@ extension Flipcash_Chat_V1_GetMentionSuggestionsResponse.Result: SwiftProtobuf._
 
 extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".StartChatRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}group\0\u{4}\u{8}idempotency_key\0\u{1}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}public_group\0\u{3}private_group\0\u{4}\u{7}idempotency_key\0\u{1}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1778,16 +2580,29 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try {
-        var v: Flipcash_Chat_V1_StartChatRequest.GroupChatParameters?
+        var v: Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters?
         var hadOneofValue = false
         if let current = self.parameters {
           hadOneofValue = true
-          if case .group(let m) = current {v = m}
+          if case .publicGroup(let m) = current {v = m}
         }
         try decoder.decodeSingularMessageField(value: &v)
         if let v = v {
           if hadOneofValue {try decoder.handleConflictingOneOf()}
-          self.parameters = .group(v)
+          self.parameters = .publicGroup(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters?
+        var hadOneofValue = false
+        if let current = self.parameters {
+          hadOneofValue = true
+          if case .privateGroup(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.parameters = .privateGroup(v)
         }
       }()
       case 9: try { try decoder.decodeSingularMessageField(value: &self._idempotencyKey) }()
@@ -1802,9 +2617,17 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    try { if case .group(let v)? = self.parameters {
+    switch self.parameters {
+    case .publicGroup?: try {
+      guard case .publicGroup(let v)? = self.parameters else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
-    } }()
+    }()
+    case .privateGroup?: try {
+      guard case .privateGroup(let v)? = self.parameters else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
     try { if let v = self._idempotencyKey {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
     } }()
@@ -1823,8 +2646,8 @@ extension Flipcash_Chat_V1_StartChatRequest: SwiftProtobuf.Message, SwiftProtobu
   }
 }
 
-extension Flipcash_Chat_V1_StartChatRequest.GroupChatParameters: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let protoMessageName: String = Flipcash_Chat_V1_StartChatRequest.protoMessageName + ".GroupChatParameters"
+extension Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_StartChatRequest.protoMessageName + ".PublicGroupChatParameters"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}title\0\u{1}picture\0\u{1}rules\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1858,10 +2681,49 @@ extension Flipcash_Chat_V1_StartChatRequest.GroupChatParameters: SwiftProtobuf.M
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Flipcash_Chat_V1_StartChatRequest.GroupChatParameters, rhs: Flipcash_Chat_V1_StartChatRequest.GroupChatParameters) -> Bool {
+  public static func ==(lhs: Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters, rhs: Flipcash_Chat_V1_StartChatRequest.PublicGroupChatParameters) -> Bool {
     if lhs.title != rhs.title {return false}
     if lhs._picture != rhs._picture {return false}
     if lhs._rules != rhs._rules {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_StartChatRequest.protoMessageName + ".PrivateGroupChatParameters"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}title\0\u{1}picture\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.title) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._picture) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if !self.title.isEmpty {
+      try visitor.visitSingularStringField(value: self.title, fieldNumber: 1)
+    }
+    try { if let v = self._picture {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters, rhs: Flipcash_Chat_V1_StartChatRequest.PrivateGroupChatParameters) -> Bool {
+    if lhs.title != rhs.title {return false}
+    if lhs._picture != rhs._picture {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2398,4 +3260,582 @@ extension Flipcash_Chat_V1_UnmuteChatResponse: SwiftProtobuf.Message, SwiftProto
 
 extension Flipcash_Chat_V1_UnmuteChatResponse.Result: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0")
+}
+
+extension Flipcash_Chat_V1_EnterLobbyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EnterLobbyRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{2}\u{9}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_EnterLobbyRequest, rhs: Flipcash_Chat_V1_EnterLobbyRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_EnterLobbyResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".EnterLobbyResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{1}lobby\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._lobby) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try { if let v = self._lobby {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_EnterLobbyResponse, rhs: Flipcash_Chat_V1_EnterLobbyResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs._lobby != rhs._lobby {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_EnterLobbyResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}ALREADY_MEMBER\0\u{1}LOBBY_FULL\0\u{1}TOO_MANY_LOBBIES\0")
+}
+
+extension Flipcash_Chat_V1_LeaveLobbyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LeaveLobbyRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{2}\u{9}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_LeaveLobbyRequest, rhs: Flipcash_Chat_V1_LeaveLobbyRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_LeaveLobbyResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".LeaveLobbyResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_LeaveLobbyResponse, rhs: Flipcash_Chat_V1_LeaveLobbyResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_LeaveLobbyResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0")
+}
+
+extension Flipcash_Chat_V1_GetLobbyMembersRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetLobbyMembersRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}query_options\0\u{2}\u{8}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._queryOptions) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._queryOptions {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_GetLobbyMembersRequest, rhs: Flipcash_Chat_V1_GetLobbyMembersRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._queryOptions != rhs._queryOptions {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_GetLobbyMembersResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetLobbyMembersResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{1}members\0\u{3}paging_token\0\u{3}has_more\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.members) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._pagingToken) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.hasMore_p) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    if !self.members.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.members, fieldNumber: 2)
+    }
+    try { if let v = self._pagingToken {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    if self.hasMore_p != false {
+      try visitor.visitSingularBoolField(value: self.hasMore_p, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_GetLobbyMembersResponse, rhs: Flipcash_Chat_V1_GetLobbyMembersResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.members != rhs.members {return false}
+    if lhs._pagingToken != rhs._pagingToken {return false}
+    if lhs.hasMore_p != rhs.hasMore_p {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_GetLobbyMembersResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0")
+}
+
+extension Flipcash_Chat_V1_AdmitLobbyMemberRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".AdmitLobbyMemberRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}user_id\0\u{3}key_envelope\0\u{2}\u{7}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._keyEnvelope) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._userID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._keyEnvelope {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_AdmitLobbyMemberRequest, rhs: Flipcash_Chat_V1_AdmitLobbyMemberRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._userID != rhs._userID {return false}
+    if lhs._keyEnvelope != rhs._keyEnvelope {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_AdmitLobbyMemberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".AdmitLobbyMemberResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_AdmitLobbyMemberResponse, rhs: Flipcash_Chat_V1_AdmitLobbyMemberResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_AdmitLobbyMemberResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}NOT_IN_LOBBY\0")
+}
+
+extension Flipcash_Chat_V1_DenyLobbyMemberRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".DenyLobbyMemberRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}user_id\0\u{2}\u{8}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._userID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_DenyLobbyMemberRequest, rhs: Flipcash_Chat_V1_DenyLobbyMemberRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._userID != rhs._userID {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_DenyLobbyMemberResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".DenyLobbyMemberResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_DenyLobbyMemberResponse, rhs: Flipcash_Chat_V1_DenyLobbyMemberResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_DenyLobbyMemberResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0")
+}
+
+extension Flipcash_Chat_V1_SetKeyEnvelopeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetKeyEnvelopeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}key_envelope\0\u{2}\u{8}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._keyEnvelope) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._keyEnvelope {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_SetKeyEnvelopeRequest, rhs: Flipcash_Chat_V1_SetKeyEnvelopeRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._keyEnvelope != rhs._keyEnvelope {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_SetKeyEnvelopeResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SetKeyEnvelopeResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_SetKeyEnvelopeResponse, rhs: Flipcash_Chat_V1_SetKeyEnvelopeResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_SetKeyEnvelopeResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}ALREADY_SET\0")
+}
+
+extension Flipcash_Chat_V1_GetKeyEnvelopeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetKeyEnvelopeRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{2}\u{9}auth\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._auth {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_GetKeyEnvelopeRequest, rhs: Flipcash_Chat_V1_GetKeyEnvelopeRequest) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._auth != rhs._auth {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_GetKeyEnvelopeResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".GetKeyEnvelopeResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}key_envelope\0\u{3}wrapped_by\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._keyEnvelope) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._wrappedBy) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.result != .ok {
+      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    }
+    try { if let v = self._keyEnvelope {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._wrappedBy {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_GetKeyEnvelopeResponse, rhs: Flipcash_Chat_V1_GetKeyEnvelopeResponse) -> Bool {
+    if lhs.result != rhs.result {return false}
+    if lhs._keyEnvelope != rhs._keyEnvelope {return false}
+    if lhs._wrappedBy != rhs._wrappedBy {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_GetKeyEnvelopeResponse.Result: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}NO_ENVELOPE\0")
 }
