@@ -152,6 +152,90 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "UnmuteChat"
             )
         }
+        /// Namespace for "EnterLobby" metadata.
+        public enum EnterLobby {
+            /// Request type for "EnterLobby".
+            public typealias Input = Flipcash_Chat_V1_EnterLobbyRequest
+            /// Response type for "EnterLobby".
+            public typealias Output = Flipcash_Chat_V1_EnterLobbyResponse
+            /// Descriptor for "EnterLobby".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "EnterLobby"
+            )
+        }
+        /// Namespace for "LeaveLobby" metadata.
+        public enum LeaveLobby {
+            /// Request type for "LeaveLobby".
+            public typealias Input = Flipcash_Chat_V1_LeaveLobbyRequest
+            /// Response type for "LeaveLobby".
+            public typealias Output = Flipcash_Chat_V1_LeaveLobbyResponse
+            /// Descriptor for "LeaveLobby".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "LeaveLobby"
+            )
+        }
+        /// Namespace for "GetLobbyMembers" metadata.
+        public enum GetLobbyMembers {
+            /// Request type for "GetLobbyMembers".
+            public typealias Input = Flipcash_Chat_V1_GetLobbyMembersRequest
+            /// Response type for "GetLobbyMembers".
+            public typealias Output = Flipcash_Chat_V1_GetLobbyMembersResponse
+            /// Descriptor for "GetLobbyMembers".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetLobbyMembers"
+            )
+        }
+        /// Namespace for "AdmitLobbyMember" metadata.
+        public enum AdmitLobbyMember {
+            /// Request type for "AdmitLobbyMember".
+            public typealias Input = Flipcash_Chat_V1_AdmitLobbyMemberRequest
+            /// Response type for "AdmitLobbyMember".
+            public typealias Output = Flipcash_Chat_V1_AdmitLobbyMemberResponse
+            /// Descriptor for "AdmitLobbyMember".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "AdmitLobbyMember"
+            )
+        }
+        /// Namespace for "DenyLobbyMember" metadata.
+        public enum DenyLobbyMember {
+            /// Request type for "DenyLobbyMember".
+            public typealias Input = Flipcash_Chat_V1_DenyLobbyMemberRequest
+            /// Response type for "DenyLobbyMember".
+            public typealias Output = Flipcash_Chat_V1_DenyLobbyMemberResponse
+            /// Descriptor for "DenyLobbyMember".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "DenyLobbyMember"
+            )
+        }
+        /// Namespace for "SetKeyEnvelope" metadata.
+        public enum SetKeyEnvelope {
+            /// Request type for "SetKeyEnvelope".
+            public typealias Input = Flipcash_Chat_V1_SetKeyEnvelopeRequest
+            /// Response type for "SetKeyEnvelope".
+            public typealias Output = Flipcash_Chat_V1_SetKeyEnvelopeResponse
+            /// Descriptor for "SetKeyEnvelope".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "SetKeyEnvelope"
+            )
+        }
+        /// Namespace for "GetKeyEnvelope" metadata.
+        public enum GetKeyEnvelope {
+            /// Request type for "GetKeyEnvelope".
+            public typealias Input = Flipcash_Chat_V1_GetKeyEnvelopeRequest
+            /// Response type for "GetKeyEnvelope".
+            public typealias Output = Flipcash_Chat_V1_GetKeyEnvelopeResponse
+            /// Descriptor for "GetKeyEnvelope".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetKeyEnvelope"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.chat.v1.Chat" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetChat.descriptor,
@@ -164,7 +248,14 @@ public enum Flipcash_Chat_V1_Chat {
             LeaveChat.descriptor,
             EditChat.descriptor,
             MuteChat.descriptor,
-            UnmuteChat.descriptor
+            UnmuteChat.descriptor,
+            EnterLobby.descriptor,
+            LeaveLobby.descriptor,
+            GetLobbyMembers.descriptor,
+            AdmitLobbyMember.descriptor,
+            DenyLobbyMember.descriptor,
+            SetKeyEnvelope.descriptor,
+            GetKeyEnvelope.descriptor
         ]
     }
 }
@@ -195,6 +286,14 @@ extension Flipcash_Chat_V1_Chat {
         /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
         /// > viewer_state). An unauthenticated read under any other view_mode, or of
         /// > a DM, is DENIED.
+        /// > 
+        /// > A private group (see Metadata.is_private) returns its record to any
+        /// > registered user, so that one who is not a member can see what they are
+        /// > asking to join, but its messaging state only to a member, whatever the
+        /// > view_mode. It has no public view: an unauthenticated read of one is
+        /// > DENIED. A private group whose creator has not stored its key yet (see
+        /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
+        /// > other: it is visible, though nothing can happen in it.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatRequest` message.
@@ -418,6 +517,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > Source IDL Documentation:
         /// >
         /// > JoinChat adds the caller to a chat's roster.
+        /// > 
+        /// > A private group (see Metadata.is_private) cannot be joined this way and
+        /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
+        /// > its creator. The one exception is the group's creator, who needs no
+        /// > approval and rejoins a private group they left with this RPC.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
@@ -441,6 +545,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > Source IDL Documentation:
         /// >
         /// > LeaveChat removes the caller from a chat's roster.
+        /// > 
+        /// > Leaving a private group discards the caller's key envelope (see
+        /// > KeyEnvelope), so returning means entering the lobby and being admitted
+        /// > again. The creator's envelope is kept, since no one else could give
+        /// > them another.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -553,6 +662,255 @@ extension Flipcash_Chat_V1_Chat {
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnmuteChatResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
+
+        /// Call the "EnterLobby" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > EnterLobby places the caller in a private group's lobby, where they
+        /// > wait for the group's creator to admit them. It is how a user asks to
+        /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
+        /// > one.
+        /// > 
+        /// > Entering a lobby the caller is already in is a no-op that returns OK.
+        /// > The server caps both how many users may wait in one lobby and how many
+        /// > lobbies one user may wait in. A group whose creator has not stored its
+        /// > key yet (see StartChatRequest.PrivateGroupChatParameters) has no lobby
+        /// > to enter, and is DENIED until they have.
+        /// > 
+        /// > A lobby is visible only to the group's creator, through
+        /// > GetLobbyMembers: the users waiting in it are not shown to each other or
+        /// > to the group's members. The creator's devices learn of the entry as a
+        /// > LobbyUpdate on the event stream.
+        /// > 
+        /// > While the caller waits, the chat's Metadata carries in_lobby. The
+        /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
+        /// > creator denies them (DenyLobbyMember), or when the creator admits them
+        /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
+        /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
+        /// > them.
+        /// > 
+        /// > There is no RPC that lists the lobbies a caller is waiting in. A client
+        /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
+        /// > learn whether it is still waiting in one. A paged listing may be added
+        /// > later.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_EnterLobbyRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_EnterLobbyRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_EnterLobbyResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func enterLobby<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_EnterLobbyRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_EnterLobbyRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_EnterLobbyResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EnterLobbyResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "LeaveLobby" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > LeaveLobby withdraws the caller from a private group's lobby. Leaving a
+        /// > lobby the caller is not in is a no-op that returns OK.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveLobbyRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_LeaveLobbyRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_LeaveLobbyResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func leaveLobby<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveLobbyRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_LeaveLobbyRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_LeaveLobbyResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveLobbyResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetLobbyMembers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetLobbyMembers pages the users waiting in a private group's lobby,
+        /// > earliest entered first.
+        /// > 
+        /// > Only the group's creator may call it, and only while a member of the
+        /// > group; anyone else is DENIED. The page is read from an index that
+        /// > trails writes briefly, so a user who just entered may be absent and one
+        /// > who just left may be present.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetLobbyMembersRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetLobbyMembersRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetLobbyMembersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getLobbyMembers<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetLobbyMembersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetLobbyMembersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetLobbyMembersResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetLobbyMembersResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "AdmitLobbyMember" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > AdmitLobbyMember admits a user waiting in a private group's lobby:
+        /// > it stores the chat key wrapped for them (see KeyEnvelope) and adds them
+        /// > to the chat's roster. The envelope is stored first, so an admitted
+        /// > member always has one.
+        /// > 
+        /// > Only the group's creator may call it, and only while a member of the
+        /// > group; anyone else is DENIED. So is a creator who has not stored their
+        /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
+        /// > nobody is admitted to a group before its creator holds its key. This is
+        /// > the only way to give another user a key envelope. Admitting a user who
+        /// > is already a member is a no-op that returns OK and leaves their stored
+        /// > envelope as it is.
+        /// > 
+        /// > The admission is announced like any other join: a
+        /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
+        /// > user, who then fetches their envelope with GetKeyEnvelope.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_AdmitLobbyMemberRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_AdmitLobbyMemberRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_AdmitLobbyMemberResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func admitLobbyMember<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_AdmitLobbyMemberRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_AdmitLobbyMemberRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_AdmitLobbyMemberResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_AdmitLobbyMemberResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "DenyLobbyMember" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > DenyLobbyMember removes a user from a private group's lobby without
+        /// > admitting them. Only the group's creator may call it, and only while a
+        /// > member of the group; anyone else is DENIED. Denying a user who is not
+        /// > in the lobby is a no-op that returns OK.
+        /// > 
+        /// > The denied user is not notified. The chat's Metadata stops carrying
+        /// > in_lobby for them, and they may enter the lobby again.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_DenyLobbyMemberRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_DenyLobbyMemberRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_DenyLobbyMemberResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func denyLobbyMember<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_DenyLobbyMemberRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_DenyLobbyMemberRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_DenyLobbyMemberResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_DenyLobbyMemberResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetKeyEnvelope" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetKeyEnvelope stores the caller's own key envelope for a private
+        /// > group. Only a member may call it, and only for themself: an envelope
+        /// > for another user is stored by admitting them (AdmitLobbyMember).
+        /// > 
+        /// > It is called in two situations (see KeyEnvelope):
+        /// >  - By the group's creator, right after StartChat returns the chat's
+        /// >    ID, to store the chat key they have just generated. This is the
+        /// >    second step of creating a private group, and nothing can happen in
+        /// >    the group until it succeeds (see
+        /// >    StartChatRequest.PrivateGroupChatParameters). The creator's client
+        /// >    keeps attempting it until it returns OK or ALREADY_SET: on a failed
+        /// >    call, on its next launch, and on any device that finds the group
+        /// >    with NO_ENVELOPE.
+        /// >  - By an admitted member, after first opening the envelope the creator
+        /// >    wrapped for them, to replace it with one wrapped by themself.
+        /// > 
+        /// > The first envelope a caller stores for themself stands. Once the
+        /// > stored envelope is one the caller wrapped, a call with a different
+        /// > envelope changes nothing and returns ALREADY_SET, and the caller uses
+        /// > the stored one from GetKeyEnvelope. This keeps two of a creator's
+        /// > devices, each setting up the same new group, from holding different
+        /// > keys. Storing an envelope identical to the one stored is a no-op that
+        /// > returns OK.
+        /// > 
+        /// > Nothing is published: the caller's other devices fetch the envelope
+        /// > when they need it.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SetKeyEnvelopeRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SetKeyEnvelopeRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SetKeyEnvelopeResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setKeyEnvelope<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SetKeyEnvelopeRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SetKeyEnvelopeRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SetKeyEnvelopeResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetKeyEnvelopeResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetKeyEnvelope" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetKeyEnvelope returns the caller's own key envelope for a private
+        /// > group. Only a member may call it. The chat key never changes, so a
+        /// > client calls this once per chat per install and keeps the key it
+        /// > unwraps.
+        /// > 
+        /// > NO_ENVELOPE is expected only for the creator of a group whose creation
+        /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
+        /// > receives it generates a chat key and stores its envelope with
+        /// > SetKeyEnvelope, as described on KeyEnvelope, and keeps attempting that
+        /// > until it succeeds.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetKeyEnvelopeRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetKeyEnvelopeRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetKeyEnvelopeResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getKeyEnvelope<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetKeyEnvelopeRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetKeyEnvelopeRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetKeyEnvelopeResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetKeyEnvelopeResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
     }
 
     /// Generated client for the "flipcash.chat.v1.Chat" service.
@@ -582,6 +940,14 @@ extension Flipcash_Chat_V1_Chat {
         /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
         /// > viewer_state). An unauthenticated read under any other view_mode, or of
         /// > a DM, is DENIED.
+        /// > 
+        /// > A private group (see Metadata.is_private) returns its record to any
+        /// > registered user, so that one who is not a member can see what they are
+        /// > asking to join, but its messaging state only to a member, whatever the
+        /// > view_mode. It has no public view: an unauthenticated read of one is
+        /// > DENIED. A private group whose creator has not stored its key yet (see
+        /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
+        /// > other: it is visible, though nothing can happen in it.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatRequest` message.
@@ -871,6 +1237,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > Source IDL Documentation:
         /// >
         /// > JoinChat adds the caller to a chat's roster.
+        /// > 
+        /// > A private group (see Metadata.is_private) cannot be joined this way and
+        /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
+        /// > its creator. The one exception is the group's creator, who needs no
+        /// > approval and rejoins a private group they left with this RPC.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
@@ -905,6 +1276,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > Source IDL Documentation:
         /// >
         /// > LeaveChat removes the caller from a chat's roster.
+        /// > 
+        /// > Leaving a private group discards the caller's key envelope (see
+        /// > KeyEnvelope), so returning means entering the lobby and being admitted
+        /// > again. The creator's envelope is kept, since no one else could give
+        /// > them another.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -1061,6 +1437,332 @@ extension Flipcash_Chat_V1_Chat {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "EnterLobby" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > EnterLobby places the caller in a private group's lobby, where they
+        /// > wait for the group's creator to admit them. It is how a user asks to
+        /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
+        /// > one.
+        /// > 
+        /// > Entering a lobby the caller is already in is a no-op that returns OK.
+        /// > The server caps both how many users may wait in one lobby and how many
+        /// > lobbies one user may wait in. A group whose creator has not stored its
+        /// > key yet (see StartChatRequest.PrivateGroupChatParameters) has no lobby
+        /// > to enter, and is DENIED until they have.
+        /// > 
+        /// > A lobby is visible only to the group's creator, through
+        /// > GetLobbyMembers: the users waiting in it are not shown to each other or
+        /// > to the group's members. The creator's devices learn of the entry as a
+        /// > LobbyUpdate on the event stream.
+        /// > 
+        /// > While the caller waits, the chat's Metadata carries in_lobby. The
+        /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
+        /// > creator denies them (DenyLobbyMember), or when the creator admits them
+        /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
+        /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
+        /// > them.
+        /// > 
+        /// > There is no RPC that lists the lobbies a caller is waiting in. A client
+        /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
+        /// > learn whether it is still waiting in one. A paged listing may be added
+        /// > later.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_EnterLobbyRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_EnterLobbyRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_EnterLobbyResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func enterLobby<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_EnterLobbyRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_EnterLobbyRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_EnterLobbyResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EnterLobbyResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.EnterLobby.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "LeaveLobby" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > LeaveLobby withdraws the caller from a private group's lobby. Leaving a
+        /// > lobby the caller is not in is a no-op that returns OK.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveLobbyRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_LeaveLobbyRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_LeaveLobbyResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func leaveLobby<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveLobbyRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_LeaveLobbyRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_LeaveLobbyResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveLobbyResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.LeaveLobby.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetLobbyMembers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetLobbyMembers pages the users waiting in a private group's lobby,
+        /// > earliest entered first.
+        /// > 
+        /// > Only the group's creator may call it, and only while a member of the
+        /// > group; anyone else is DENIED. The page is read from an index that
+        /// > trails writes briefly, so a user who just entered may be absent and one
+        /// > who just left may be present.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetLobbyMembersRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetLobbyMembersRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetLobbyMembersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getLobbyMembers<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetLobbyMembersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetLobbyMembersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetLobbyMembersResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetLobbyMembersResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetLobbyMembers.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "AdmitLobbyMember" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > AdmitLobbyMember admits a user waiting in a private group's lobby:
+        /// > it stores the chat key wrapped for them (see KeyEnvelope) and adds them
+        /// > to the chat's roster. The envelope is stored first, so an admitted
+        /// > member always has one.
+        /// > 
+        /// > Only the group's creator may call it, and only while a member of the
+        /// > group; anyone else is DENIED. So is a creator who has not stored their
+        /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
+        /// > nobody is admitted to a group before its creator holds its key. This is
+        /// > the only way to give another user a key envelope. Admitting a user who
+        /// > is already a member is a no-op that returns OK and leaves their stored
+        /// > envelope as it is.
+        /// > 
+        /// > The admission is announced like any other join: a
+        /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
+        /// > user, who then fetches their envelope with GetKeyEnvelope.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_AdmitLobbyMemberRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_AdmitLobbyMemberRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_AdmitLobbyMemberResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func admitLobbyMember<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_AdmitLobbyMemberRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_AdmitLobbyMemberRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_AdmitLobbyMemberResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_AdmitLobbyMemberResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.AdmitLobbyMember.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "DenyLobbyMember" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > DenyLobbyMember removes a user from a private group's lobby without
+        /// > admitting them. Only the group's creator may call it, and only while a
+        /// > member of the group; anyone else is DENIED. Denying a user who is not
+        /// > in the lobby is a no-op that returns OK.
+        /// > 
+        /// > The denied user is not notified. The chat's Metadata stops carrying
+        /// > in_lobby for them, and they may enter the lobby again.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_DenyLobbyMemberRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_DenyLobbyMemberRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_DenyLobbyMemberResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func denyLobbyMember<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_DenyLobbyMemberRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_DenyLobbyMemberRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_DenyLobbyMemberResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_DenyLobbyMemberResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.DenyLobbyMember.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SetKeyEnvelope" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetKeyEnvelope stores the caller's own key envelope for a private
+        /// > group. Only a member may call it, and only for themself: an envelope
+        /// > for another user is stored by admitting them (AdmitLobbyMember).
+        /// > 
+        /// > It is called in two situations (see KeyEnvelope):
+        /// >  - By the group's creator, right after StartChat returns the chat's
+        /// >    ID, to store the chat key they have just generated. This is the
+        /// >    second step of creating a private group, and nothing can happen in
+        /// >    the group until it succeeds (see
+        /// >    StartChatRequest.PrivateGroupChatParameters). The creator's client
+        /// >    keeps attempting it until it returns OK or ALREADY_SET: on a failed
+        /// >    call, on its next launch, and on any device that finds the group
+        /// >    with NO_ENVELOPE.
+        /// >  - By an admitted member, after first opening the envelope the creator
+        /// >    wrapped for them, to replace it with one wrapped by themself.
+        /// > 
+        /// > The first envelope a caller stores for themself stands. Once the
+        /// > stored envelope is one the caller wrapped, a call with a different
+        /// > envelope changes nothing and returns ALREADY_SET, and the caller uses
+        /// > the stored one from GetKeyEnvelope. This keeps two of a creator's
+        /// > devices, each setting up the same new group, from holding different
+        /// > keys. Storing an envelope identical to the one stored is a no-op that
+        /// > returns OK.
+        /// > 
+        /// > Nothing is published: the caller's other devices fetch the envelope
+        /// > when they need it.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SetKeyEnvelopeRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SetKeyEnvelopeRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SetKeyEnvelopeResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setKeyEnvelope<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SetKeyEnvelopeRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SetKeyEnvelopeRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SetKeyEnvelopeResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetKeyEnvelopeResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.SetKeyEnvelope.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetKeyEnvelope" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetKeyEnvelope returns the caller's own key envelope for a private
+        /// > group. Only a member may call it. The chat key never changes, so a
+        /// > client calls this once per chat per install and keeps the key it
+        /// > unwraps.
+        /// > 
+        /// > NO_ENVELOPE is expected only for the creator of a group whose creation
+        /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
+        /// > receives it generates a chat key and stores its envelope with
+        /// > SetKeyEnvelope, as described on KeyEnvelope, and keeps attempting that
+        /// > until it succeeds.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetKeyEnvelopeRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetKeyEnvelopeRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetKeyEnvelopeResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getKeyEnvelope<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetKeyEnvelopeRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetKeyEnvelopeRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetKeyEnvelopeResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetKeyEnvelopeResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetKeyEnvelope.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -1078,6 +1780,14 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
     /// > viewer_state). An unauthenticated read under any other view_mode, or of
     /// > a DM, is DENIED.
+    /// > 
+    /// > A private group (see Metadata.is_private) returns its record to any
+    /// > registered user, so that one who is not a member can see what they are
+    /// > asking to join, but its messaging state only to a member, whatever the
+    /// > view_mode. It has no public view: an unauthenticated read of one is
+    /// > DENIED. A private group whose creator has not stored its key yet (see
+    /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
+    /// > other: it is visible, though nothing can happen in it.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatRequest` message.
@@ -1337,6 +2047,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > JoinChat adds the caller to a chat's roster.
+    /// > 
+    /// > A private group (see Metadata.is_private) cannot be joined this way and
+    /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
+    /// > its creator. The one exception is the group's creator, who needs no
+    /// > approval and rejoins a private group they left with this RPC.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
@@ -1366,6 +2081,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > LeaveChat removes the caller from a chat's roster.
+    /// > 
+    /// > Leaving a private group discards the caller's key envelope (see
+    /// > KeyEnvelope), so returning means entering the lobby and being admitted
+    /// > again. The creator's envelope is kept, since no one else could give
+    /// > them another.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -1502,6 +2222,297 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             onResponse: handleResponse
         )
     }
+
+    /// Call the "EnterLobby" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > EnterLobby places the caller in a private group's lobby, where they
+    /// > wait for the group's creator to admit them. It is how a user asks to
+    /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
+    /// > one.
+    /// > 
+    /// > Entering a lobby the caller is already in is a no-op that returns OK.
+    /// > The server caps both how many users may wait in one lobby and how many
+    /// > lobbies one user may wait in. A group whose creator has not stored its
+    /// > key yet (see StartChatRequest.PrivateGroupChatParameters) has no lobby
+    /// > to enter, and is DENIED until they have.
+    /// > 
+    /// > A lobby is visible only to the group's creator, through
+    /// > GetLobbyMembers: the users waiting in it are not shown to each other or
+    /// > to the group's members. The creator's devices learn of the entry as a
+    /// > LobbyUpdate on the event stream.
+    /// > 
+    /// > While the caller waits, the chat's Metadata carries in_lobby. The
+    /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
+    /// > creator denies them (DenyLobbyMember), or when the creator admits them
+    /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
+    /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
+    /// > them.
+    /// > 
+    /// > There is no RPC that lists the lobbies a caller is waiting in. A client
+    /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
+    /// > learn whether it is still waiting in one. A paged listing may be added
+    /// > later.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_EnterLobbyRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func enterLobby<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_EnterLobbyRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EnterLobbyResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.enterLobby(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_EnterLobbyRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_EnterLobbyResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "LeaveLobby" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > LeaveLobby withdraws the caller from a private group's lobby. Leaving a
+    /// > lobby the caller is not in is a no-op that returns OK.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveLobbyRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func leaveLobby<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveLobbyRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveLobbyResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.leaveLobby(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_LeaveLobbyRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_LeaveLobbyResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetLobbyMembers" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetLobbyMembers pages the users waiting in a private group's lobby,
+    /// > earliest entered first.
+    /// > 
+    /// > Only the group's creator may call it, and only while a member of the
+    /// > group; anyone else is DENIED. The page is read from an index that
+    /// > trails writes briefly, so a user who just entered may be absent and one
+    /// > who just left may be present.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetLobbyMembersRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getLobbyMembers<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetLobbyMembersRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetLobbyMembersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getLobbyMembers(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetLobbyMembersRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetLobbyMembersResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "AdmitLobbyMember" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > AdmitLobbyMember admits a user waiting in a private group's lobby:
+    /// > it stores the chat key wrapped for them (see KeyEnvelope) and adds them
+    /// > to the chat's roster. The envelope is stored first, so an admitted
+    /// > member always has one.
+    /// > 
+    /// > Only the group's creator may call it, and only while a member of the
+    /// > group; anyone else is DENIED. So is a creator who has not stored their
+    /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
+    /// > nobody is admitted to a group before its creator holds its key. This is
+    /// > the only way to give another user a key envelope. Admitting a user who
+    /// > is already a member is a no-op that returns OK and leaves their stored
+    /// > envelope as it is.
+    /// > 
+    /// > The admission is announced like any other join: a
+    /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
+    /// > user, who then fetches their envelope with GetKeyEnvelope.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_AdmitLobbyMemberRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func admitLobbyMember<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_AdmitLobbyMemberRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_AdmitLobbyMemberResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.admitLobbyMember(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_AdmitLobbyMemberRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_AdmitLobbyMemberResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "DenyLobbyMember" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > DenyLobbyMember removes a user from a private group's lobby without
+    /// > admitting them. Only the group's creator may call it, and only while a
+    /// > member of the group; anyone else is DENIED. Denying a user who is not
+    /// > in the lobby is a no-op that returns OK.
+    /// > 
+    /// > The denied user is not notified. The chat's Metadata stops carrying
+    /// > in_lobby for them, and they may enter the lobby again.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_DenyLobbyMemberRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func denyLobbyMember<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_DenyLobbyMemberRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_DenyLobbyMemberResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.denyLobbyMember(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_DenyLobbyMemberRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_DenyLobbyMemberResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetKeyEnvelope" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetKeyEnvelope stores the caller's own key envelope for a private
+    /// > group. Only a member may call it, and only for themself: an envelope
+    /// > for another user is stored by admitting them (AdmitLobbyMember).
+    /// > 
+    /// > It is called in two situations (see KeyEnvelope):
+    /// >  - By the group's creator, right after StartChat returns the chat's
+    /// >    ID, to store the chat key they have just generated. This is the
+    /// >    second step of creating a private group, and nothing can happen in
+    /// >    the group until it succeeds (see
+    /// >    StartChatRequest.PrivateGroupChatParameters). The creator's client
+    /// >    keeps attempting it until it returns OK or ALREADY_SET: on a failed
+    /// >    call, on its next launch, and on any device that finds the group
+    /// >    with NO_ENVELOPE.
+    /// >  - By an admitted member, after first opening the envelope the creator
+    /// >    wrapped for them, to replace it with one wrapped by themself.
+    /// > 
+    /// > The first envelope a caller stores for themself stands. Once the
+    /// > stored envelope is one the caller wrapped, a call with a different
+    /// > envelope changes nothing and returns ALREADY_SET, and the caller uses
+    /// > the stored one from GetKeyEnvelope. This keeps two of a creator's
+    /// > devices, each setting up the same new group, from holding different
+    /// > keys. Storing an envelope identical to the one stored is a no-op that
+    /// > returns OK.
+    /// > 
+    /// > Nothing is published: the caller's other devices fetch the envelope
+    /// > when they need it.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_SetKeyEnvelopeRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setKeyEnvelope<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SetKeyEnvelopeRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetKeyEnvelopeResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setKeyEnvelope(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_SetKeyEnvelopeRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_SetKeyEnvelopeResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetKeyEnvelope" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetKeyEnvelope returns the caller's own key envelope for a private
+    /// > group. Only a member may call it. The chat key never changes, so a
+    /// > client calls this once per chat per install and keeps the key it
+    /// > unwraps.
+    /// > 
+    /// > NO_ENVELOPE is expected only for the creator of a group whose creation
+    /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
+    /// > receives it generates a chat key and stores its envelope with
+    /// > SetKeyEnvelope, as described on KeyEnvelope, and keeps attempting that
+    /// > until it succeeds.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetKeyEnvelopeRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getKeyEnvelope<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetKeyEnvelopeRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetKeyEnvelopeResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getKeyEnvelope(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetKeyEnvelopeRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetKeyEnvelopeResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
 }
 
 // Helpers providing sugared APIs for 'ClientProtocol' methods.
@@ -1518,6 +2529,14 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > with view_mode REDACTED and none of the per-viewer fields (is_hidden,
     /// > viewer_state). An unauthenticated read under any other view_mode, or of
     /// > a DM, is DENIED.
+    /// > 
+    /// > A private group (see Metadata.is_private) returns its record to any
+    /// > registered user, so that one who is not a member can see what they are
+    /// > asking to join, but its messaging state only to a member, whatever the
+    /// > view_mode. It has no public view: an unauthenticated read of one is
+    /// > DENIED. A private group whose creator has not stored its key yet (see
+    /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
+    /// > other: it is visible, though nothing can happen in it.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -1801,6 +2820,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > JoinChat adds the caller to a chat's roster.
+    /// > 
+    /// > A private group (see Metadata.is_private) cannot be joined this way and
+    /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
+    /// > its creator. The one exception is the group's creator, who needs no
+    /// > approval and rejoins a private group they left with this RPC.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -1834,6 +2858,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > LeaveChat removes the caller from a chat's roster.
+    /// > 
+    /// > Leaving a private group discards the caller's key envelope (see
+    /// > KeyEnvelope), so returning means entering the lobby and being admitted
+    /// > again. The creator's envelope is kept, since no one else could give
+    /// > them another.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -1981,6 +3010,325 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.unmuteChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "EnterLobby" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > EnterLobby places the caller in a private group's lobby, where they
+    /// > wait for the group's creator to admit them. It is how a user asks to
+    /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
+    /// > one.
+    /// > 
+    /// > Entering a lobby the caller is already in is a no-op that returns OK.
+    /// > The server caps both how many users may wait in one lobby and how many
+    /// > lobbies one user may wait in. A group whose creator has not stored its
+    /// > key yet (see StartChatRequest.PrivateGroupChatParameters) has no lobby
+    /// > to enter, and is DENIED until they have.
+    /// > 
+    /// > A lobby is visible only to the group's creator, through
+    /// > GetLobbyMembers: the users waiting in it are not shown to each other or
+    /// > to the group's members. The creator's devices learn of the entry as a
+    /// > LobbyUpdate on the event stream.
+    /// > 
+    /// > While the caller waits, the chat's Metadata carries in_lobby. The
+    /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
+    /// > creator denies them (DenyLobbyMember), or when the creator admits them
+    /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
+    /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
+    /// > them.
+    /// > 
+    /// > There is no RPC that lists the lobbies a caller is waiting in. A client
+    /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
+    /// > learn whether it is still waiting in one. A paged listing may be added
+    /// > later.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func enterLobby<Result>(
+        _ message: Flipcash_Chat_V1_EnterLobbyRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_EnterLobbyResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_EnterLobbyRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.enterLobby(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "LeaveLobby" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > LeaveLobby withdraws the caller from a private group's lobby. Leaving a
+    /// > lobby the caller is not in is a no-op that returns OK.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func leaveLobby<Result>(
+        _ message: Flipcash_Chat_V1_LeaveLobbyRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_LeaveLobbyResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_LeaveLobbyRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.leaveLobby(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetLobbyMembers" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetLobbyMembers pages the users waiting in a private group's lobby,
+    /// > earliest entered first.
+    /// > 
+    /// > Only the group's creator may call it, and only while a member of the
+    /// > group; anyone else is DENIED. The page is read from an index that
+    /// > trails writes briefly, so a user who just entered may be absent and one
+    /// > who just left may be present.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getLobbyMembers<Result>(
+        _ message: Flipcash_Chat_V1_GetLobbyMembersRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetLobbyMembersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetLobbyMembersRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getLobbyMembers(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "AdmitLobbyMember" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > AdmitLobbyMember admits a user waiting in a private group's lobby:
+    /// > it stores the chat key wrapped for them (see KeyEnvelope) and adds them
+    /// > to the chat's roster. The envelope is stored first, so an admitted
+    /// > member always has one.
+    /// > 
+    /// > Only the group's creator may call it, and only while a member of the
+    /// > group; anyone else is DENIED. So is a creator who has not stored their
+    /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
+    /// > nobody is admitted to a group before its creator holds its key. This is
+    /// > the only way to give another user a key envelope. Admitting a user who
+    /// > is already a member is a no-op that returns OK and leaves their stored
+    /// > envelope as it is.
+    /// > 
+    /// > The admission is announced like any other join: a
+    /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
+    /// > user, who then fetches their envelope with GetKeyEnvelope.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func admitLobbyMember<Result>(
+        _ message: Flipcash_Chat_V1_AdmitLobbyMemberRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_AdmitLobbyMemberResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_AdmitLobbyMemberRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.admitLobbyMember(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "DenyLobbyMember" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > DenyLobbyMember removes a user from a private group's lobby without
+    /// > admitting them. Only the group's creator may call it, and only while a
+    /// > member of the group; anyone else is DENIED. Denying a user who is not
+    /// > in the lobby is a no-op that returns OK.
+    /// > 
+    /// > The denied user is not notified. The chat's Metadata stops carrying
+    /// > in_lobby for them, and they may enter the lobby again.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func denyLobbyMember<Result>(
+        _ message: Flipcash_Chat_V1_DenyLobbyMemberRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_DenyLobbyMemberResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_DenyLobbyMemberRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.denyLobbyMember(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetKeyEnvelope" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetKeyEnvelope stores the caller's own key envelope for a private
+    /// > group. Only a member may call it, and only for themself: an envelope
+    /// > for another user is stored by admitting them (AdmitLobbyMember).
+    /// > 
+    /// > It is called in two situations (see KeyEnvelope):
+    /// >  - By the group's creator, right after StartChat returns the chat's
+    /// >    ID, to store the chat key they have just generated. This is the
+    /// >    second step of creating a private group, and nothing can happen in
+    /// >    the group until it succeeds (see
+    /// >    StartChatRequest.PrivateGroupChatParameters). The creator's client
+    /// >    keeps attempting it until it returns OK or ALREADY_SET: on a failed
+    /// >    call, on its next launch, and on any device that finds the group
+    /// >    with NO_ENVELOPE.
+    /// >  - By an admitted member, after first opening the envelope the creator
+    /// >    wrapped for them, to replace it with one wrapped by themself.
+    /// > 
+    /// > The first envelope a caller stores for themself stands. Once the
+    /// > stored envelope is one the caller wrapped, a call with a different
+    /// > envelope changes nothing and returns ALREADY_SET, and the caller uses
+    /// > the stored one from GetKeyEnvelope. This keeps two of a creator's
+    /// > devices, each setting up the same new group, from holding different
+    /// > keys. Storing an envelope identical to the one stored is a no-op that
+    /// > returns OK.
+    /// > 
+    /// > Nothing is published: the caller's other devices fetch the envelope
+    /// > when they need it.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setKeyEnvelope<Result>(
+        _ message: Flipcash_Chat_V1_SetKeyEnvelopeRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetKeyEnvelopeResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_SetKeyEnvelopeRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setKeyEnvelope(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetKeyEnvelope" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetKeyEnvelope returns the caller's own key envelope for a private
+    /// > group. Only a member may call it. The chat key never changes, so a
+    /// > client calls this once per chat per install and keeps the key it
+    /// > unwraps.
+    /// > 
+    /// > NO_ENVELOPE is expected only for the creator of a group whose creation
+    /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
+    /// > receives it generates a chat key and stores its envelope with
+    /// > SetKeyEnvelope, as described on KeyEnvelope, and keeps attempting that
+    /// > until it succeeds.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getKeyEnvelope<Result>(
+        _ message: Flipcash_Chat_V1_GetKeyEnvelopeRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetKeyEnvelopeResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetKeyEnvelopeRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getKeyEnvelope(
             request: request,
             options: options,
             onResponse: handleResponse

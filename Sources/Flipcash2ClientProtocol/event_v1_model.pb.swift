@@ -357,6 +357,20 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   /// Clears the value of `rosterUpdates`. Subsequent reads from it will return its default value.
   public mutating func clearRosterUpdates() {self._rosterUpdates = nil}
 
+  /// If present, best-effort real-time changes to the chat's lobby — users
+  /// entering or leaving it. Sent only for a private group, and only to its
+  /// creator. Like roster_updates, they are NOT part of the gap-detected
+  /// event log; the creator reconciles any misses by refetching the lobby
+  /// with Chat.GetLobbyMembers.
+  public var lobbyUpdates: Flipcash_Chat_V1_LobbyUpdateBatch {
+    get {return _lobbyUpdates ?? Flipcash_Chat_V1_LobbyUpdateBatch()}
+    set {_lobbyUpdates = newValue}
+  }
+  /// Returns true if `lobbyUpdates` has been explicitly set.
+  public var hasLobbyUpdates: Bool {return self._lobbyUpdates != nil}
+  /// Clears the value of `lobbyUpdates`. Subsequent reads from it will return its default value.
+  public mutating func clearLobbyUpdates() {self._lobbyUpdates = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -367,6 +381,7 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   fileprivate var _events: Flipcash_Messaging_V1_EventBatch? = nil
   fileprivate var _reactionUpdates: Flipcash_Messaging_V1_ReactionUpdateBatch? = nil
   fileprivate var _rosterUpdates: Flipcash_Chat_V1_RosterUpdateBatch? = nil
+  fileprivate var _lobbyUpdates: Flipcash_Chat_V1_LobbyUpdateBatch? = nil
 }
 
 /// BlobUpdate notifies the recipient in real time that blobs they uploaded have
@@ -812,7 +827,7 @@ extension Flipcash_Event_V1_ClientPong: SwiftProtobuf.Message, SwiftProtobuf._Me
 
 extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{4}\u{2}pointer_updates\0\u{3}is_typing_notifications\0\u{3}metadata_updates\0\u{1}events\0\u{3}reaction_updates\0\u{3}roster_updates\0\u{c}\u{2}\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{4}\u{2}pointer_updates\0\u{3}is_typing_notifications\0\u{3}metadata_updates\0\u{1}events\0\u{3}reaction_updates\0\u{3}roster_updates\0\u{3}lobby_updates\0\u{c}\u{2}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -827,6 +842,7 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
       case 6: try { try decoder.decodeSingularMessageField(value: &self._events) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._reactionUpdates) }()
       case 8: try { try decoder.decodeSingularMessageField(value: &self._rosterUpdates) }()
+      case 9: try { try decoder.decodeSingularMessageField(value: &self._lobbyUpdates) }()
       default: break
       }
     }
@@ -858,6 +874,9 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
     try { if let v = self._rosterUpdates {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
     } }()
+    try { if let v = self._lobbyUpdates {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -869,6 +888,7 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
     if lhs._events != rhs._events {return false}
     if lhs._reactionUpdates != rhs._reactionUpdates {return false}
     if lhs._rosterUpdates != rhs._rosterUpdates {return false}
+    if lhs._lobbyUpdates != rhs._lobbyUpdates {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

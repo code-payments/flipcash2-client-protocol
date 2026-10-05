@@ -808,11 +808,11 @@ public struct Flipcash_Blob_V1_AccessContext: Sendable {
 
   /// The caller is accessing these blobs from this user's public profile.
   /// Authorized iff the blob is a rendition of that user's CURRENT profile
-  /// picture — a profile grants nothing else, and a superseded picture's
-  /// renditions stop resolving through it.
+  /// picture or cover picture — a profile grants nothing else, and a
+  /// superseded picture's renditions stop resolving through it.
   ///
-  /// A caller never needs this for its OWN profile picture, since it owns
-  /// those blobs.
+  /// A caller never needs this for its OWN pictures, since it owns those
+  /// blobs.
   public var userProfile: Flipcash_Common_V1_UserId {
     get {
       if case .userProfile(let v)? = scope {return v}
@@ -844,11 +844,11 @@ public struct Flipcash_Blob_V1_AccessContext: Sendable {
     case chat(Flipcash_Common_V1_ChatId)
     /// The caller is accessing these blobs from this user's public profile.
     /// Authorized iff the blob is a rendition of that user's CURRENT profile
-    /// picture — a profile grants nothing else, and a superseded picture's
-    /// renditions stop resolving through it.
+    /// picture or cover picture — a profile grants nothing else, and a
+    /// superseded picture's renditions stop resolving through it.
     ///
-    /// A caller never needs this for its OWN profile picture, since it owns
-    /// those blobs.
+    /// A caller never needs this for its OWN pictures, since it owns those
+    /// blobs.
     case userProfile(Flipcash_Common_V1_UserId)
     /// The caller is accessing these blobs from this chat's public profile.
     /// Authorized iff the blob is a rendition of that chat's CURRENT profile

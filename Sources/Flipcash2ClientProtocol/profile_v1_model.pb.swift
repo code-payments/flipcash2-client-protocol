@@ -136,6 +136,34 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   /// Clears the value of `minDmChatInitFee`. Subsequent reads from it will return its default value.
   public mutating func clearMinDmChatInitFee() {self._minDmChatInitFee = nil}
 
+  /// A short free-form description the user wrote about themself. Public, so
+  /// it is returned for any user, not just the caller. Empty when the user
+  /// has not set one. Set it with SetBio.
+  ///
+  /// It is returned on GetProfile only: a profile embedded elsewhere (a chat
+  /// member row, a mention suggestion) carries no bio.
+  public var bio: String = String()
+
+  /// The user's cover picture — the banner shown behind the profile view —
+  /// as the set of renditions it is stored as, like profile_picture. Public,
+  /// so it is returned for any user, not just the caller.
+  ///
+  /// Unset when the user has not set one. Set it with SetCoverPicture.
+  ///
+  /// It is returned on GetProfile only: a profile embedded elsewhere carries
+  /// no cover picture. To fetch the bytes of ANOTHER user's cover picture, a
+  /// GetBlobs call must carry a blob.v1.AccessContext whose `user_profile`
+  /// scope names this user, exactly as for profile_picture. A caller reading
+  /// its own needs none.
+  public var coverPicture: Flipcash_Blob_V1_Media {
+    get {return _coverPicture ?? Flipcash_Blob_V1_Media()}
+    set {_coverPicture = newValue}
+  }
+  /// Returns true if `coverPicture` has been explicitly set.
+  public var hasCoverPicture: Bool {return self._coverPicture != nil}
+  /// Clears the value of `coverPicture`. Subsequent reads from it will return its default value.
+  public mutating func clearCoverPicture() {self._coverPicture = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -148,6 +176,7 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   fileprivate var _joinTs: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
   fileprivate var _flipcardCustomization: Flipcash_Profile_V1_FlipcardCustomization? = nil
   fileprivate var _minDmChatInitFee: Flipcash_Common_V1_FiatPaymentAmount? = nil
+  fileprivate var _coverPicture: Flipcash_Blob_V1_Media? = nil
 }
 
 public struct Flipcash_Profile_V1_SocialProfile: Sendable {
@@ -278,7 +307,7 @@ fileprivate let _protobuf_package = "flipcash.profile.v1"
 
 extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserProfile"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}display_name\0\u{3}social_profiles\0\u{3}phone_number\0\u{3}email_address\0\u{3}profile_picture\0\u{3}join_ts\0\u{3}flipcard_customization\0\u{1}username\0\u{3}user_id\0\u{3}min_dm_chat_init_fee\0\u{3}is_username_auto_assigned\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}display_name\0\u{3}social_profiles\0\u{3}phone_number\0\u{3}email_address\0\u{3}profile_picture\0\u{3}join_ts\0\u{3}flipcard_customization\0\u{1}username\0\u{3}user_id\0\u{3}min_dm_chat_init_fee\0\u{3}is_username_auto_assigned\0\u{1}bio\0\u{3}cover_picture\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -297,6 +326,8 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
       case 9: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._minDmChatInitFee) }()
       case 11: try { try decoder.decodeSingularBoolField(value: &self.isUsernameAutoAssigned) }()
+      case 12: try { try decoder.decodeSingularStringField(value: &self.bio) }()
+      case 13: try { try decoder.decodeSingularMessageField(value: &self._coverPicture) }()
       default: break
       }
     }
@@ -340,6 +371,12 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     if self.isUsernameAutoAssigned != false {
       try visitor.visitSingularBoolField(value: self.isUsernameAutoAssigned, fieldNumber: 11)
     }
+    if !self.bio.isEmpty {
+      try visitor.visitSingularStringField(value: self.bio, fieldNumber: 12)
+    }
+    try { if let v = self._coverPicture {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -355,6 +392,8 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     if lhs._joinTs != rhs._joinTs {return false}
     if lhs._flipcardCustomization != rhs._flipcardCustomization {return false}
     if lhs._minDmChatInitFee != rhs._minDmChatInitFee {return false}
+    if lhs.bio != rhs.bio {return false}
+    if lhs._coverPicture != rhs._coverPicture {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

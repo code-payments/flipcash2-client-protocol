@@ -136,13 +136,16 @@ public struct Flipcash_Blob_V1_InitiateExternalUploadRequest: Sendable {
   /// profile or chat pictures).
   public var endToEndEncryptedFor: Flipcash_Blob_V1_InitiateExternalUploadRequest.OneOf_EndToEndEncryptedFor? = nil
 
-  /// The bytes are encrypted for this DM, as described in
-  /// messaging.v1.EncryptedContent: the 24-byte nonce followed by the
+  /// The bytes are encrypted for this DM or private group, as described
+  /// in messaging.v1.EncryptedContent: the 24-byte nonce followed by the
   /// ciphertext and its 16-byte tag. The caller must be a member of the
-  /// chat and the chat must be a DM, or the upload is DENIED. Once READY,
-  /// the blob is granted to the chat, so the other member can read it
-  /// through AccessContext.chat, and it can be referenced only from
-  /// EncryptedContent in that chat.
+  /// chat and the chat must be a DM or a private group
+  /// (chat.v1.Metadata.is_private), or the upload is DENIED. So is an
+  /// upload for a private group whose creator has not stored its key
+  /// yet (see chat.v1.StartChatRequest.PrivateGroupChatParameters).
+  /// Once READY, the blob is granted to the chat, so its other members
+  /// can read it through AccessContext.chat, and it can be referenced
+  /// only from EncryptedContent in that chat.
   public var chat: Flipcash_Common_V1_ChatId {
     get {
       if case .chat(let v)? = endToEndEncryptedFor {return v}
@@ -165,13 +168,16 @@ public struct Flipcash_Blob_V1_InitiateExternalUploadRequest: Sendable {
   /// named here, and is rejected anywhere else (unencrypted MediaContent,
   /// profile or chat pictures).
   public enum OneOf_EndToEndEncryptedFor: Equatable, Sendable {
-    /// The bytes are encrypted for this DM, as described in
-    /// messaging.v1.EncryptedContent: the 24-byte nonce followed by the
+    /// The bytes are encrypted for this DM or private group, as described
+    /// in messaging.v1.EncryptedContent: the 24-byte nonce followed by the
     /// ciphertext and its 16-byte tag. The caller must be a member of the
-    /// chat and the chat must be a DM, or the upload is DENIED. Once READY,
-    /// the blob is granted to the chat, so the other member can read it
-    /// through AccessContext.chat, and it can be referenced only from
-    /// EncryptedContent in that chat.
+    /// chat and the chat must be a DM or a private group
+    /// (chat.v1.Metadata.is_private), or the upload is DENIED. So is an
+    /// upload for a private group whose creator has not stored its key
+    /// yet (see chat.v1.StartChatRequest.PrivateGroupChatParameters).
+    /// Once READY, the blob is granted to the chat, so its other members
+    /// can read it through AccessContext.chat, and it can be referenced
+    /// only from EncryptedContent in that chat.
     case chat(Flipcash_Common_V1_ChatId)
 
   }

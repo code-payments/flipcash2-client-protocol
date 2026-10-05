@@ -8,6 +8,52 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.16.0
+
+Synced to [`flipcash2-protobuf-api@ec66e6b1`](https://github.com/code-payments/flipcash2-protobuf-api/commit/ec66e6b12c59d7eae3281341e74fe8853c90a306),
+picking up [#132](https://github.com/code-payments/flipcash2-protobuf-api/pull/132) and
+[#133](https://github.com/code-payments/flipcash2-protobuf-api/pull/133). `chat.v1`, `event.v1`,
+`messaging.v1` and `profile.v1` moved; `blob.v1` changed only in comments.
+
+### Changed
+
+- `StartChatRequest`'s `group` oneof case is now `public_group`, and its message
+  `GroupChatParameters` is now `PublicGroupChatParameters`. The field number is still 1, so this is
+  wire-compatible, but every call site that sets or reads it stops compiling on upgrade
+  (`setGroup`/`group` in Kotlin, `.group` in Swift).
+
+### Added
+
+- Private groups. `StartChatRequest` gains a `private_group` case (= 2) with
+  `PrivateGroupChatParameters` (`title`, 1–64 characters; optional `picture`). A private group is
+  visible once created, but nothing can happen in it until its creator stores the group's key.
+- Seven `Chat` RPCs for the lobby and keys: `EnterLobby`, `LeaveLobby`, `GetLobbyMembers`,
+  `AdmitLobbyMember`, `DenyLobbyMember`, `SetKeyEnvelope` and `GetKeyEnvelope`, each with its own
+  `Result` enum. A user waits in the lobby until the creator admits or denies them; admitting is
+  the only way to hand another user a key envelope, and the admission arrives as an ordinary
+  `RosterUpdate.MemberJoined`. A denial is not announced to the denied user.
+- `chat.v1.KeyEnvelope` (`scheme`, 24-byte `nonce`, 48-byte `ciphertext`): the group's 32-byte chat
+  key, wrapped per member. The first envelope a caller stores for themself stands; a different one
+  afterwards returns `ALREADY_SET`. There is no forward secrecy, and a member who leaves still knows
+  the chat key.
+- `chat.v1.Lobby`, `LobbyMember`, `LobbyUpdate` and `LobbyUpdateBatch`, and
+  `event.v1.ChatUpdate.lobby_updates` (= 9) carrying members entering and leaving a lobby.
+- `chat.v1.Metadata.is_private` (= 14) and `in_lobby` (= 15). `in_lobby` is per-viewer: there is no
+  RPC that lists the lobbies a caller is waiting in, so a client reads it from `GetChat`.
+- `messaging.v1.EncryptedContent.Scheme.CHAT_KEY_XCHACHA20POLY1305` (= 2), the scheme private groups
+  use. Clients render a scheme they don't recognize as unsupported.
+- `ENCRYPTION_REQUIRED` on `SendMessageResponse.Result` (= 3) and `EditMessageResponse.Result`
+  (= 6): the chat is a private group and the content is not `EncryptedContent`.
+- Profile bios and cover pictures: `UserProfile.bio` (= 12, up to 160 characters) and
+  `cover_picture` (= 13), set through the new `Profile.SetBio` and `Profile.SetCoverPicture` RPCs.
+  `SetBio` can come back `FAILED_MODERATED` with a `flagged_category`; `SetCoverPicture` reports blob
+  state the same way `SetProfilePicture` does.
+
+### Upgrading
+
+The `public_group` rename is the one source break. No field or enum value was renumbered: every new
+enum case is appended after the existing ones, so `Error*(rawValue:)` mappings keep their meaning.
+
 ## 0.15.0
 
 Synced to [`flipcash2-protobuf-api@993127b5`](https://github.com/code-payments/flipcash2-protobuf-api/commit/993127b50e42046ee2f290f122b05625774a0661),
