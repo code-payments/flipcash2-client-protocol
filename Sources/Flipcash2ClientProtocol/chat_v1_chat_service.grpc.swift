@@ -578,8 +578,8 @@ extension Flipcash_Chat_V1_Chat {
         /// > 
         /// > Only a group chat may be edited, and only by a member the server permits
         /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
-        /// > is DENIED. A new title is moderated like
-        /// > StartChat's. A new picture is a blob the caller has already uploaded via
+        /// > is DENIED. A new title or description is moderated like StartChat's. A
+        /// > new picture is a blob the caller has already uploaded via
         /// > BlobStorage: the client uploads only the ORIGINAL and passes the
         /// > resulting BlobId once the blob is READY, and the server derives the
         /// > remaining renditions. Setting a field to the value the chat already has
@@ -588,7 +588,8 @@ extension Flipcash_Chat_V1_Chat {
         /// > 
         /// > Every real change reaches the chat's members, including the caller's
         /// > other devices, on the event stream as one MetadataUpdate per field
-        /// > changed: TitleChanged for the title, PictureChanged for the picture.
+        /// > changed: TitleChanged for the title, PictureChanged for the picture,
+        /// > DescriptionChanged for the description.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
@@ -1320,8 +1321,8 @@ extension Flipcash_Chat_V1_Chat {
         /// > 
         /// > Only a group chat may be edited, and only by a member the server permits
         /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
-        /// > is DENIED. A new title is moderated like
-        /// > StartChat's. A new picture is a blob the caller has already uploaded via
+        /// > is DENIED. A new title or description is moderated like StartChat's. A
+        /// > new picture is a blob the caller has already uploaded via
         /// > BlobStorage: the client uploads only the ORIGINAL and passes the
         /// > resulting BlobId once the blob is READY, and the server derives the
         /// > remaining renditions. Setting a field to the value the chat already has
@@ -1330,7 +1331,8 @@ extension Flipcash_Chat_V1_Chat {
         /// > 
         /// > Every real change reaches the chat's members, including the caller's
         /// > other devices, on the event stream as one MetadataUpdate per field
-        /// > changed: TitleChanged for the title, PictureChanged for the picture.
+        /// > changed: TitleChanged for the title, PictureChanged for the picture,
+        /// > DescriptionChanged for the description.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
@@ -2120,8 +2122,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > 
     /// > Only a group chat may be edited, and only by a member the server permits
     /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
-    /// > is DENIED. A new title is moderated like
-    /// > StartChat's. A new picture is a blob the caller has already uploaded via
+    /// > is DENIED. A new title or description is moderated like StartChat's. A
+    /// > new picture is a blob the caller has already uploaded via
     /// > BlobStorage: the client uploads only the ORIGINAL and passes the
     /// > resulting BlobId once the blob is READY, and the server derives the
     /// > remaining renditions. Setting a field to the value the chat already has
@@ -2130,7 +2132,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > 
     /// > Every real change reaches the chat's members, including the caller's
     /// > other devices, on the event stream as one MetadataUpdate per field
-    /// > changed: TitleChanged for the title, PictureChanged for the picture.
+    /// > changed: TitleChanged for the title, PictureChanged for the picture,
+    /// > DescriptionChanged for the description.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
@@ -2901,8 +2904,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > 
     /// > Only a group chat may be edited, and only by a member the server permits
     /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
-    /// > is DENIED. A new title is moderated like
-    /// > StartChat's. A new picture is a blob the caller has already uploaded via
+    /// > is DENIED. A new title or description is moderated like StartChat's. A
+    /// > new picture is a blob the caller has already uploaded via
     /// > BlobStorage: the client uploads only the ORIGINAL and passes the
     /// > resulting BlobId once the blob is READY, and the server derives the
     /// > remaining renditions. Setting a field to the value the chat already has
@@ -2911,7 +2914,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > 
     /// > Every real change reaches the chat's members, including the caller's
     /// > other devices, on the event stream as one MetadataUpdate per field
-    /// > changed: TitleChanged for the title, PictureChanged for the picture.
+    /// > changed: TitleChanged for the title, PictureChanged for the picture,
+    /// > DescriptionChanged for the description.
     ///
     /// - Parameters:
     ///   - message: request message to send.

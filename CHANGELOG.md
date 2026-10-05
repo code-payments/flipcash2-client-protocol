@@ -8,6 +8,30 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.17.0
+
+Synced to [`flipcash2-protobuf-api@3bb442d3`](https://github.com/code-payments/flipcash2-protobuf-api/commit/3bb442d359dd8452b4e3eca5f5c1ca463e7f5a4b),
+picking up [#134](https://github.com/code-payments/flipcash2-protobuf-api/pull/134). Only `chat.v1`
+moved.
+
+### Added
+
+- Group descriptions, up to 160 characters and moderated like the title.
+  - `chat.v1.Metadata.description` (= 16).
+  - Set at creation through `description` on `PublicGroupChatParameters` (= 4) and
+    `PrivateGroupChatParameters` (= 3). Optional; empty sets none.
+  - Changed through `EditChatRequest.description` (= 4), a `Description { value }` wrapper: unset
+    leaves the description alone, and a set wrapper with an empty `value` clears it.
+  - Announced as `MetadataUpdate.DescriptionChanged` (= 6, `new_description`).
+- `DESCRIPTION_MODERATED` on `StartChatResponse.Result` (= 6) and `EditChatResponse.Result` (= 5).
+  The response's `flagged_category` is set for it, as it is for `TITLE_MODERATED`.
+
+### Upgrading
+
+Nothing existing changed: no renames, and no field or enum renumbering. Both new result cases come
+after the existing ones. A client that ignores `description` keeps working, but one with an
+exhaustive `MetadataUpdate` switch needs a `DescriptionChanged` case.
+
 ## 0.16.0
 
 Synced to [`flipcash2-protobuf-api@ec66e6b1`](https://github.com/code-payments/flipcash2-protobuf-api/commit/ec66e6b12c59d7eae3281341e74fe8853c90a306),
