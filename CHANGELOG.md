@@ -8,6 +8,72 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.18.0
+
+Synced to [`flipcash2-protobuf-api@9d44350b`](https://github.com/code-payments/flipcash2-protobuf-api/commit/9d44350b8d4d8eda9d63cff405238bd0e2920409),
+picking up [#135](https://github.com/code-payments/flipcash2-protobuf-api/pull/135),
+[#136](https://github.com/code-payments/flipcash2-protobuf-api/pull/136),
+[#137](https://github.com/code-payments/flipcash2-protobuf-api/pull/137) and
+[#138](https://github.com/code-payments/flipcash2-protobuf-api/pull/138). Only `chat.v1` moved;
+`blob.v1` changed only in comments.
+
+### Renumbered
+
+- `EditChatResponse.Result`: `COVER_PICTURE_BLOB_NOT_ACCEPTED` is inserted at 5, and
+  `DESCRIPTION_MODERATED` moves from 5 to 6. 0.17.0 shipped `DESCRIPTION_MODERATED = 5`, so a
+  0.17.0 client reads a cover-picture rejection from a current server as a moderated description,
+  and does not recognize 6 at all. Code that maps this enum by raw value, such as iOS's
+  `Error*(rawValue:)`, has to be re-checked case by case, not only extended.
+
+No other field or enum moved. `StartChatResponse.Result` gains its new case at the end.
+
+### Renamed
+
+The group picture becomes the profile picture, to tell it apart from the new cover picture. Field
+numbers are unchanged, so this is wire-compatible but breaks source in both languages.
+
+- `Metadata.picture` → `profile_picture` (= 9).
+- `picture` → `profile_picture` (= 2) on `PublicGroupChatParameters` and
+  `PrivateGroupChatParameters`.
+- `EditChatRequest.picture` → `profile_picture` (= 3), and its type `Picture` → `ProfilePicture`.
+- `MetadataUpdate.picture_changed` → `profile_picture_changed` (= 5), and `PictureChanged` →
+  `ProfilePictureChanged` with `new_picture` → `new_profile_picture`.
+- `PICTURE_BLOB_NOT_ACCEPTED` → `PROFILE_PICTURE_BLOB_NOT_ACCEPTED` on `StartChatResponse.Result`
+  (= 3) and `EditChatResponse.Result` (= 4).
+
+### Added
+
+- Group cover pictures, the banner behind a chat's profile view.
+  - `Metadata.cover_picture` (= 17). The feed RPCs may leave it unset even when one is set, so a
+    feed result must not clear a cover picture the client already holds; `GetChat` returns it.
+  - Set at creation through `cover_picture` on `PublicGroupChatParameters` (= 5) and
+    `PrivateGroupChatParameters` (= 4), and changed through `EditChatRequest.cover_picture`
+    (= 5, a `CoverPicture { blob_id }` wrapper).
+  - Announced as `MetadataUpdate.CoverPictureChanged` (= 7, `new_cover_picture`).
+  - `COVER_PICTURE_BLOB_NOT_ACCEPTED` on `StartChatResponse.Result` (= 7) and
+    `EditChatResponse.Result` (= 5, see above).
+- `RosterUpdate.MembershipChanged` (= 3), an empty case for a roster change the recipient is not
+  shown. Apply its `roster_summary` by version and leave the cached member list alone.
+- `Chat.SampleChatters`, a public sample of up to 100 members of a public group: its creator, then
+  the most recent senders. Auth is optional. Returns `SampledChatter` (`user_profile`,
+  `last_sent_at`, `is_creator`) and `has_more`.
+- `Chat.SetFeaturedGroups` and `Chat.GetFeaturedGroups`, an ordered list of up to 10 public groups a
+  user shows on their profile. `GetFeaturedGroups` looks the user up by `username`, takes optional
+  auth, and returns each group as a list view shows it, without `cover_picture` or any viewer or
+  messaging state.
+
+### Changed behavior
+
+- `GetRoster` now requires membership. A non-member whom a group's listener rules let read its
+  messages used to get the roster and now gets `DENIED`. `SampleChatters` is the public
+  alternative.
+
+### Upgrading
+
+Expect compile errors from the renames. Beyond those, an exhaustive `MetadataUpdate` switch needs
+`CoverPictureChanged`, an exhaustive `RosterUpdate` switch needs `MembershipChanged`, and anything
+that calls `GetRoster` for a group the user has not joined needs to stop.
+
 ## 0.17.0
 
 Synced to [`flipcash2-protobuf-api@3bb442d3`](https://github.com/code-payments/flipcash2-protobuf-api/commit/3bb442d359dd8452b4e3eca5f5c1ca463e7f5a4b),
