@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 3bb442d359dd8452b4e3eca5f5c1ca463e7f5a4b
-subject: Add support for group descriptions (#134)
+commit: 9d44350b8d4d8eda9d63cff405238bd0e2920409
+subject: Add support for featured groups (#138)

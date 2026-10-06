@@ -77,6 +77,10 @@ service Chat {
     // being read. Every page is served only for groups the caller is still a
     // member of at the time of that page; a group the caller left between
     // pages is dropped, and its removal arrives on the stream.
+    //
+    // The feed is meant for list views, so a chat's cover_picture may be
+    // omitted from it (see Metadata). Fetch it with GetChat when the client
+    // shows the chat's profile view.
     rpc GetGroupChatFeed(GetGroupChatFeedRequest) returns (GetGroupChatFeedResponse);
 
     // GetRoster pages a chat's roster, most recently joined first. Every
@@ -103,10 +107,45 @@ service Chat {
     // carry none: group pointer advances are never broadcast, so a page of
     // them would be stale as soon as it was served.
     //
-    // Requires that the caller may read the chat: a member, or a non-member
-    // a group's listener rules admit. A viewer who may only preview the chat
-    // is DENIED.
+    // Requires that the caller is a member of the chat. Anyone else is
+    // DENIED, including a non-member whom a group's listener rules admit to
+    // read its messages: who is in a chat is shown only to its members.
     rpc GetRoster(GetRosterRequest) returns (GetRosterResponse);
+
+    // SampleChatters returns a short sample of a public group's members to
+    // show: its creator first, while they are a member, then the members who
+    // have sent a message most recently, most recent first. Members who have
+    // not sent a message recently are not in it. The caller is included like
+    // any other member, and so are users the caller has blocked: the sample
+    // shows who is in the chat, not who may be mentioned (see
+    // GetMentionSuggestions).
+    //
+    // Unlike the roster (see GetRoster), the sample is public: it is part of
+    // how a group presents itself, as its title and pictures are, and is
+    // returned to anyone who asks, member or not, registered or not. Auth is
+    // optional; when set it must be valid, but it changes nothing about what
+    // is returned.
+    //
+    // Everyone in the sample is a member of the group as of the read, which
+    // may trail a join or departure by a moment: it is a subset of the roster
+    // GetRoster pages, never someone who never joined, though someone who
+    // left a moment ago may still be in it. It is not the whole roster: it is neither complete nor
+    // paged and carries no roster version, and has_more is the only
+    // indication of what lies past it. The server decides how many to
+    // return, up to 100; neither the size nor the order after the creator is
+    // part of the contract.
+    //
+    // It is a snapshot, which a client may show as it is. A client that wants
+    // it live, and streams the group's events (as a member, or through a chat
+    // preview), may instead keep it fresh between fetches by moving the
+    // sender of each new message to the front, adding them if absent, since
+    // anyone who sends is a member. Departures are not announced to the other
+    // members (see RosterUpdate.MembershipChanged), so a member who has left
+    // may remain in a client's copy until it fetches again.
+    //
+    // Only for public groups: a private group (see Metadata.is_private) and a
+    // DM are DENIED, whoever asks.
+    rpc SampleChatters(SampleChattersRequest) returns (SampleChattersResponse);
 
     // GetMentionSuggestions returns people the caller may want to @mention in
     // a group chat, ranked by the server, most relevant first. Today that is
@@ -154,17 +193,18 @@ service Chat {
     // Only a group chat may be edited, and only by a member the server permits
     // to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
     // is DENIED. A new title or description is moderated like StartChat's. A
-    // new picture is a blob the caller has already uploaded via
-    // BlobStorage: the client uploads only the ORIGINAL and passes the
-    // resulting BlobId once the blob is READY, and the server derives the
-    // remaining renditions. Setting a field to the value the chat already has
-    // is a no-op for that field, and a request that sets nothing is a no-op
-    // that returns OK.
+    // new profile picture or cover picture is a blob the caller has already
+    // uploaded via BlobStorage: the client uploads only the ORIGINAL and
+    // passes the resulting BlobId once the blob is READY, and the server
+    // derives the remaining renditions. Setting a field to the value the chat
+    // already has is a no-op for that field, and a request that sets nothing
+    // is a no-op that returns OK.
     //
     // Every real change reaches the chat's members, including the caller's
     // other devices, on the event stream as one MetadataUpdate per field
-    // changed: TitleChanged for the title, PictureChanged for the picture,
-    // DescriptionChanged for the description.
+    // changed: TitleChanged for the title, ProfilePictureChanged for the
+    // profile picture, DescriptionChanged for the description,
+    // CoverPictureChanged for the cover picture.
     rpc EditChat(EditChatRequest) returns (EditChatResponse);
 
     // MuteChat mutes a chat for the caller, until a time or indefinitely.
@@ -291,6 +331,48 @@ service Chat {
     // SetKeyEnvelope, as described on KeyEnvelope, and keeps attempting that
     // until it succeeds.
     rpc GetKeyEnvelope(GetKeyEnvelopeRequest) returns (GetKeyEnvelopeResponse);
+
+    // SetFeaturedGroups replaces the caller's featured groups: an ordered
+    // list of public group chats they show on their profile, which anyone can
+    // fetch with GetFeaturedGroups. The list is written whole, so the request
+    // carries every group the caller wants featured, in the order to show
+    // them, and an empty list clears it. Setting the list already stored is a
+    // no-op that returns OK.
+    //
+    // Featuring a group says nothing about the caller's place in it: a group
+    // may be featured whether or not the caller is a member, and leaving a
+    // group does not remove it from the list.
+    //
+    // Only public groups may be featured: when a group in the request is
+    // private (see Metadata.is_private), nothing is written and the result
+    // is DENIED. A group never becomes private after it is created, so a
+    // featured group stays public. Every group must exist: when one does not,
+    // nothing is written and the result is NOT_FOUND. A DM's ID, or a group
+    // named more than once, is an invalid argument.
+    //
+    // Nothing is published: the caller's other devices see the change on
+    // their next GetFeaturedGroups.
+    rpc SetFeaturedGroups(SetFeaturedGroupsRequest) returns (SetFeaturedGroupsResponse);
+
+    // GetFeaturedGroups returns a user's featured groups (see
+    // SetFeaturedGroups), in the order the user set them.
+    //
+    // Each group is a public group (see SetFeaturedGroups), returned as its
+    // record as a list view shows it: chat_id, type, title, description,
+    // profile_picture, roster_summary, rules, creator and last_activity. Nothing about the viewer's place in the
+    // group is set (members, is_hidden, viewer_state, in_lobby), nor its
+    // messaging state (last_message, latest_event_sequence), nor its
+    // cover_picture: a client opening a group fetches the rest with GetChat.
+    //
+    // The list is public, like the user's profile, and the same for every
+    // viewer. Auth is optional; when set it must be valid, but it changes
+    // nothing about what is returned. A group that no longer exists is left
+    // out.
+    //
+    // The user is identified by username, the handle a profile is opened by,
+    // so a client can fetch a profile (see profile.v1.Profile.GetProfile) and
+    // its featured groups at once.
+    rpc GetFeaturedGroups(GetFeaturedGroupsRequest) returns (GetFeaturedGroupsResponse);
 }
 
 message GetChatRequest {
@@ -299,11 +381,12 @@ message GetChatRequest {
     // What the client intends to render of the chat's messaging state — its
     // last_message and latest_event_sequence — and so whether they may be
     // returned redacted (see messaging.v1.ViewMode). A group's record (title,
-    // description, picture, rules, roster summary) is returned to every
-    // registered user whatever the mode; the mode decides only the messaging
-    // state, which is withheld from a viewer who may not read the chat under
-    // it. Unset (FULL) is the pre-redaction contract: messaging state for a
-    // viewer who may read the chat in full, the bare record for anyone else.
+    // description, profile picture, cover picture, rules, roster summary) is
+    // returned to every registered user whatever the mode; the mode decides
+    // only the messaging state, which is withheld from a viewer who may not
+    // read the chat under it. Unset (FULL) is the pre-redaction contract:
+    // messaging state for a viewer who may read the chat in full, the bare
+    // record for anyone else.
     //
     // Must be REDACTED when auth is unset; any other mode is DENIED.
     messaging.v1.ViewMode view_mode = 2 [(validate.rules).enum = {
@@ -472,6 +555,37 @@ message GetRosterResponse {
     bool has_more = 5;
 }
 
+message SampleChattersRequest {
+    common.v1.ChatId chat_id = 1 [(validate.rules).message.required = true];
+
+    // Optional. When set it must be valid, but the sample is the same with
+    // or without it (see Chat.SampleChatters).
+    common.v1.Auth auth = 10;
+}
+
+message SampleChattersResponse {
+    Result result = 1;
+    enum Result {
+        OK        = 0;
+        DENIED    = 1;
+        NOT_FOUND = 2;
+    }
+
+    // The sample, every one a member as of the read: the creator first, when
+    // they are a member, then the most recent senders, most recent first.
+    // Set when result is OK.
+    repeated SampledChatter chatters = 2 [(validate.rules).repeated = {
+        min_items: 0
+        max_items: 100
+    }];
+
+    // Whether the group may have more members who have sent recently than
+    // the sample holds, for a client to show that there are others. It is
+    // true when the server knows of more, and also when it stopped looking
+    // before it could tell. Set when result is OK.
+    bool has_more = 3;
+}
+
 message GetMentionSuggestionsRequest {
     common.v1.ChatId chat_id = 1 [(validate.rules).message.required = true];
 
@@ -514,9 +628,9 @@ message StartChatRequest {
             max_len: 64
         }];
 
-        // The blob holding the ORIGINAL picture the caller uploaded. Optional.
-        // If set, it must be owned by the caller and READY.
-        blob.v1.BlobId picture = 2;
+        // The blob holding the ORIGINAL profile picture the caller uploaded.
+        // Optional. If set, it must be owned by the caller and READY.
+        blob.v1.BlobId profile_picture = 2;
 
         // Rules governing participation in the chat. Optional; if not set, the
         // chat has no participation requirements. Caller must satisfy the rules
@@ -528,6 +642,10 @@ message StartChatRequest {
         string description = 4 [(validate.rules).string = {
             max_len: 160
         }];
+
+        // The blob holding the ORIGINAL cover picture the caller uploaded.
+        // Optional. If set, it must be owned by the caller and READY.
+        blob.v1.BlobId cover_picture = 5;
     }
 
     // Parameters for creating a private group chat (see Metadata.is_private):
@@ -558,15 +676,19 @@ message StartChatRequest {
             max_len: 64
         }];
 
-        // The blob holding the ORIGINAL picture the caller uploaded. Optional.
-        // If set, it must be owned by the caller and READY.
-        blob.v1.BlobId picture = 2;
+        // The blob holding the ORIGINAL profile picture the caller uploaded.
+        // Optional. If set, it must be owned by the caller and READY.
+        blob.v1.BlobId profile_picture = 2;
 
         // Description for the chat. Optional; empty sets none. Moderated like
         // the title.
         string description = 3 [(validate.rules).string = {
             max_len: 160
         }];
+
+        // The blob holding the ORIGINAL cover picture the caller uploaded.
+        // Optional. If set, it must be owned by the caller and READY.
+        blob.v1.BlobId cover_picture = 4;
     }
 
     // Key for retrying this request safely. A retry with the same key from the
@@ -580,18 +702,19 @@ message StartChatRequest {
 message StartChatResponse {
     Result result = 1;
     enum Result {
-        OK                        = 0;
-        DENIED                    = 1;
-        TITLE_MODERATED           = 2;
-        PICTURE_BLOB_NOT_ACCEPTED = 3;
-        INVALID_RULES             = 4;
-        RULES_NOT_SATISFIED       = 5;
-        DESCRIPTION_MODERATED     = 6;
+        OK                                = 0;
+        DENIED                            = 1;
+        TITLE_MODERATED                   = 2;
+        PROFILE_PICTURE_BLOB_NOT_ACCEPTED = 3;
+        INVALID_RULES                     = 4;
+        RULES_NOT_SATISFIED               = 5;
+        DESCRIPTION_MODERATED             = 6;
+        COVER_PICTURE_BLOB_NOT_ACCEPTED   = 7;
     }
 
     // The metadata for the newly created chat, including the server-generated
-    // chat_id and any picture renditions the server derived. Set only when
-    // result == OK.
+    // chat_id and any profile picture or cover picture renditions the server
+    // derived. Set only when result == OK.
     Metadata chat = 2;
 
     // The best-fit category that tripped moderation, mirroring the Moderation
@@ -641,11 +764,14 @@ message EditChatRequest {
     // The new title. Left unchanged when unset.
     Title title = 2;
 
-    // The new picture. Left unchanged when unset.
-    Picture picture = 3;
+    // The new profile picture. Left unchanged when unset.
+    ProfilePicture profile_picture = 3;
 
     // The new description. Left unchanged when unset.
     Description description = 4;
+
+    // The new cover picture. Left unchanged when unset.
+    CoverPicture cover_picture = 5;
 
     message Title {
         string value = 1 [(validate.rules).string = {
@@ -654,10 +780,10 @@ message EditChatRequest {
         }];
     }
 
-    message Picture {
-        // The blob holding the ORIGINAL picture the caller uploaded. It must be
-        // owned by the caller and READY; the server derives the remaining
-        // renditions from it.
+    message ProfilePicture {
+        // The blob holding the ORIGINAL profile picture the caller uploaded. It
+        // must be owned by the caller and READY; the server derives the
+        // remaining renditions from it.
         blob.v1.BlobId blob_id = 1 [(validate.rules).message.required = true];
     }
 
@@ -668,23 +794,31 @@ message EditChatRequest {
         }];
     }
 
+    message CoverPicture {
+        // The blob holding the ORIGINAL cover picture the caller uploaded. It
+        // must be owned by the caller and READY; the server derives the
+        // remaining renditions from it.
+        blob.v1.BlobId blob_id = 1 [(validate.rules).message.required = true];
+    }
+
     common.v1.Auth auth = 10 [(validate.rules).message.required = true];
 }
 
 message EditChatResponse {
     Result result = 1;
     enum Result {
-        OK                        = 0;
-        DENIED                    = 1;
-        NOT_FOUND                 = 2;
-        TITLE_MODERATED           = 3;
-        PICTURE_BLOB_NOT_ACCEPTED = 4;
-        DESCRIPTION_MODERATED     = 5;
+        OK                                = 0;
+        DENIED                            = 1;
+        NOT_FOUND                         = 2;
+        TITLE_MODERATED                   = 3;
+        PROFILE_PICTURE_BLOB_NOT_ACCEPTED = 4;
+        COVER_PICTURE_BLOB_NOT_ACCEPTED   = 5;
+        DESCRIPTION_MODERATED             = 6;
     }
 
     // The metadata for the chat after the edit, as seen by the caller,
-    // including any picture renditions the server derived. Set only when
-    // result == OK.
+    // including any profile picture or cover picture renditions the server
+    // derived. Set only when result == OK.
     Metadata chat = 2;
 
     // The best-fit category that tripped moderation, mirroring the Moderation
@@ -897,4 +1031,61 @@ message GetKeyEnvelopeResponse {
     // hint: an envelope that does not open against that key is rejected. Set
     // only when result == OK.
     common.v1.UserId wrapped_by = 3;
+}
+
+message SetFeaturedGroupsRequest {
+    // The groups to feature, in the order to show them. Every ID must name a
+    // public group chat, and none may repeat. Empty clears the featured
+    // groups.
+    repeated common.v1.ChatId chat_ids = 1 [(validate.rules).repeated = {
+        min_items: 0
+        max_items: 10
+    }];
+
+    common.v1.Auth auth = 10 [(validate.rules).message.required = true];
+}
+
+message SetFeaturedGroupsResponse {
+    Result result = 1;
+    enum Result {
+        OK        = 0;
+        DENIED    = 1; // A group in the request is private; nothing was written
+        NOT_FOUND = 2; // A group in the request does not exist; nothing was written
+    }
+
+    // The caller's featured groups after the write, as GetFeaturedGroups
+    // returns them. Set only when result == OK.
+    repeated Metadata featured_groups = 2 [(validate.rules).repeated = {
+        min_items: 0
+        max_items: 10
+    }];
+}
+
+message GetFeaturedGroupsRequest {
+    // The user whose featured groups are being fetched. Only a username is
+    // supported for now; the oneof leaves room for other identifiers.
+    oneof identifier {
+        option (validate.required) = true;
+
+        common.v1.Username username = 1;
+    }
+
+    // Optional. When set it must be valid, but the list is the same with or
+    // without it (see Chat.GetFeaturedGroups).
+    common.v1.Auth auth = 10;
+}
+
+message GetFeaturedGroupsResponse {
+    Result result = 1;
+    enum Result {
+        OK        = 0;
+        NOT_FOUND = 1; // No user holds the username
+    }
+
+    // The user's featured groups, in their order. Empty when they feature
+    // none. Set only when result == OK.
+    repeated Metadata featured_groups = 2 [(validate.rules).repeated = {
+        min_items: 0
+        max_items: 10
+    }];
 }

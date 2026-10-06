@@ -68,6 +68,18 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetRoster"
             )
         }
+        /// Namespace for "SampleChatters" metadata.
+        public enum SampleChatters {
+            /// Request type for "SampleChatters".
+            public typealias Input = Flipcash_Chat_V1_SampleChattersRequest
+            /// Response type for "SampleChatters".
+            public typealias Output = Flipcash_Chat_V1_SampleChattersResponse
+            /// Descriptor for "SampleChatters".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "SampleChatters"
+            )
+        }
         /// Namespace for "GetMentionSuggestions" metadata.
         public enum GetMentionSuggestions {
             /// Request type for "GetMentionSuggestions".
@@ -236,12 +248,37 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetKeyEnvelope"
             )
         }
+        /// Namespace for "SetFeaturedGroups" metadata.
+        public enum SetFeaturedGroups {
+            /// Request type for "SetFeaturedGroups".
+            public typealias Input = Flipcash_Chat_V1_SetFeaturedGroupsRequest
+            /// Response type for "SetFeaturedGroups".
+            public typealias Output = Flipcash_Chat_V1_SetFeaturedGroupsResponse
+            /// Descriptor for "SetFeaturedGroups".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "SetFeaturedGroups"
+            )
+        }
+        /// Namespace for "GetFeaturedGroups" metadata.
+        public enum GetFeaturedGroups {
+            /// Request type for "GetFeaturedGroups".
+            public typealias Input = Flipcash_Chat_V1_GetFeaturedGroupsRequest
+            /// Response type for "GetFeaturedGroups".
+            public typealias Output = Flipcash_Chat_V1_GetFeaturedGroupsResponse
+            /// Descriptor for "GetFeaturedGroups".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetFeaturedGroups"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.chat.v1.Chat" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetChat.descriptor,
             GetDmChatFeed.descriptor,
             GetGroupChatFeed.descriptor,
             GetRoster.descriptor,
+            SampleChatters.descriptor,
             GetMentionSuggestions.descriptor,
             StartChat.descriptor,
             JoinChat.descriptor,
@@ -255,7 +292,9 @@ public enum Flipcash_Chat_V1_Chat {
             AdmitLobbyMember.descriptor,
             DenyLobbyMember.descriptor,
             SetKeyEnvelope.descriptor,
-            GetKeyEnvelope.descriptor
+            GetKeyEnvelope.descriptor,
+            SetFeaturedGroups.descriptor,
+            GetFeaturedGroups.descriptor
         ]
     }
 }
@@ -382,6 +421,10 @@ extension Flipcash_Chat_V1_Chat {
         /// > being read. Every page is served only for groups the caller is still a
         /// > member of at the time of that page; a group the caller left between
         /// > pages is dropped, and its removal arrives on the stream.
+        /// > 
+        /// > The feed is meant for list views, so a chat's cover_picture may be
+        /// > omitted from it (see Metadata). Fetch it with GetChat when the client
+        /// > shows the chat's profile view.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetGroupChatFeedRequest` message.
@@ -428,9 +471,9 @@ extension Flipcash_Chat_V1_Chat {
         /// > carry none: group pointer advances are never broadcast, so a page of
         /// > them would be stale as soon as it was served.
         /// > 
-        /// > Requires that the caller may read the chat: a member, or a non-member
-        /// > a group's listener rules admit. A viewer who may only preview the chat
-        /// > is DENIED.
+        /// > Requires that the caller is a member of the chat. Anyone else is
+        /// > DENIED, including a non-member whom a group's listener rules admit to
+        /// > read its messages: who is in a chat is shown only to its members.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
@@ -447,6 +490,61 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRosterResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRosterResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SampleChatters" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SampleChatters returns a short sample of a public group's members to
+        /// > show: its creator first, while they are a member, then the members who
+        /// > have sent a message most recently, most recent first. Members who have
+        /// > not sent a message recently are not in it. The caller is included like
+        /// > any other member, and so are users the caller has blocked: the sample
+        /// > shows who is in the chat, not who may be mentioned (see
+        /// > GetMentionSuggestions).
+        /// > 
+        /// > Unlike the roster (see GetRoster), the sample is public: it is part of
+        /// > how a group presents itself, as its title and pictures are, and is
+        /// > returned to anyone who asks, member or not, registered or not. Auth is
+        /// > optional; when set it must be valid, but it changes nothing about what
+        /// > is returned.
+        /// > 
+        /// > Everyone in the sample is a member of the group as of the read, which
+        /// > may trail a join or departure by a moment: it is a subset of the roster
+        /// > GetRoster pages, never someone who never joined, though someone who
+        /// > left a moment ago may still be in it. It is not the whole roster: it is neither complete nor
+        /// > paged and carries no roster version, and has_more is the only
+        /// > indication of what lies past it. The server decides how many to
+        /// > return, up to 100; neither the size nor the order after the creator is
+        /// > part of the contract.
+        /// > 
+        /// > It is a snapshot, which a client may show as it is. A client that wants
+        /// > it live, and streams the group's events (as a member, or through a chat
+        /// > preview), may instead keep it fresh between fetches by moving the
+        /// > sender of each new message to the front, adding them if absent, since
+        /// > anyone who sends is a member. Departures are not announced to the other
+        /// > members (see RosterUpdate.MembershipChanged), so a member who has left
+        /// > may remain in a client's copy until it fetches again.
+        /// > 
+        /// > Only for public groups: a private group (see Metadata.is_private) and a
+        /// > DM are DENIED, whoever asks.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SampleChattersRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SampleChattersRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SampleChattersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func sampleChatters<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SampleChattersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SampleChattersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SampleChattersResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SampleChattersResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "GetMentionSuggestions" method.
@@ -579,17 +677,18 @@ extension Flipcash_Chat_V1_Chat {
         /// > Only a group chat may be edited, and only by a member the server permits
         /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
         /// > is DENIED. A new title or description is moderated like StartChat's. A
-        /// > new picture is a blob the caller has already uploaded via
-        /// > BlobStorage: the client uploads only the ORIGINAL and passes the
-        /// > resulting BlobId once the blob is READY, and the server derives the
-        /// > remaining renditions. Setting a field to the value the chat already has
-        /// > is a no-op for that field, and a request that sets nothing is a no-op
-        /// > that returns OK.
+        /// > new profile picture or cover picture is a blob the caller has already
+        /// > uploaded via BlobStorage: the client uploads only the ORIGINAL and
+        /// > passes the resulting BlobId once the blob is READY, and the server
+        /// > derives the remaining renditions. Setting a field to the value the chat
+        /// > already has is a no-op for that field, and a request that sets nothing
+        /// > is a no-op that returns OK.
         /// > 
         /// > Every real change reaches the chat's members, including the caller's
         /// > other devices, on the event stream as one MetadataUpdate per field
-        /// > changed: TitleChanged for the title, PictureChanged for the picture,
-        /// > DescriptionChanged for the description.
+        /// > changed: TitleChanged for the title, ProfilePictureChanged for the
+        /// > profile picture, DescriptionChanged for the description,
+        /// > CoverPictureChanged for the cover picture.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
@@ -912,6 +1011,88 @@ extension Flipcash_Chat_V1_Chat {
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetKeyEnvelopeResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
+
+        /// Call the "SetFeaturedGroups" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetFeaturedGroups replaces the caller's featured groups: an ordered
+        /// > list of public group chats they show on their profile, which anyone can
+        /// > fetch with GetFeaturedGroups. The list is written whole, so the request
+        /// > carries every group the caller wants featured, in the order to show
+        /// > them, and an empty list clears it. Setting the list already stored is a
+        /// > no-op that returns OK.
+        /// > 
+        /// > Featuring a group says nothing about the caller's place in it: a group
+        /// > may be featured whether or not the caller is a member, and leaving a
+        /// > group does not remove it from the list.
+        /// > 
+        /// > Only public groups may be featured: when a group in the request is
+        /// > private (see Metadata.is_private), nothing is written and the result
+        /// > is DENIED. A group never becomes private after it is created, so a
+        /// > featured group stays public. Every group must exist: when one does not,
+        /// > nothing is written and the result is NOT_FOUND. A DM's ID, or a group
+        /// > named more than once, is an invalid argument.
+        /// > 
+        /// > Nothing is published: the caller's other devices see the change on
+        /// > their next GetFeaturedGroups.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SetFeaturedGroupsRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SetFeaturedGroupsRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SetFeaturedGroupsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func setFeaturedGroups<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SetFeaturedGroupsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SetFeaturedGroupsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SetFeaturedGroupsResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetFeaturedGroupsResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetFeaturedGroups" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetFeaturedGroups returns a user's featured groups (see
+        /// > SetFeaturedGroups), in the order the user set them.
+        /// > 
+        /// > Each group is a public group (see SetFeaturedGroups), returned as its
+        /// > record as a list view shows it: chat_id, type, title, description,
+        /// > profile_picture, roster_summary, rules, creator and last_activity. Nothing about the viewer's place in the
+        /// > group is set (members, is_hidden, viewer_state, in_lobby), nor its
+        /// > messaging state (last_message, latest_event_sequence), nor its
+        /// > cover_picture: a client opening a group fetches the rest with GetChat.
+        /// > 
+        /// > The list is public, like the user's profile, and the same for every
+        /// > viewer. Auth is optional; when set it must be valid, but it changes
+        /// > nothing about what is returned. A group that no longer exists is left
+        /// > out.
+        /// > 
+        /// > The user is identified by username, the handle a profile is opened by,
+        /// > so a client can fetch a profile (see profile.v1.Profile.GetProfile) and
+        /// > its featured groups at once.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetFeaturedGroupsRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetFeaturedGroupsRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetFeaturedGroupsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getFeaturedGroups<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetFeaturedGroupsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetFeaturedGroupsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetFeaturedGroupsResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetFeaturedGroupsResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
     }
 
     /// Generated client for the "flipcash.chat.v1.Chat" service.
@@ -1059,6 +1240,10 @@ extension Flipcash_Chat_V1_Chat {
         /// > being read. Every page is served only for groups the caller is still a
         /// > member of at the time of that page; a group the caller left between
         /// > pages is dropped, and its removal arrives on the stream.
+        /// > 
+        /// > The feed is meant for list views, so a chat's cover_picture may be
+        /// > omitted from it (see Metadata). Fetch it with GetChat when the client
+        /// > shows the chat's profile view.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetGroupChatFeedRequest` message.
@@ -1116,9 +1301,9 @@ extension Flipcash_Chat_V1_Chat {
         /// > carry none: group pointer advances are never broadcast, so a page of
         /// > them would be stale as soon as it was served.
         /// > 
-        /// > Requires that the caller may read the chat: a member, or a non-member
-        /// > a group's listener rules admit. A viewer who may only preview the chat
-        /// > is DENIED.
+        /// > Requires that the caller is a member of the chat. Anyone else is
+        /// > DENIED, including a non-member whom a group's listener rules admit to
+        /// > read its messages: who is in a chat is shown only to its members.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
@@ -1141,6 +1326,72 @@ extension Flipcash_Chat_V1_Chat {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Chat_V1_Chat.Method.GetRoster.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "SampleChatters" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SampleChatters returns a short sample of a public group's members to
+        /// > show: its creator first, while they are a member, then the members who
+        /// > have sent a message most recently, most recent first. Members who have
+        /// > not sent a message recently are not in it. The caller is included like
+        /// > any other member, and so are users the caller has blocked: the sample
+        /// > shows who is in the chat, not who may be mentioned (see
+        /// > GetMentionSuggestions).
+        /// > 
+        /// > Unlike the roster (see GetRoster), the sample is public: it is part of
+        /// > how a group presents itself, as its title and pictures are, and is
+        /// > returned to anyone who asks, member or not, registered or not. Auth is
+        /// > optional; when set it must be valid, but it changes nothing about what
+        /// > is returned.
+        /// > 
+        /// > Everyone in the sample is a member of the group as of the read, which
+        /// > may trail a join or departure by a moment: it is a subset of the roster
+        /// > GetRoster pages, never someone who never joined, though someone who
+        /// > left a moment ago may still be in it. It is not the whole roster: it is neither complete nor
+        /// > paged and carries no roster version, and has_more is the only
+        /// > indication of what lies past it. The server decides how many to
+        /// > return, up to 100; neither the size nor the order after the creator is
+        /// > part of the contract.
+        /// > 
+        /// > It is a snapshot, which a client may show as it is. A client that wants
+        /// > it live, and streams the group's events (as a member, or through a chat
+        /// > preview), may instead keep it fresh between fetches by moving the
+        /// > sender of each new message to the front, adding them if absent, since
+        /// > anyone who sends is a member. Departures are not announced to the other
+        /// > members (see RosterUpdate.MembershipChanged), so a member who has left
+        /// > may remain in a client's copy until it fetches again.
+        /// > 
+        /// > Only for public groups: a private group (see Metadata.is_private) and a
+        /// > DM are DENIED, whoever asks.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SampleChattersRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SampleChattersRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SampleChattersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func sampleChatters<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SampleChattersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SampleChattersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SampleChattersResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SampleChattersResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.SampleChatters.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -1322,17 +1573,18 @@ extension Flipcash_Chat_V1_Chat {
         /// > Only a group chat may be edited, and only by a member the server permits
         /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
         /// > is DENIED. A new title or description is moderated like StartChat's. A
-        /// > new picture is a blob the caller has already uploaded via
-        /// > BlobStorage: the client uploads only the ORIGINAL and passes the
-        /// > resulting BlobId once the blob is READY, and the server derives the
-        /// > remaining renditions. Setting a field to the value the chat already has
-        /// > is a no-op for that field, and a request that sets nothing is a no-op
-        /// > that returns OK.
+        /// > new profile picture or cover picture is a blob the caller has already
+        /// > uploaded via BlobStorage: the client uploads only the ORIGINAL and
+        /// > passes the resulting BlobId once the blob is READY, and the server
+        /// > derives the remaining renditions. Setting a field to the value the chat
+        /// > already has is a no-op for that field, and a request that sets nothing
+        /// > is a no-op that returns OK.
         /// > 
         /// > Every real change reaches the chat's members, including the caller's
         /// > other devices, on the event stream as one MetadataUpdate per field
-        /// > changed: TitleChanged for the title, PictureChanged for the picture,
-        /// > DescriptionChanged for the description.
+        /// > changed: TitleChanged for the title, ProfilePictureChanged for the
+        /// > profile picture, DescriptionChanged for the description,
+        /// > CoverPictureChanged for the cover picture.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
@@ -1765,6 +2017,110 @@ extension Flipcash_Chat_V1_Chat {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "SetFeaturedGroups" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SetFeaturedGroups replaces the caller's featured groups: an ordered
+        /// > list of public group chats they show on their profile, which anyone can
+        /// > fetch with GetFeaturedGroups. The list is written whole, so the request
+        /// > carries every group the caller wants featured, in the order to show
+        /// > them, and an empty list clears it. Setting the list already stored is a
+        /// > no-op that returns OK.
+        /// > 
+        /// > Featuring a group says nothing about the caller's place in it: a group
+        /// > may be featured whether or not the caller is a member, and leaving a
+        /// > group does not remove it from the list.
+        /// > 
+        /// > Only public groups may be featured: when a group in the request is
+        /// > private (see Metadata.is_private), nothing is written and the result
+        /// > is DENIED. A group never becomes private after it is created, so a
+        /// > featured group stays public. Every group must exist: when one does not,
+        /// > nothing is written and the result is NOT_FOUND. A DM's ID, or a group
+        /// > named more than once, is an invalid argument.
+        /// > 
+        /// > Nothing is published: the caller's other devices see the change on
+        /// > their next GetFeaturedGroups.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SetFeaturedGroupsRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SetFeaturedGroupsRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SetFeaturedGroupsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func setFeaturedGroups<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SetFeaturedGroupsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SetFeaturedGroupsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SetFeaturedGroupsResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetFeaturedGroupsResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.SetFeaturedGroups.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetFeaturedGroups" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetFeaturedGroups returns a user's featured groups (see
+        /// > SetFeaturedGroups), in the order the user set them.
+        /// > 
+        /// > Each group is a public group (see SetFeaturedGroups), returned as its
+        /// > record as a list view shows it: chat_id, type, title, description,
+        /// > profile_picture, roster_summary, rules, creator and last_activity. Nothing about the viewer's place in the
+        /// > group is set (members, is_hidden, viewer_state, in_lobby), nor its
+        /// > messaging state (last_message, latest_event_sequence), nor its
+        /// > cover_picture: a client opening a group fetches the rest with GetChat.
+        /// > 
+        /// > The list is public, like the user's profile, and the same for every
+        /// > viewer. Auth is optional; when set it must be valid, but it changes
+        /// > nothing about what is returned. A group that no longer exists is left
+        /// > out.
+        /// > 
+        /// > The user is identified by username, the handle a profile is opened by,
+        /// > so a client can fetch a profile (see profile.v1.Profile.GetProfile) and
+        /// > its featured groups at once.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetFeaturedGroupsRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetFeaturedGroupsRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetFeaturedGroupsResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getFeaturedGroups<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetFeaturedGroupsRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetFeaturedGroupsRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetFeaturedGroupsResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetFeaturedGroupsResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetFeaturedGroups.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -1890,6 +2246,10 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > being read. Every page is served only for groups the caller is still a
     /// > member of at the time of that page; a group the caller left between
     /// > pages is dropped, and its removal arrives on the stream.
+    /// > 
+    /// > The feed is meant for list views, so a chat's cover_picture may be
+    /// > omitted from it (see Metadata). Fetch it with GetChat when the client
+    /// > shows the chat's profile view.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_GetGroupChatFeedRequest` message.
@@ -1942,9 +2302,9 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > carry none: group pointer advances are never broadcast, so a page of
     /// > them would be stale as soon as it was served.
     /// > 
-    /// > Requires that the caller may read the chat: a member, or a non-member
-    /// > a group's listener rules admit. A viewer who may only preview the chat
-    /// > is DENIED.
+    /// > Requires that the caller is a member of the chat. Anyone else is
+    /// > DENIED, including a non-member whom a group's listener rules admit to
+    /// > read its messages: who is in a chat is shown only to its members.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
@@ -1964,6 +2324,67 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetRosterRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetRosterResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SampleChatters" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SampleChatters returns a short sample of a public group's members to
+    /// > show: its creator first, while they are a member, then the members who
+    /// > have sent a message most recently, most recent first. Members who have
+    /// > not sent a message recently are not in it. The caller is included like
+    /// > any other member, and so are users the caller has blocked: the sample
+    /// > shows who is in the chat, not who may be mentioned (see
+    /// > GetMentionSuggestions).
+    /// > 
+    /// > Unlike the roster (see GetRoster), the sample is public: it is part of
+    /// > how a group presents itself, as its title and pictures are, and is
+    /// > returned to anyone who asks, member or not, registered or not. Auth is
+    /// > optional; when set it must be valid, but it changes nothing about what
+    /// > is returned.
+    /// > 
+    /// > Everyone in the sample is a member of the group as of the read, which
+    /// > may trail a join or departure by a moment: it is a subset of the roster
+    /// > GetRoster pages, never someone who never joined, though someone who
+    /// > left a moment ago may still be in it. It is not the whole roster: it is neither complete nor
+    /// > paged and carries no roster version, and has_more is the only
+    /// > indication of what lies past it. The server decides how many to
+    /// > return, up to 100; neither the size nor the order after the creator is
+    /// > part of the contract.
+    /// > 
+    /// > It is a snapshot, which a client may show as it is. A client that wants
+    /// > it live, and streams the group's events (as a member, or through a chat
+    /// > preview), may instead keep it fresh between fetches by moving the
+    /// > sender of each new message to the front, adding them if absent, since
+    /// > anyone who sends is a member. Departures are not announced to the other
+    /// > members (see RosterUpdate.MembershipChanged), so a member who has left
+    /// > may remain in a client's copy until it fetches again.
+    /// > 
+    /// > Only for public groups: a private group (see Metadata.is_private) and a
+    /// > DM are DENIED, whoever asks.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_SampleChattersRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func sampleChatters<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SampleChattersRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SampleChattersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.sampleChatters(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_SampleChattersRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_SampleChattersResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -2123,17 +2544,18 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Only a group chat may be edited, and only by a member the server permits
     /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
     /// > is DENIED. A new title or description is moderated like StartChat's. A
-    /// > new picture is a blob the caller has already uploaded via
-    /// > BlobStorage: the client uploads only the ORIGINAL and passes the
-    /// > resulting BlobId once the blob is READY, and the server derives the
-    /// > remaining renditions. Setting a field to the value the chat already has
-    /// > is a no-op for that field, and a request that sets nothing is a no-op
-    /// > that returns OK.
+    /// > new profile picture or cover picture is a blob the caller has already
+    /// > uploaded via BlobStorage: the client uploads only the ORIGINAL and
+    /// > passes the resulting BlobId once the blob is READY, and the server
+    /// > derives the remaining renditions. Setting a field to the value the chat
+    /// > already has is a no-op for that field, and a request that sets nothing
+    /// > is a no-op that returns OK.
     /// > 
     /// > Every real change reaches the chat's members, including the caller's
     /// > other devices, on the event stream as one MetadataUpdate per field
-    /// > changed: TitleChanged for the title, PictureChanged for the picture,
-    /// > DescriptionChanged for the description.
+    /// > changed: TitleChanged for the title, ProfilePictureChanged for the
+    /// > profile picture, DescriptionChanged for the description,
+    /// > CoverPictureChanged for the cover picture.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_EditChatRequest` message.
@@ -2516,6 +2938,100 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             onResponse: handleResponse
         )
     }
+
+    /// Call the "SetFeaturedGroups" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetFeaturedGroups replaces the caller's featured groups: an ordered
+    /// > list of public group chats they show on their profile, which anyone can
+    /// > fetch with GetFeaturedGroups. The list is written whole, so the request
+    /// > carries every group the caller wants featured, in the order to show
+    /// > them, and an empty list clears it. Setting the list already stored is a
+    /// > no-op that returns OK.
+    /// > 
+    /// > Featuring a group says nothing about the caller's place in it: a group
+    /// > may be featured whether or not the caller is a member, and leaving a
+    /// > group does not remove it from the list.
+    /// > 
+    /// > Only public groups may be featured: when a group in the request is
+    /// > private (see Metadata.is_private), nothing is written and the result
+    /// > is DENIED. A group never becomes private after it is created, so a
+    /// > featured group stays public. Every group must exist: when one does not,
+    /// > nothing is written and the result is NOT_FOUND. A DM's ID, or a group
+    /// > named more than once, is an invalid argument.
+    /// > 
+    /// > Nothing is published: the caller's other devices see the change on
+    /// > their next GetFeaturedGroups.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_SetFeaturedGroupsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setFeaturedGroups<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SetFeaturedGroupsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetFeaturedGroupsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.setFeaturedGroups(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_SetFeaturedGroupsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_SetFeaturedGroupsResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetFeaturedGroups" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetFeaturedGroups returns a user's featured groups (see
+    /// > SetFeaturedGroups), in the order the user set them.
+    /// > 
+    /// > Each group is a public group (see SetFeaturedGroups), returned as its
+    /// > record as a list view shows it: chat_id, type, title, description,
+    /// > profile_picture, roster_summary, rules, creator and last_activity. Nothing about the viewer's place in the
+    /// > group is set (members, is_hidden, viewer_state, in_lobby), nor its
+    /// > messaging state (last_message, latest_event_sequence), nor its
+    /// > cover_picture: a client opening a group fetches the rest with GetChat.
+    /// > 
+    /// > The list is public, like the user's profile, and the same for every
+    /// > viewer. Auth is optional; when set it must be valid, but it changes
+    /// > nothing about what is returned. A group that no longer exists is left
+    /// > out.
+    /// > 
+    /// > The user is identified by username, the handle a profile is opened by,
+    /// > so a client can fetch a profile (see profile.v1.Profile.GetProfile) and
+    /// > its featured groups at once.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetFeaturedGroupsRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getFeaturedGroups<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetFeaturedGroupsRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetFeaturedGroupsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getFeaturedGroups(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetFeaturedGroupsRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetFeaturedGroupsResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
 }
 
 // Helpers providing sugared APIs for 'ClientProtocol' methods.
@@ -2648,6 +3164,10 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > being read. Every page is served only for groups the caller is still a
     /// > member of at the time of that page; a group the caller left between
     /// > pages is dropped, and its removal arrives on the stream.
+    /// > 
+    /// > The feed is meant for list views, so a chat's cover_picture may be
+    /// > omitted from it (see Metadata). Fetch it with GetChat when the client
+    /// > shows the chat's profile view.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -2704,9 +3224,9 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > carry none: group pointer advances are never broadcast, so a page of
     /// > them would be stale as soon as it was served.
     /// > 
-    /// > Requires that the caller may read the chat: a member, or a non-member
-    /// > a group's listener rules admit. A viewer who may only preview the chat
-    /// > is DENIED.
+    /// > Requires that the caller is a member of the chat. Anyone else is
+    /// > DENIED, including a non-member whom a group's listener rules admit to
+    /// > read its messages: who is in a chat is shown only to its members.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -2729,6 +3249,71 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getRoster(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SampleChatters" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SampleChatters returns a short sample of a public group's members to
+    /// > show: its creator first, while they are a member, then the members who
+    /// > have sent a message most recently, most recent first. Members who have
+    /// > not sent a message recently are not in it. The caller is included like
+    /// > any other member, and so are users the caller has blocked: the sample
+    /// > shows who is in the chat, not who may be mentioned (see
+    /// > GetMentionSuggestions).
+    /// > 
+    /// > Unlike the roster (see GetRoster), the sample is public: it is part of
+    /// > how a group presents itself, as its title and pictures are, and is
+    /// > returned to anyone who asks, member or not, registered or not. Auth is
+    /// > optional; when set it must be valid, but it changes nothing about what
+    /// > is returned.
+    /// > 
+    /// > Everyone in the sample is a member of the group as of the read, which
+    /// > may trail a join or departure by a moment: it is a subset of the roster
+    /// > GetRoster pages, never someone who never joined, though someone who
+    /// > left a moment ago may still be in it. It is not the whole roster: it is neither complete nor
+    /// > paged and carries no roster version, and has_more is the only
+    /// > indication of what lies past it. The server decides how many to
+    /// > return, up to 100; neither the size nor the order after the creator is
+    /// > part of the contract.
+    /// > 
+    /// > It is a snapshot, which a client may show as it is. A client that wants
+    /// > it live, and streams the group's events (as a member, or through a chat
+    /// > preview), may instead keep it fresh between fetches by moving the
+    /// > sender of each new message to the front, adding them if absent, since
+    /// > anyone who sends is a member. Departures are not announced to the other
+    /// > members (see RosterUpdate.MembershipChanged), so a member who has left
+    /// > may remain in a client's copy until it fetches again.
+    /// > 
+    /// > Only for public groups: a private group (see Metadata.is_private) and a
+    /// > DM are DENIED, whoever asks.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func sampleChatters<Result>(
+        _ message: Flipcash_Chat_V1_SampleChattersRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SampleChattersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_SampleChattersRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.sampleChatters(
             request: request,
             options: options,
             onResponse: handleResponse
@@ -2905,17 +3490,18 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Only a group chat may be edited, and only by a member the server permits
     /// > to edit it, as reported by ViewerState.Permissions.can_edit; anyone else
     /// > is DENIED. A new title or description is moderated like StartChat's. A
-    /// > new picture is a blob the caller has already uploaded via
-    /// > BlobStorage: the client uploads only the ORIGINAL and passes the
-    /// > resulting BlobId once the blob is READY, and the server derives the
-    /// > remaining renditions. Setting a field to the value the chat already has
-    /// > is a no-op for that field, and a request that sets nothing is a no-op
-    /// > that returns OK.
+    /// > new profile picture or cover picture is a blob the caller has already
+    /// > uploaded via BlobStorage: the client uploads only the ORIGINAL and
+    /// > passes the resulting BlobId once the blob is READY, and the server
+    /// > derives the remaining renditions. Setting a field to the value the chat
+    /// > already has is a no-op for that field, and a request that sets nothing
+    /// > is a no-op that returns OK.
     /// > 
     /// > Every real change reaches the chat's members, including the caller's
     /// > other devices, on the event stream as one MetadataUpdate per field
-    /// > changed: TitleChanged for the title, PictureChanged for the picture,
-    /// > DescriptionChanged for the description.
+    /// > changed: TitleChanged for the title, ProfilePictureChanged for the
+    /// > profile picture, DescriptionChanged for the description,
+    /// > CoverPictureChanged for the cover picture.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -3333,6 +3919,108 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getKeyEnvelope(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SetFeaturedGroups" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SetFeaturedGroups replaces the caller's featured groups: an ordered
+    /// > list of public group chats they show on their profile, which anyone can
+    /// > fetch with GetFeaturedGroups. The list is written whole, so the request
+    /// > carries every group the caller wants featured, in the order to show
+    /// > them, and an empty list clears it. Setting the list already stored is a
+    /// > no-op that returns OK.
+    /// > 
+    /// > Featuring a group says nothing about the caller's place in it: a group
+    /// > may be featured whether or not the caller is a member, and leaving a
+    /// > group does not remove it from the list.
+    /// > 
+    /// > Only public groups may be featured: when a group in the request is
+    /// > private (see Metadata.is_private), nothing is written and the result
+    /// > is DENIED. A group never becomes private after it is created, so a
+    /// > featured group stays public. Every group must exist: when one does not,
+    /// > nothing is written and the result is NOT_FOUND. A DM's ID, or a group
+    /// > named more than once, is an invalid argument.
+    /// > 
+    /// > Nothing is published: the caller's other devices see the change on
+    /// > their next GetFeaturedGroups.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func setFeaturedGroups<Result>(
+        _ message: Flipcash_Chat_V1_SetFeaturedGroupsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SetFeaturedGroupsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_SetFeaturedGroupsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.setFeaturedGroups(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetFeaturedGroups" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetFeaturedGroups returns a user's featured groups (see
+    /// > SetFeaturedGroups), in the order the user set them.
+    /// > 
+    /// > Each group is a public group (see SetFeaturedGroups), returned as its
+    /// > record as a list view shows it: chat_id, type, title, description,
+    /// > profile_picture, roster_summary, rules, creator and last_activity. Nothing about the viewer's place in the
+    /// > group is set (members, is_hidden, viewer_state, in_lobby), nor its
+    /// > messaging state (last_message, latest_event_sequence), nor its
+    /// > cover_picture: a client opening a group fetches the rest with GetChat.
+    /// > 
+    /// > The list is public, like the user's profile, and the same for every
+    /// > viewer. Auth is optional; when set it must be valid, but it changes
+    /// > nothing about what is returned. A group that no longer exists is left
+    /// > out.
+    /// > 
+    /// > The user is identified by username, the handle a profile is opened by,
+    /// > so a client can fetch a profile (see profile.v1.Profile.GetProfile) and
+    /// > its featured groups at once.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getFeaturedGroups<Result>(
+        _ message: Flipcash_Chat_V1_GetFeaturedGroupsRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetFeaturedGroupsResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetFeaturedGroupsRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getFeaturedGroups(
             request: request,
             options: options,
             onResponse: handleResponse
