@@ -761,9 +761,21 @@ public struct Flipcash_Chat_V1_StartChatRequest: Sendable {
     /// Clears the value of `profilePicture`. Subsequent reads from it will return its default value.
     public mutating func clearProfilePicture() {self._profilePicture = nil}
 
-    /// Rules governing participation in the chat. Optional; if not set, the
-    /// chat has no participation requirements. Caller must satisfy the rules
-    /// in order for the chat to be started.
+    /// Rules governing participation in the chat. Caller must satisfy the
+    /// rules, speaker rules included, in order for the chat to be started
+    /// (RULES_NOT_SATISFIED otherwise).
+    ///
+    /// The server currently accepts only the following, and refuses
+    /// anything else as INVALID_RULES:
+    ///  - Listener rules: exactly one MinimumBalanceRequirement, which is
+    ///    required, and optionally one StaffRequirement.
+    ///  - Speaker rules: optionally one MinimumBalanceRequirement. If set,
+    ///    it must be in the same currency and the same mints as the
+    ///    listener MinimumBalanceRequirement, and its amount must be larger
+    ///    by at least the currency's minimum transfer value.
+    /// Every MinimumBalanceRequirement must be at least the currency's
+    /// minimum transfer value (one unit at its last decimal place, e.g.
+    /// 0.01 USD or 1 JPY), in a currency the server can value.
     public var rules: Flipcash_Chat_V1_Rules {
       get {return _rules ?? Flipcash_Chat_V1_Rules()}
       set {_rules = newValue}
