@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 9d44350b8d4d8eda9d63cff405238bd0e2920409
-subject: Add support for featured groups (#138)
+commit: 9f67566fd0297a27ad2de7a98474634adf4d3a24
+subject: Update StartChat comments to enable minimum speaker balanace requirements for public groups (#139)
