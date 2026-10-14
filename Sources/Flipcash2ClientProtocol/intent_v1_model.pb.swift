@@ -20,6 +20,47 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
+/// The action being performed for a payment in a chat
+public enum Flipcash_Intent_V1_PaymentAction: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+
+  /// Same as SEND: the payment is shown as "sent", not "tipped"
+  case `default` // = 0
+  case send // = 1
+  case tip // = 2
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .default
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .default
+    case 1: self = .send
+    case 2: self = .tip
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .default: return 0
+    case .send: return 1
+    case .tip: return 2
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Flipcash_Intent_V1_PaymentAction] = [
+    .default,
+    .send,
+    .tip,
+  ]
+
+}
+
 public struct Flipcash_Intent_V1_AppMetadata: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -78,11 +119,20 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     set {type = .dmPayment(newValue)}
   }
 
+  public var groupPayment: Flipcash_Intent_V1_ChatMetadata.GroupPayment {
+    get {
+      if case .groupPayment(let v)? = type {return v}
+      return Flipcash_Intent_V1_ChatMetadata.GroupPayment()
+    }
+    set {type = .groupPayment(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
     case contactDmPayment(Flipcash_Intent_V1_ChatMetadata.ContactDmPayment)
     case dmPayment(Flipcash_Intent_V1_ChatMetadata.DmPayment)
+    case groupPayment(Flipcash_Intent_V1_ChatMetadata.GroupPayment)
 
   }
 
@@ -129,7 +179,8 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
 
     public var location: Flipcash_Intent_V1_ChatMetadata.DmPayment.Location = .flipcard
 
-    public var action: Flipcash_Intent_V1_ChatMetadata.DmPayment.Action = .default
+    /// The action being performed for the payment
+    public var action: Flipcash_Intent_V1_PaymentAction = .default
 
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -168,46 +219,26 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
 
     }
 
-    /// The action being performed for the payment
-    public enum Action: SwiftProtobuf.Enum, Swift.CaseIterable {
-      public typealias RawValue = Int
+    public init() {}
+  }
 
-      /// Same as SEND: the payment is shown as "sent", not "tipped"
-      case `default` // = 0
-      case send // = 1
-      case tip // = 2
-      case UNRECOGNIZED(Int)
+  /// For sending a payment directly to another member of a group chat. The
+  /// chat_id must be a group, and the payment's destination owner account
+  /// names the recipient, who must be a Flipcash user and a member of the
+  /// group. The sender must be able to speak in the group: the payment posts
+  /// a CashContent message into it as the sender, naming the recipient as
+  /// its receiver.
+  public struct GroupPayment: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
 
-      public init() {
-        self = .default
-      }
+    /// The action being performed for the payment. Only DEFAULT and SEND
+    /// are supported today, and the payment is shown as SENT; the server
+    /// denies TIP.
+    public var action: Flipcash_Intent_V1_PaymentAction = .default
 
-      public init?(rawValue: Int) {
-        switch rawValue {
-        case 0: self = .default
-        case 1: self = .send
-        case 2: self = .tip
-        default: self = .UNRECOGNIZED(rawValue)
-        }
-      }
-
-      public var rawValue: Int {
-        switch self {
-        case .default: return 0
-        case .send: return 1
-        case .tip: return 2
-        case .UNRECOGNIZED(let i): return i
-        }
-      }
-
-      // The compiler won't synthesize support with the UNRECOGNIZED case.
-      public static let allCases: [Flipcash_Intent_V1_ChatMetadata.DmPayment.Action] = [
-        .default,
-        .send,
-        .tip,
-      ]
-
-    }
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     public init() {}
   }
@@ -220,6 +251,10 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "flipcash.intent.v1"
+
+extension Flipcash_Intent_V1_PaymentAction: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0DEFAULT\0\u{1}SEND\0\u{1}TIP\0")
+}
 
 extension Flipcash_Intent_V1_AppMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".AppMetadata"
@@ -269,7 +304,7 @@ extension Flipcash_Intent_V1_AppMetadata: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -304,6 +339,19 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
           self.type = .dmPayment(v)
         }
       }()
+      case 4: try {
+        var v: Flipcash_Intent_V1_ChatMetadata.GroupPayment?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .groupPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .groupPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -325,6 +373,10 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
     case .dmPayment?: try {
       guard case .dmPayment(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case .groupPayment?: try {
+      guard case .groupPayment(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
     }()
     case nil: break
     }
@@ -417,6 +469,32 @@ extension Flipcash_Intent_V1_ChatMetadata.DmPayment.Location: SwiftProtobuf._Pro
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FLIPCARD\0\u{1}CHAT\0")
 }
 
-extension Flipcash_Intent_V1_ChatMetadata.DmPayment.Action: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0DEFAULT\0\u{1}SEND\0\u{1}TIP\0")
+extension Flipcash_Intent_V1_ChatMetadata.GroupPayment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Intent_V1_ChatMetadata.protoMessageName + ".GroupPayment"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}action\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.action) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.action != .default {
+      try visitor.visitSingularEnumField(value: self.action, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.GroupPayment, rhs: Flipcash_Intent_V1_ChatMetadata.GroupPayment) -> Bool {
+    if lhs.action != rhs.action {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
 }
