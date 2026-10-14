@@ -8,6 +8,68 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.19.0
+
+Synced to [`flipcash2-protobuf-api@1897108a`](https://github.com/code-payments/flipcash2-protobuf-api/commit/1897108ae75e032fc5f7de13cf6e9cadcec9deda),
+picking up [#139](https://github.com/code-payments/flipcash2-protobuf-api/pull/139) (docs only),
+[#140](https://github.com/code-payments/flipcash2-protobuf-api/pull/140),
+[#141](https://github.com/code-payments/flipcash2-protobuf-api/pull/141),
+[#142](https://github.com/code-payments/flipcash2-protobuf-api/pull/142),
+[#143](https://github.com/code-payments/flipcash2-protobuf-api/pull/143),
+[#144](https://github.com/code-payments/flipcash2-protobuf-api/pull/144),
+[#145](https://github.com/code-payments/flipcash2-protobuf-api/pull/145) and
+[#146](https://github.com/code-payments/flipcash2-protobuf-api/pull/146). `poll.v1` is new;
+`intent.v1` and `messaging.v1` moved; `chat.v1` changed only in comments.
+
+This release adds polls, payments in group chats, link previews and structured system messages. One
+enum moved, which is wire-compatible but breaks source in both languages.
+
+### Moved
+
+- `ChatMetadata.DmPayment.Action` is now the top-level enum `PaymentAction`, shared by DM and
+  group payments. Its cases keep their values (`DEFAULT = 0`, `SEND = 1`, `TIP = 2`) and
+  `DmPayment.action` keeps field 2, so the wire format is unchanged. Code naming the old type has
+  to be updated: `Flipcash_Intent_V1_ChatMetadata.DmPayment.Action` becomes
+  `Flipcash_Intent_V1_PaymentAction` in Swift, and `ChatMetadata.DmPayment.Action` becomes
+  `PaymentAction` in Kotlin.
+
+### Added
+
+- A `Poll` service in `poll.v1` with `CreatePoll`, `GetPoll`, `GetPolls` and `Vote`, and its model:
+  count or balance-weighted polls of 2 to 10 options, single or multiple choice, a required end
+  time 5 minutes to 30 days out, and question text that is plaintext in a group that is not
+  private and encrypted in a private one. Results come back as count, balance, ranked or withheld,
+  and every vote result model carries `total_voters`.
+- `WidgetContent.poll` (field 2), a `PollWidget` carrying only the poll's ID. In a group that is not
+  private, `SendMessage` accepts it only from the poll's creator, in the poll's own chat, while the
+  poll is `OPEN`. A private group sends it inside `EncryptedContent`, where clients do those checks
+  and render a mismatch as unsupported.
+- `ChatMetadata.group_payment` (field 4), a `GroupPayment` for paying another member of a group
+  chat. The payment's destination owner names the recipient, who must be a member. Only `DEFAULT`
+  and `SEND` are accepted; the server denies `TIP`.
+- `CashContent.receiver` (field 3, previously reserved), the user who received the cash. It is
+  always set in a group chat. In a DM it is set on new messages only, so a client reading older DM
+  messages still has to treat the other member as the receiver when it is unset.
+- `TextContent.link_previews` (field 2), at most one `LinkPreview` with a `url`, `title`, optional
+  `description` and optional `image`. The sending device builds the preview, so its title,
+  description and image are the sender's claim; the comments on `LinkPreview` spell out the
+  validation rules and how clients have to render the host.
+- `SystemContent.type`, a required oneof whose first case is `user_joined` (field 2). `UserJoined`
+  names the user and how they joined: `direct`, or `admitted` with the user who let them in.
+  `fallback_text` is unchanged and still always set; a client renders it only for a variant it
+  does not recognize.
+
+### Changed
+
+- `EncryptedContent.ciphertext` may now be up to 28672 bytes, up from 17408, to fit a maximum-length
+  text with a link preview.
+
+### Unchanged
+
+Nothing was renumbered. Every result enum in this release is new, so no existing case moved. Apart
+from the `PaymentAction` move, no existing field changed type or meaning, and no service, RPC,
+message or enum case was removed.
+
 ## 0.18.0
 
 Synced to [`flipcash2-protobuf-api@9d44350b`](https://github.com/code-payments/flipcash2-protobuf-api/commit/9d44350b8d4d8eda9d63cff405238bd0e2920409),
