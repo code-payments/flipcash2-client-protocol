@@ -407,6 +407,9 @@ public struct Flipcash_Messaging_V1_SendMessageRequest: Sendable {
   ///  - TextContent
   ///  - ReplyContent
   ///  - MediaContent
+  ///  - WidgetContent with a PollWidget, in group chats that are not private
+  ///    only. A private group sends it inside EncryptedContent. See
+  ///    PollWidget for when it is accepted.
   ///  - EncryptedContent, in DMs and private groups only. A private group
   ///    accepts nothing else.
   ///
