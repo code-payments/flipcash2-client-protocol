@@ -992,6 +992,11 @@ public struct Flipcash_Messaging_V1_RemoveReactionResponse: Sendable {
     case ok // = 0
     case denied // = 1
     case messageNotFound // = 2
+
+    /// The caller has paid to boost this emoji on the message (see
+    /// Reactor.boost_usd), and a boosted reaction is permanent. Nothing
+    /// changed.
+    case cannotRemoveBoosted // = 3
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -1003,6 +1008,7 @@ public struct Flipcash_Messaging_V1_RemoveReactionResponse: Sendable {
       case 0: self = .ok
       case 1: self = .denied
       case 2: self = .messageNotFound
+      case 3: self = .cannotRemoveBoosted
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -1012,6 +1018,7 @@ public struct Flipcash_Messaging_V1_RemoveReactionResponse: Sendable {
       case .ok: return 0
       case .denied: return 1
       case .messageNotFound: return 2
+      case .cannotRemoveBoosted: return 3
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -1021,6 +1028,7 @@ public struct Flipcash_Messaging_V1_RemoveReactionResponse: Sendable {
       .ok,
       .denied,
       .messageNotFound,
+      .cannotRemoveBoosted,
     ]
 
   }
@@ -1063,13 +1071,16 @@ public struct Flipcash_Messaging_V1_GetReactorsRequest: Sendable {
   /// Clears the value of `emoji`. Subsequent reads from it will return its default value.
   public mutating func clearEmoji() {self._emoji = nil}
 
-  /// Paging over the reactor list. The order is fixed: reaction order, newest
-  /// first — descending Reactor.version, never reacted_ts. Leave
+  /// Paging over the reactor list. The order is fixed: most boosted first
+  /// (descending Reactor.boost_usd), then reaction order, newest first
+  /// (descending Reactor.version), never reacted_ts. Leave
   /// options.paging_token unset on the first request; on every subsequent
   /// request, set it to the paging_token from the most recent response to
   /// advance through the list. The token is opaque and server-generated; do
-  /// not construct it. options.page_size above 100 is clamped to 100, the most
-  /// a response carries; options.order is ignored.
+  /// not construct it, and do not keep it: a token the server no longer
+  /// recognises (one issued under an earlier order, say) is answered with
+  /// the first page, not an error. options.page_size above 100 is clamped to
+  /// 100, the most a response carries; options.order is ignored.
   public var options: Flipcash_Common_V1_QueryOptions {
     get {return _options ?? Flipcash_Common_V1_QueryOptions()}
     set {_options = newValue}
@@ -1106,9 +1117,9 @@ public struct Flipcash_Messaging_V1_GetReactorsResponse: Sendable {
 
   public var result: Flipcash_Messaging_V1_GetReactorsResponse.Result = .ok
 
-  /// A page of users who reacted with the requested emoji, newest first (see
-  /// Reactor.version). Empty when the message exists but has no reactors for
-  /// the emoji.
+  /// A page of users who reacted with the requested emoji, most boosted
+  /// first and then newest first (see Reactor.version). Empty when the
+  /// message exists but has no reactors for the emoji.
   public var reactors: [Flipcash_Messaging_V1_Reactor] = []
 
   /// The server-generated cursor advanced past this page. The client MUST send
@@ -1135,8 +1146,15 @@ public struct Flipcash_Messaging_V1_GetReactorsResponse: Sendable {
   /// keeping an open reactor list live applies ReactionUpdates for this
   /// (message, emoji) whose version exceeds this value; any it re-applies are
   /// idempotent (an ADDED actor already listed dedupes, a REMOVED actor already
-  /// absent is a no-op). 0 when the emoji has never been reacted with on the
-  /// message. Set when result is OK.
+  /// absent is a no-op, a BOOSTED actor already at the update's
+  /// actor_boost_usd stays put). The boosted head of the list may be
+  /// served from an index that trails a boost by a moment, so a boost that
+  /// landed just before the page can be absent from it, or show the actor
+  /// at an earlier total; no update repairs that (the boost's version is at
+  /// or below this value), and the reactor appears on the next read. A
+  /// client may apply a BOOSTED update's actor_boost_usd whatever its
+  /// version, since a total re-applied is the same total. 0 when the emoji
+  /// has never been reacted with on the message. Set when result is OK.
   public var version: UInt64 = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -2355,7 +2373,7 @@ extension Flipcash_Messaging_V1_RemoveReactionResponse: SwiftProtobuf.Message, S
 }
 
 extension Flipcash_Messaging_V1_RemoveReactionResponse.Result: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}MESSAGE_NOT_FOUND\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}MESSAGE_NOT_FOUND\0\u{1}CANNOT_REMOVE_BOOSTED\0")
 }
 
 extension Flipcash_Messaging_V1_GetReactorsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

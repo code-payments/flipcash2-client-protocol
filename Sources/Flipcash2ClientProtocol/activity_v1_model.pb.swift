@@ -336,6 +336,19 @@ public struct Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: Senda
     set {destinationIdentifier = .userID(newValue)}
   }
 
+  /// Set when the payment boosted a reaction (see BoostedReaction). A boost
+  /// that paid one person names them in destination_identifier; one that
+  /// paid both the message's sender and the group's creator names neither,
+  /// and payment_amount is the whole boost.
+  public var boostedReaction: Flipcash_Activity_V1_BoostedReaction {
+    get {return _boostedReaction ?? Flipcash_Activity_V1_BoostedReaction()}
+    set {_boostedReaction = newValue}
+  }
+  /// Returns true if `boostedReaction` has been explicitly set.
+  public var hasBoostedReaction: Bool {return self._boostedReaction != nil}
+  /// Clears the value of `boostedReaction`. Subsequent reads from it will return its default value.
+  public mutating func clearBoostedReaction() {self._boostedReaction = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_DestinationIdentifier: Equatable, Sendable {
@@ -345,6 +358,8 @@ public struct Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: Senda
   }
 
   public init() {}
+
+  fileprivate var _boostedReaction: Flipcash_Activity_V1_BoostedReaction? = nil
 }
 
 public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable {
@@ -370,6 +385,19 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
     set {sourceIdentifier = .userID(newValue)}
   }
 
+  /// Set when the payment was the recipient's share of a boost of a
+  /// reaction (see BoostedReaction), paid to them as the boosted message's
+  /// sender or the group's creator. source_identifier names the payer, and
+  /// payment_amount is the recipient's share alone.
+  public var boostedReaction: Flipcash_Activity_V1_BoostedReaction {
+    get {return _boostedReaction ?? Flipcash_Activity_V1_BoostedReaction()}
+    set {_boostedReaction = newValue}
+  }
+  /// Returns true if `boostedReaction` has been explicitly set.
+  public var hasBoostedReaction: Bool {return self._boostedReaction != nil}
+  /// Clears the value of `boostedReaction`. Subsequent reads from it will return its default value.
+  public mutating func clearBoostedReaction() {self._boostedReaction = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_SourceIdentifier: Equatable, Sendable {
@@ -379,6 +407,57 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
   }
 
   public init() {}
+
+  fileprivate var _boostedReaction: Flipcash_Activity_V1_BoostedReaction? = nil
+}
+
+/// The reaction a payment boosted: the payer's reaction with emoji on a
+/// message in a group chat (see intent.v1.ChatMetadata.ReactionBoost). It is
+/// what the payment was for when it was made and is not kept up to date: the
+/// message may since have been deleted, and the viewer may no longer be a
+/// member of the chat.
+public struct Flipcash_Activity_V1_BoostedReaction: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The group chat the boosted message is in.
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The message whose reaction was boosted.
+  public var messageID: Flipcash_Messaging_V1_MessageId {
+    get {return _messageID ?? Flipcash_Messaging_V1_MessageId()}
+    set {_messageID = newValue}
+  }
+  /// Returns true if `messageID` has been explicitly set.
+  public var hasMessageID: Bool {return self._messageID != nil}
+  /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
+  public mutating func clearMessageID() {self._messageID = nil}
+
+  /// The emoji of the boosted reaction.
+  public var emoji: Flipcash_Messaging_V1_Emoji {
+    get {return _emoji ?? Flipcash_Messaging_V1_Emoji()}
+    set {_emoji = newValue}
+  }
+  /// Returns true if `emoji` has been explicitly set.
+  public var hasEmoji: Bool {return self._emoji != nil}
+  /// Clears the value of `emoji`. Subsequent reads from it will return its default value.
+  public mutating func clearEmoji() {self._emoji = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
+  fileprivate var _emoji: Flipcash_Messaging_V1_Emoji? = nil
 }
 
 public struct Flipcash_Activity_V1_WithdrewCryptoNotificationMetadata: Sendable {
@@ -837,7 +916,7 @@ extension Flipcash_Activity_V1_Notification: SwiftProtobuf.Message, SwiftProtobu
 
 extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".DirectlySentCryptoNotificationMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -871,6 +950,7 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
           self.destinationIdentifier = .userID(v)
         }
       }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._boostedReaction) }()
       default: break
       }
     }
@@ -892,11 +972,15 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
     }()
     case nil: break
     }
+    try { if let v = self._boostedReaction {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata, rhs: Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata) -> Bool {
     if lhs.destinationIdentifier != rhs.destinationIdentifier {return false}
+    if lhs._boostedReaction != rhs._boostedReaction {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -904,7 +988,7 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
 
 extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ReceivedCryptoNotificationMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -938,6 +1022,7 @@ extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf
           self.sourceIdentifier = .userID(v)
         }
       }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._boostedReaction) }()
       default: break
       }
     }
@@ -959,11 +1044,59 @@ extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf
     }()
     case nil: break
     }
+    try { if let v = self._boostedReaction {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata, rhs: Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata) -> Bool {
     if lhs.sourceIdentifier != rhs.sourceIdentifier {return false}
+    if lhs._boostedReaction != rhs._boostedReaction {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Activity_V1_BoostedReaction: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".BoostedReaction"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}message_id\0\u{1}emoji\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._emoji) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._messageID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._emoji {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Activity_V1_BoostedReaction, rhs: Flipcash_Activity_V1_BoostedReaction) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._messageID != rhs._messageID {return false}
+    if lhs._emoji != rhs._emoji {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

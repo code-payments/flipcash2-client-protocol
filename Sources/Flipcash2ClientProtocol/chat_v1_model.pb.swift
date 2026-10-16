@@ -272,6 +272,26 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   /// Clears the value of `coverPicture`. Subsequent reads from it will return its default value.
   public mutating func clearCoverPicture() {_uniqueStorage()._coverPicture = nil}
 
+  /// What the group's members hold of the currency the group is gated on.
+  /// Only supported for public group chats gated on a single currency
+  /// launched on Flipcash (see HoldingsSummary for what that means). Unset
+  /// for every other chat, for such a group until the server has first
+  /// computed it, and whenever too few of its members hold the currency:
+  /// the server sets a minimum number of holders (and a positive total)
+  /// below which it shows no summary, and may change it. A group whose
+  /// holders fall below the minimum loses its summary at the next refresh.
+  ///
+  /// A periodic snapshot (see HoldingsSummary.as_of), not live: no event
+  /// announces a change, and a client refetches the chat to refresh it.
+  public var holdingsSummary: Flipcash_Chat_V1_HoldingsSummary {
+    get {return _storage._holdingsSummary ?? Flipcash_Chat_V1_HoldingsSummary()}
+    set {_uniqueStorage()._holdingsSummary = newValue}
+  }
+  /// Returns true if `holdingsSummary` has been explicitly set.
+  public var hasHoldingsSummary: Bool {return _storage._holdingsSummary != nil}
+  /// Clears the value of `holdingsSummary`. Subsequent reads from it will return its default value.
+  public mutating func clearHoldingsSummary() {_uniqueStorage()._holdingsSummary = nil}
+
   /// Whether messages in this chat are end-to-end encrypted (see
   /// messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or DM);
   /// always false for group chats. A private group is always end-to-end
@@ -672,6 +692,61 @@ public struct Flipcash_Chat_V1_RosterSummary: Sendable {
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
+}
+
+/// HoldingsSummary is what a group's members held of the currency the group is
+/// gated on, as of one moment (see Metadata.holdings_summary). Holdings are
+/// counted for the members at that moment, whether or not each still meets
+/// the group's minimum balance requirements.
+///
+/// A group is gated on a single currency when its minimum balance
+/// requirements (see MinimumBalanceRequirement), listener and speaker alike,
+/// all name the same one mint, and that mint is a currency launched on
+/// Flipcash. The fiat currency a requirement is denominated in does not
+/// matter. A group with no minimum balance requirement is not gated on a
+/// currency, nor is one with a requirement that names no mint (and so applies
+/// to every mint), nor one whose requirements name different mints.
+public struct Flipcash_Chat_V1_HoldingsSummary: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The mint of the currency the group is gated on: the one mint its
+  /// minimum balance requirements name.
+  public var mint: Flipcash_Common_V1_PublicKey {
+    get {return _mint ?? Flipcash_Common_V1_PublicKey()}
+    set {_mint = newValue}
+  }
+  /// Returns true if `mint` has been explicitly set.
+  public var hasMint: Bool {return self._mint != nil}
+  /// Clears the value of `mint`. Subsequent reads from it will return its default value.
+  public mutating func clearMint() {self._mint = nil}
+
+  /// The total amount of the currency held by the group's members, in the
+  /// mint's quarks. Clients value it in fiat with the currency's price they
+  /// already show.
+  public var quarks: UInt64 = 0
+
+  /// The number of the group's members who held any of the currency.
+  public var holderCount: UInt64 = 0
+
+  /// When quarks and holder_count were computed. How often the server
+  /// recomputes them is its to decide and may change.
+  public var asOf: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _asOf ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_asOf = newValue}
+  }
+  /// Returns true if `asOf` has been explicitly set.
+  public var hasAsOf: Bool {return self._asOf != nil}
+  /// Clears the value of `asOf`. Subsequent reads from it will return its default value.
+  public mutating func clearAsOf() {self._asOf = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _mint: Flipcash_Common_V1_PublicKey? = nil
+  fileprivate var _asOf: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
 }
 
 public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
@@ -1576,7 +1651,7 @@ extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Metadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{3}profile_picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{3}is_private\0\u{3}in_lobby\0\u{1}description\0\u{3}cover_picture\0\u{4}S\u{1}use_e2ee\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{3}profile_picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{3}is_private\0\u{3}in_lobby\0\u{1}description\0\u{3}cover_picture\0\u{3}holdings_summary\0\u{4}R\u{1}use_e2ee\0")
 
   fileprivate class _StorageClass {
     var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -1596,6 +1671,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
     var _inLobby: Bool = false
     var _description_p: String = String()
     var _coverPicture: Flipcash_Blob_V1_Media? = nil
+    var _holdingsSummary: Flipcash_Chat_V1_HoldingsSummary? = nil
     var _useE2Ee: Bool = false
 
       // This property is used as the initial default value for new instances of the type.
@@ -1624,6 +1700,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _inLobby = source._inLobby
       _description_p = source._description_p
       _coverPicture = source._coverPicture
+      _holdingsSummary = source._holdingsSummary
       _useE2Ee = source._useE2Ee
     }
   }
@@ -1660,6 +1737,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 15: try { try decoder.decodeSingularBoolField(value: &_storage._inLobby) }()
         case 16: try { try decoder.decodeSingularStringField(value: &_storage._description_p) }()
         case 17: try { try decoder.decodeSingularMessageField(value: &_storage._coverPicture) }()
+        case 18: try { try decoder.decodeSingularMessageField(value: &_storage._holdingsSummary) }()
         case 100: try { try decoder.decodeSingularBoolField(value: &_storage._useE2Ee) }()
         default: break
         }
@@ -1724,6 +1802,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       try { if let v = _storage._coverPicture {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
       } }()
+      try { if let v = _storage._holdingsSummary {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
+      } }()
       if _storage._useE2Ee != false {
         try visitor.visitSingularBoolField(value: _storage._useE2Ee, fieldNumber: 100)
       }
@@ -1753,6 +1834,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._inLobby != rhs_storage._inLobby {return false}
         if _storage._description_p != rhs_storage._description_p {return false}
         if _storage._coverPicture != rhs_storage._coverPicture {return false}
+        if _storage._holdingsSummary != rhs_storage._holdingsSummary {return false}
         if _storage._useE2Ee != rhs_storage._useE2Ee {return false}
         return true
       }
@@ -2351,6 +2433,55 @@ extension Flipcash_Chat_V1_RosterSummary: SwiftProtobuf.Message, SwiftProtobuf._
   public static func ==(lhs: Flipcash_Chat_V1_RosterSummary, rhs: Flipcash_Chat_V1_RosterSummary) -> Bool {
     if lhs.memberCount != rhs.memberCount {return false}
     if lhs.version != rhs.version {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_HoldingsSummary: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".HoldingsSummary"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}mint\0\u{1}quarks\0\u{3}holder_count\0\u{3}as_of\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._mint) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.quarks) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.holderCount) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._asOf) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._mint {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    if self.quarks != 0 {
+      try visitor.visitSingularUInt64Field(value: self.quarks, fieldNumber: 2)
+    }
+    if self.holderCount != 0 {
+      try visitor.visitSingularUInt64Field(value: self.holderCount, fieldNumber: 3)
+    }
+    try { if let v = self._asOf {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_HoldingsSummary, rhs: Flipcash_Chat_V1_HoldingsSummary) -> Bool {
+    if lhs._mint != rhs._mint {return false}
+    if lhs.quarks != rhs.quarks {return false}
+    if lhs.holderCount != rhs.holderCount {return false}
+    if lhs._asOf != rhs._asOf {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
