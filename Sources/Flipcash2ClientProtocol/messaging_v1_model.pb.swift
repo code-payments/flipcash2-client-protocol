@@ -1166,12 +1166,24 @@ public struct Flipcash_Messaging_V1_Reactor: Sendable {
 
   /// The emoji aggregate's version at which this reaction was added — the
   /// EmojiReaction.version the add produced. Unique among an emoji's reactors,
-  /// so it is the reactor list's order: descending version is reaction order,
-  /// newest first, with no clock involved. A reactor who removes and re-adds
-  /// comes back under a fresh, higher version, at the top. A client slotting a
-  /// ReactionUpdate's actor into sample_reactors records the update's version
-  /// here.
+  /// so with boost_usd it makes the reactor list's order total: the list is
+  /// most boosted first (descending boost_usd), then reaction order, newest
+  /// first (descending version), with no clock involved. Every plain
+  /// reaction sits after every boosted one. A reactor who removes and re-adds
+  /// comes back under a fresh, higher version, at the top of the plain
+  /// reactors. A client slotting a ReactionUpdate's actor into
+  /// sample_reactors records the update's version here.
   public var version: UInt64 = 0
+
+  /// The total the user has paid to boost this emoji on this message, in USD
+  /// at each payment's market value when it was made (see
+  /// intent.v1.ChatMetadata.ReactionBoost). 0 when they have only reacted.
+  /// A boosted reaction is permanent: it cannot be removed, and the total
+  /// only grows. It is the reactor list's primary order (see version): a
+  /// client applying a BOOSTED ReactionUpdate records the update's
+  /// actor_boost_usd here and moves the actor to their place among the
+  /// boosters.
+  public var boostUsd: Double = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1200,7 +1212,13 @@ public struct Flipcash_Messaging_V1_ReactionSummary: Sendable {
   /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
   public mutating func clearMessageID() {self._messageID = nil}
 
-  /// One entry per distinct emoji reacted to this message
+  /// One entry per distinct emoji reacted to this message, in the server's
+  /// display order: most money first (descending EmojiReaction.boost_usd),
+  /// then most reactors (descending count), then by the emoji itself. The
+  /// order is total for a given state, so two reads of the same state list
+  /// the same sequence. Counts and totals move as users react and boost, so
+  /// a client that wants a row to hold still between refreshes keeps its own
+  /// order; this is the order for a fresh render.
   public var reactions: [Flipcash_Messaging_V1_EmojiReaction] = []
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -1259,9 +1277,10 @@ public struct Flipcash_Messaging_V1_EmojiReaction: Sendable {
   public mutating func clearSelfReactor() {self._selfReactor = nil}
 
   /// A small sample of reactors (e.g. for rendering a few avatars), capped
-  /// well below count: the most recent reactors by Reactor.version, newest
-  /// first. The complete, paged reactor list is fetched on demand via
-  /// GetReactors, in the same order.
+  /// well below count: the first reactors in list order (see
+  /// Reactor.version), so the top boosters by Reactor.boost_usd and then the
+  /// most recent plain reactors, newest first. The complete, paged reactor
+  /// list is fetched on demand via GetReactors, in the same order.
   public var sampleReactors: [Flipcash_Messaging_V1_Reactor] = []
 
   /// Version of this emoji's aggregate on the message: assigned by the server
@@ -1286,6 +1305,18 @@ public struct Flipcash_Messaging_V1_EmojiReaction: Sendable {
   /// emoji entirely — their versions are not surfaced — so a refresh cannot
   /// restore a watermark once forgotten.
   public var version: UInt64 = 0
+
+  /// The total paid to boost this emoji on this message, in USD at each
+  /// payment's market value when it was made: the sum of every reactor's
+  /// boost_usd. 0 when no one has boosted it. It only grows, since a boosted
+  /// reaction cannot be removed, and it moves `version` like any other
+  /// change to the emoji. The server keeps every boost as its own record
+  /// behind these totals; there is no read of them yet.
+  ///
+  /// It is the primary sort key of a ReactionSummary (see there): the server
+  /// lists an emoji with more money behind it ahead of one with more
+  /// reactors.
+  public var boostUsd: Double = 0
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1315,7 +1346,7 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
   public mutating func clearMessageID() {self._messageID = nil}
 
-  /// The emoji that was added or removed.
+  /// The emoji that was added, removed or boosted.
   public var emoji: Flipcash_Messaging_V1_Emoji {
     get {return _emoji ?? Flipcash_Messaging_V1_Emoji()}
     set {_emoji = newValue}
@@ -1325,10 +1356,11 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   /// Clears the value of `emoji`. Subsequent reads from it will return its default value.
   public mutating func clearEmoji() {self._emoji = nil}
 
-  /// The user who added or removed the reaction. A client maintains its own
-  /// EmojiReaction.self_reactor by comparing this to itself (ADDED sets it
-  /// from this actor, `version` and `reacted_ts` below; REMOVED clears it),
-  /// so a reaction made on the user's other device is reflected.
+  /// The user who added, removed or boosted the reaction. A client maintains
+  /// its own EmojiReaction.self_reactor by comparing this to itself (ADDED
+  /// sets it from this actor, `version` and `reacted_ts` below; REMOVED
+  /// clears it; BOOSTED sets it if absent and records actor_boost_usd on
+  /// it), so a reaction made on the user's other device is reflected.
   public var actor: Flipcash_Common_V1_UserId {
     get {return _actor ?? Flipcash_Common_V1_UserId()}
     set {_actor = newValue}
@@ -1355,8 +1387,12 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   /// When the actor reacted. On ADDED, clients record this as the actor's
   /// Reactor.reacted_ts, and `version` above as their Reactor.version, when
   /// slotting them into sample_reactors or an open reactor list; ignored for
-  /// REMOVED. This is a display timestamp, distinct from `version`, which is
-  /// the ordering key.
+  /// REMOVED. On BOOSTED it is when the actor first reacted with the emoji:
+  /// the boost's time when the boost added the reaction, the original add's
+  /// time otherwise, so a client slotting a new reactor records it as above,
+  /// and one already listed keeps its reacted_ts and version while
+  /// actor_boost_usd moves it among the boosters. This is a display
+  /// timestamp, distinct from `version`, which is the ordering key.
   public var reactedTs: SwiftProtobuf.Google_Protobuf_Timestamp {
     get {return _reactedTs ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
     set {_reactedTs = newValue}
@@ -1366,6 +1402,15 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
   /// Clears the value of `reactedTs`. Subsequent reads from it will return its default value.
   public mutating func clearReactedTs() {self._reactedTs = nil}
 
+  /// The emoji's total boost after this change (EmojiReaction.boost_usd).
+  /// Set on BOOSTED; on ADDED and REMOVED it is the unchanged total, carried
+  /// so a client applying the update at `version` holds the whole aggregate.
+  public var boostUsd: Double = 0
+
+  /// The actor's own total on the emoji after this change (their
+  /// Reactor.boost_usd). Set on BOOSTED; 0 on ADDED and REMOVED.
+  public var actorBoostUsd: Double = 0
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum Action: SwiftProtobuf.Enum, Swift.CaseIterable {
@@ -1373,6 +1418,15 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
     case unknown // = 0
     case added // = 1
     case removed // = 2
+
+    /// The actor paid to boost the emoji (see
+    /// intent.v1.ChatMetadata.ReactionBoost). `count` is the reactor count
+    /// after it, one more than before when the actor had not reacted with
+    /// the emoji yet, unchanged otherwise; boost_usd and actor_boost_usd
+    /// carry the new totals. Applied by `version` like any other action,
+    /// so a client that missed the ADDED it implies still ends up with
+    /// the actor listed.
+    case boosted // = 3
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -1384,6 +1438,7 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
       case 0: self = .unknown
       case 1: self = .added
       case 2: self = .removed
+      case 3: self = .boosted
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -1393,6 +1448,7 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
       case .unknown: return 0
       case .added: return 1
       case .removed: return 2
+      case .boosted: return 3
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -1402,6 +1458,7 @@ public struct Flipcash_Messaging_V1_ReactionUpdate: Sendable {
       .unknown,
       .added,
       .removed,
+      .boosted,
     ]
 
   }
@@ -2714,7 +2771,7 @@ extension Flipcash_Messaging_V1_Emoji: SwiftProtobuf.Message, SwiftProtobuf._Mes
 
 extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Reactor"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{3}reacted_ts\0\u{1}version\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{3}reacted_ts\0\u{1}version\0\u{3}boost_usd\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2725,6 +2782,7 @@ extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._M
       case 1: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._reactedTs) }()
       case 3: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
+      case 4: try { try decoder.decodeSingularDoubleField(value: &self.boostUsd) }()
       default: break
       }
     }
@@ -2744,6 +2802,9 @@ extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._M
     if self.version != 0 {
       try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 3)
     }
+    if self.boostUsd.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.boostUsd, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2751,6 +2812,7 @@ extension Flipcash_Messaging_V1_Reactor: SwiftProtobuf.Message, SwiftProtobuf._M
     if lhs._userID != rhs._userID {return false}
     if lhs._reactedTs != rhs._reactedTs {return false}
     if lhs.version != rhs.version {return false}
+    if lhs.boostUsd != rhs.boostUsd {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2797,7 +2859,7 @@ extension Flipcash_Messaging_V1_ReactionSummary: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".EmojiReaction"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}emoji\0\u{1}count\0\u{3}self_reactor\0\u{3}sample_reactors\0\u{1}version\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}emoji\0\u{1}count\0\u{3}self_reactor\0\u{3}sample_reactors\0\u{1}version\0\u{3}boost_usd\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2810,6 +2872,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
       case 3: try { try decoder.decodeSingularMessageField(value: &self._selfReactor) }()
       case 4: try { try decoder.decodeRepeatedMessageField(value: &self.sampleReactors) }()
       case 5: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
+      case 6: try { try decoder.decodeSingularDoubleField(value: &self.boostUsd) }()
       default: break
       }
     }
@@ -2835,6 +2898,9 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
     if self.version != 0 {
       try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 5)
     }
+    if self.boostUsd.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.boostUsd, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2844,6 +2910,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
     if lhs._selfReactor != rhs._selfReactor {return false}
     if lhs.sampleReactors != rhs.sampleReactors {return false}
     if lhs.version != rhs.version {return false}
+    if lhs.boostUsd != rhs.boostUsd {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2851,7 +2918,7 @@ extension Flipcash_Messaging_V1_EmojiReaction: SwiftProtobuf.Message, SwiftProto
 
 extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ReactionUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{1}emoji\0\u{1}actor\0\u{1}action\0\u{1}count\0\u{1}version\0\u{3}reacted_ts\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{1}emoji\0\u{1}actor\0\u{1}action\0\u{1}count\0\u{1}version\0\u{3}reacted_ts\0\u{3}boost_usd\0\u{3}actor_boost_usd\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2866,6 +2933,8 @@ extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProt
       case 5: try { try decoder.decodeSingularUInt64Field(value: &self.count) }()
       case 6: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._reactedTs) }()
+      case 8: try { try decoder.decodeSingularDoubleField(value: &self.boostUsd) }()
+      case 9: try { try decoder.decodeSingularDoubleField(value: &self.actorBoostUsd) }()
       default: break
       }
     }
@@ -2897,6 +2966,12 @@ extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProt
     try { if let v = self._reactedTs {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     } }()
+    if self.boostUsd.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.boostUsd, fieldNumber: 8)
+    }
+    if self.actorBoostUsd.bitPattern != 0 {
+      try visitor.visitSingularDoubleField(value: self.actorBoostUsd, fieldNumber: 9)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2908,13 +2983,15 @@ extension Flipcash_Messaging_V1_ReactionUpdate: SwiftProtobuf.Message, SwiftProt
     if lhs.count != rhs.count {return false}
     if lhs.version != rhs.version {return false}
     if lhs._reactedTs != rhs._reactedTs {return false}
+    if lhs.boostUsd != rhs.boostUsd {return false}
+    if lhs.actorBoostUsd != rhs.actorBoostUsd {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
 extension Flipcash_Messaging_V1_ReactionUpdate.Action: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}ADDED\0\u{1}REMOVED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}ADDED\0\u{1}REMOVED\0\u{1}BOOSTED\0")
 }
 
 extension Flipcash_Messaging_V1_ReactionUpdateBatch: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

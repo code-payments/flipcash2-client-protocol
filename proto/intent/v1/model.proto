@@ -7,6 +7,7 @@ option java_package = "com.codeinc.flipcash.gen.intent.v1";
 option objc_class_prefix = "FPBIntentV1";
 
 import "common/v1/common.proto";
+import "messaging/v1/model.proto";
 import "validate/validate.proto";
 
 message AppMetadata {
@@ -27,6 +28,7 @@ message ChatMetadata {
         ContactDmPayment contact_dm_payment = 2;
         DmPayment        dm_payment         = 3;
         GroupPayment     group_payment      = 4;
+        ReactionBoost    reaction_boost     = 5;
     }
 
     // For sending a payment to a contact in a DM
@@ -63,6 +65,52 @@ message ChatMetadata {
         // are supported today, and the payment is shown as SENT; the server
         // denies TIP.
         PaymentAction action = 1;
+    }
+
+    // For paying to boost a reaction on a message in a group chat: the
+    // payer's reaction with the emoji carries money, shown as
+    // messaging.v1.Reactor.boost_usd and summed into
+    // messaging.v1.EmojiReaction.boost_usd, which orders a message's
+    // reactions. The chat_id must be a group the payer is a member
+    // of, the message one of its reactable messages, and the payer must
+    // already have reacted to it with the emoji: a boost puts money behind
+    // a reaction the payer holds, so a client adds the reaction first
+    // (messaging.v1.AddReaction) and pays after. No one boosts their own
+    // message, the group's creator included. The payment is divided
+    // between the message's sender and the group's creator by a fixed rule
+    // the server enforces; the payer does not choose it:
+    //
+    //   - A boost by anyone but the creator of a message the creator did
+    //     not send pays the creator 20% of the whole and the sender the
+    //     rest, as one SendPublicMultiPayment to the two of them. The
+    //     split is judged on each payment's fiat amount (its exchange data's
+    //     native_amount), which must be within half the currency's smallest
+    //     unit of the payee's share of the whole, so round each share to that
+    //     unit (e.g. a cent) either way. Each payment's quarks are the ones
+    //     worth its own amount, computed from that amount alone at the shared
+    //     exchange rate and reserve state; on a bonding curve they are not
+    //     an 80/20 of the quarks for the whole.
+    //   - A boost of the creator's own message pays the creator the whole.
+    //   - A boost by the creator pays the sender the whole.
+    //
+    // A boost that pays one person is a SendPublicPayment, and one that pays
+    // two a SendPublicMultiPayment; the server refuses either intent for the
+    // other case. Every share, each destination's amount, must be at least
+    // the currency's minimum transfer value (one minor unit, e.g. $0.01), so
+    // a boost that pays two is at least five of them. Either way the reaction
+    // is credited with the whole payment.
+    //
+    // Once the payment is made the server records the
+    // boost against the reaction: the emoji's and the payer's totals grow
+    // by the payment's USD market value (the reaction is added back if the
+    // payer removed it after paying), and a messaging.v1.ReactionUpdate
+    // with action BOOSTED is broadcast. No message is posted into the chat.
+    message ReactionBoost {
+        // The message whose reaction is boosted.
+        messaging.v1.MessageId message_id = 1 [(validate.rules).message.required = true];
+
+        // The emoji boosted.
+        messaging.v1.Emoji emoji = 2 [(validate.rules).message.required = true];
     }
 }
 

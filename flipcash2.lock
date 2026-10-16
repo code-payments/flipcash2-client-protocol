@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 1897108ae75e032fc5f7de13cf6e9cadcec9deda
-subject: Update link preview comments (#146)
+commit: 733ea7f9f33291b9631f0176fab5485acf161fab
+subject: Update comments around paid reactions (#149)

@@ -127,12 +127,21 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     set {type = .groupPayment(newValue)}
   }
 
+  public var reactionBoost: Flipcash_Intent_V1_ChatMetadata.ReactionBoost {
+    get {
+      if case .reactionBoost(let v)? = type {return v}
+      return Flipcash_Intent_V1_ChatMetadata.ReactionBoost()
+    }
+    set {type = .reactionBoost(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
     case contactDmPayment(Flipcash_Intent_V1_ChatMetadata.ContactDmPayment)
     case dmPayment(Flipcash_Intent_V1_ChatMetadata.DmPayment)
     case groupPayment(Flipcash_Intent_V1_ChatMetadata.GroupPayment)
+    case reactionBoost(Flipcash_Intent_V1_ChatMetadata.ReactionBoost)
 
   }
 
@@ -243,6 +252,77 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     public init() {}
   }
 
+  /// For paying to boost a reaction on a message in a group chat: the
+  /// payer's reaction with the emoji carries money, shown as
+  /// messaging.v1.Reactor.boost_usd and summed into
+  /// messaging.v1.EmojiReaction.boost_usd, which orders a message's
+  /// reactions. The chat_id must be a group the payer is a member
+  /// of, the message one of its reactable messages, and the payer must
+  /// already have reacted to it with the emoji: a boost puts money behind
+  /// a reaction the payer holds, so a client adds the reaction first
+  /// (messaging.v1.AddReaction) and pays after. No one boosts their own
+  /// message, the group's creator included. The payment is divided
+  /// between the message's sender and the group's creator by a fixed rule
+  /// the server enforces; the payer does not choose it:
+  ///
+  ///   - A boost by anyone but the creator of a message the creator did
+  ///     not send pays the creator 20% of the whole and the sender the
+  ///     rest, as one SendPublicMultiPayment to the two of them. The
+  ///     split is judged on each payment's fiat amount (its exchange data's
+  ///     native_amount), which must be within half the currency's smallest
+  ///     unit of the payee's share of the whole, so round each share to that
+  ///     unit (e.g. a cent) either way. Each payment's quarks are the ones
+  ///     worth its own amount, computed from that amount alone at the shared
+  ///     exchange rate and reserve state; on a bonding curve they are not
+  ///     an 80/20 of the quarks for the whole.
+  ///   - A boost of the creator's own message pays the creator the whole.
+  ///   - A boost by the creator pays the sender the whole.
+  ///
+  /// A boost that pays one person is a SendPublicPayment, and one that pays
+  /// two a SendPublicMultiPayment; the server refuses either intent for the
+  /// other case. Every share, each destination's amount, must be at least
+  /// the currency's minimum transfer value (one minor unit, e.g. $0.01), so
+  /// a boost that pays two is at least five of them. Either way the reaction
+  /// is credited with the whole payment.
+  ///
+  /// Once the payment is made the server records the
+  /// boost against the reaction: the emoji's and the payer's totals grow
+  /// by the payment's USD market value (the reaction is added back if the
+  /// payer removed it after paying), and a messaging.v1.ReactionUpdate
+  /// with action BOOSTED is broadcast. No message is posted into the chat.
+  public struct ReactionBoost: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The message whose reaction is boosted.
+    public var messageID: Flipcash_Messaging_V1_MessageId {
+      get {return _messageID ?? Flipcash_Messaging_V1_MessageId()}
+      set {_messageID = newValue}
+    }
+    /// Returns true if `messageID` has been explicitly set.
+    public var hasMessageID: Bool {return self._messageID != nil}
+    /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
+    public mutating func clearMessageID() {self._messageID = nil}
+
+    /// The emoji boosted.
+    public var emoji: Flipcash_Messaging_V1_Emoji {
+      get {return _emoji ?? Flipcash_Messaging_V1_Emoji()}
+      set {_emoji = newValue}
+    }
+    /// Returns true if `emoji` has been explicitly set.
+    public var hasEmoji: Bool {return self._emoji != nil}
+    /// Clears the value of `emoji`. Subsequent reads from it will return its default value.
+    public mutating func clearEmoji() {self._emoji = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
+    fileprivate var _emoji: Flipcash_Messaging_V1_Emoji? = nil
+  }
+
   public init() {}
 
   fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -304,7 +384,7 @@ extension Flipcash_Intent_V1_AppMetadata: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0\u{3}reaction_boost\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -352,6 +432,19 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
           self.type = .groupPayment(v)
         }
       }()
+      case 5: try {
+        var v: Flipcash_Intent_V1_ChatMetadata.ReactionBoost?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .reactionBoost(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .reactionBoost(v)
+        }
+      }()
       default: break
       }
     }
@@ -377,6 +470,10 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
     case .groupPayment?: try {
       guard case .groupPayment(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case .reactionBoost?: try {
+      guard case .reactionBoost(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
     }()
     case nil: break
     }
@@ -494,6 +591,45 @@ extension Flipcash_Intent_V1_ChatMetadata.GroupPayment: SwiftProtobuf.Message, S
 
   public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.GroupPayment, rhs: Flipcash_Intent_V1_ChatMetadata.GroupPayment) -> Bool {
     if lhs.action != rhs.action {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Intent_V1_ChatMetadata.ReactionBoost: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Intent_V1_ChatMetadata.protoMessageName + ".ReactionBoost"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{1}emoji\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._emoji) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._messageID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._emoji {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.ReactionBoost, rhs: Flipcash_Intent_V1_ChatMetadata.ReactionBoost) -> Bool {
+    if lhs._messageID != rhs._messageID {return false}
+    if lhs._emoji != rhs._emoji {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
