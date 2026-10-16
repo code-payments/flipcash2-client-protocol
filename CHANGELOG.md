@@ -8,6 +8,54 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.20.0
+
+Synced to [`flipcash2-protobuf-api@733ea7f9`](https://github.com/code-payments/flipcash2-protobuf-api/commit/733ea7f9f33291b9631f0176fab5485acf161fab),
+picking up [#147](https://github.com/code-payments/flipcash2-protobuf-api/pull/147),
+[#148](https://github.com/code-payments/flipcash2-protobuf-api/pull/148) and
+[#149](https://github.com/code-payments/flipcash2-protobuf-api/pull/149) (docs only). `community.v1`
+is new. `activity.v1`, `chat.v1`, `intent.v1` and `messaging.v1` moved.
+
+This release adds the Community service, paid reaction boosts and a holdings summary on gated group
+chats. Everything is additive. Two enums gained a case, appended at the end, so no existing value
+moved. An exhaustive `switch` or `when` over either enum needs the new case before it compiles.
+
+### Added
+
+- `community.v1.Community`, a new service with one RPC, `GetCommunity`. It looks a community up by
+  `mint` and returns `CommunityMetadata` (`mint`, `name`, `leader`, and up to 25
+  `top_holder_chats`), or `NOT_FOUND`.
+- Reaction boosts. A payer puts money behind a reaction they already hold on a group message:
+  - `intent.v1.ChatMetadata.reaction_boost` (oneof field 5), a `ReactionBoost` naming the
+    `message_id` and `emoji`.
+  - A boost that pays two people, the sender and the group's creator split 80/20, is an ocp
+    `SendPublicMultiPayment`, so it needs `ocp-client-protocol` 0.8.0 or later. A boost that pays
+    one person is a `SendPublicPayment`.
+  - `messaging.v1.Reactor.boost_usd` (field 4), `EmojiReaction.boost_usd` (field 6),
+    `ReactionUpdate.boost_usd` (field 8) and `ReactionUpdate.actor_boost_usd` (field 9).
+  - `ReactionUpdate.Action.BOOSTED = 3`.
+  - `RemoveReactionResponse.Result.CANNOT_REMOVE_BOOSTED = 3`. A boosted reaction is permanent.
+  - `activity.v1.BoostedReaction`, set as `boosted_reaction` (field 3) on both
+    `DirectlySentCryptoNotificationMetadata` and `ReceivedCryptoNotificationMetadata` when the
+    payment was a boost.
+- `chat.v1.Metadata.holdings_summary` (field 18), a `HoldingsSummary` of the group members' holdings
+  of the currency the group is gated on (`mint`, `quarks`, `holder_count`, `as_of`). It is set only
+  for public groups gated on a single Flipcash-launched currency with enough holders. It is a
+  periodic snapshot, and no event announces a change.
+
+### Changed
+
+- Reactor lists, `sample_reactors` and `ReactionSummary.reactions` now sort boosted entries first,
+  by `boost_usd` descending, then fall back to the previous order. Nothing changed on the wire, but
+  a client that re-sorts by `version` alone will disagree with the server.
+- `GetReactors` now documents that a paging token the server no longer recognises, such as one
+  issued under the old order, is answered with the first page rather than an error. Don't keep
+  tokens across sessions.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC, message, field or enum case was removed or changed type.
+
 ## 0.19.0
 
 Synced to [`flipcash2-protobuf-api@1897108a`](https://github.com/code-payments/flipcash2-protobuf-api/commit/1897108ae75e032fc5f7de13cf6e9cadcec9deda),
