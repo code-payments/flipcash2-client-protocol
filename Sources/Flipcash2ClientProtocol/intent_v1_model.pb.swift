@@ -135,6 +135,14 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     set {type = .reactionBoost(newValue)}
   }
 
+  public var requestedPayment: Flipcash_Intent_V1_ChatMetadata.RequestedPayment {
+    get {
+      if case .requestedPayment(let v)? = type {return v}
+      return Flipcash_Intent_V1_ChatMetadata.RequestedPayment()
+    }
+    set {type = .requestedPayment(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
@@ -142,6 +150,7 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     case dmPayment(Flipcash_Intent_V1_ChatMetadata.DmPayment)
     case groupPayment(Flipcash_Intent_V1_ChatMetadata.GroupPayment)
     case reactionBoost(Flipcash_Intent_V1_ChatMetadata.ReactionBoost)
+    case requestedPayment(Flipcash_Intent_V1_ChatMetadata.RequestedPayment)
 
   }
 
@@ -231,12 +240,20 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     public init() {}
   }
 
-  /// For sending a payment directly to another member of a group chat. The
-  /// chat_id must be a group, and the payment's destination owner account
-  /// names the recipient, who must be a Flipcash user and a member of the
-  /// group. The sender must be able to speak in the group: the payment posts
-  /// a CashContent message into it as the sender, naming the recipient as
-  /// its receiver.
+  /// For sending a payment directly to other members of a group chat. The
+  /// chat_id must be a group, and the sender must be able to speak in it:
+  /// the payment posts one CashContent message into the group as the sender.
+  ///
+  ///   - A payment to one member is a SendPublicPayment, whose destination
+  ///     owner account names the recipient. The message names them as its
+  ///     single_receiver.
+  ///   - A payment to several members at once is a SendPublicMultiPayment
+  ///     to 2 to 10 of them, each a distinct destination owner account and
+  ///     none the sender. The message lists each recipient with their part
+  ///     in its multi_receiver, and carries the whole payment as its
+  ///     total_amount.
+  ///
+  /// Every recipient must be a Flipcash user and a member of the group.
   public struct GroupPayment: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -252,18 +269,23 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     public init() {}
   }
 
-  /// For paying to boost a reaction on a message in a group chat: the
-  /// payer's reaction with the emoji carries money, shown as
+  /// For paying to boost a reaction on a message in a group chat or a DM:
+  /// the payer's reaction with the emoji carries money, shown as
   /// messaging.v1.Reactor.boost_usd and summed into
   /// messaging.v1.EmojiReaction.boost_usd, which orders a message's
-  /// reactions. The chat_id must be a group the payer is a member
+  /// reactions. The chat_id must be a group or a DM the payer is a member
   /// of, the message one of its reactable messages, and the payer must
   /// already have reacted to it with the emoji: a boost puts money behind
   /// a reaction the payer holds, so a client adds the reaction first
   /// (messaging.v1.AddReaction) and pays after. No one boosts their own
-  /// message, the group's creator included. The payment is divided
-  /// between the message's sender and the group's creator by a fixed rule
-  /// the server enforces; the payer does not choose it:
+  /// message, a group's creator included. Who is paid is a fixed rule the
+  /// server enforces; the payer does not choose it.
+  ///
+  /// In a DM, the payer boosts the other member's message, and the
+  /// payment pays them the whole, as one SendPublicPayment.
+  ///
+  /// In a group, the payment is divided between the message's sender and
+  /// the group's creator:
   ///
   ///   - A boost by anyone but the creator of a message the creator did
   ///     not send pays the creator 20% of the whole and the sender the
@@ -321,6 +343,58 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
 
     fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
     fileprivate var _emoji: Flipcash_Messaging_V1_Emoji? = nil
+  }
+
+  /// For paying the payer's share of a payment request made in a group chat,
+  /// today a paymentrequest.v1.Split (see paymentrequest.v1.PaymentRequest; a
+  /// kind with no shares takes no such payment). The payment is a
+  /// SendPublicPayment, never a multi payment, from a debtor of the request
+  /// to its creator, and pays the debtor's own unpaid share exactly:
+  ///
+  ///   - The chat_id must be the group the request was created for.
+  ///   - The payment's one destination must be the creator's owner account.
+  ///   - The payment's currency must be the request's, and its native amount
+  ///     (its exchange data's native_amount) must be the share's
+  ///     native_amount to within half the currency's smallest unit. Any mint
+  ///     may pay. A partial payment or an overpayment is refused: a share is
+  ///     paid all at once.
+  ///   - The request must be OPEN: not COMPLETED, not closed, and not past
+  ///     its ends_at.
+  ///   - The payer must hold an unpaid share of the request.
+  ///   - The intent's ID must be the one the server generated for the
+  ///     payer's share, which paymentrequest.v1.GetPaymentRequest gives the
+  ///     payer alone (GetPaymentRequestResponse.payment_intent_id). An intent
+  ///     ID is used at most once, so this is what makes a share payable at
+  ///     most once.
+  ///   - Neither the payer nor the creator may be the Flipcash team account.
+  ///
+  /// Once the payment is made the server marks the share paid (a
+  /// paymentrequest.v1.PaidShare carrying the payment's intent), posts one
+  /// messaging.v1.CashContent message into the group as the payer, with the
+  /// creator as its single_receiver and the request's ID in its
+  /// payment_request_id. If it was the last unpaid share, the request becomes
+  /// COMPLETED. No event announces the change; clients see it by refetching
+  /// the request.
+  public struct RequestedPayment: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The payment request whose share is paid.
+    public var paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId {
+      get {return _paymentRequestID ?? Flipcash_Paymentrequest_V1_PaymentRequestId()}
+      set {_paymentRequestID = newValue}
+    }
+    /// Returns true if `paymentRequestID` has been explicitly set.
+    public var hasPaymentRequestID: Bool {return self._paymentRequestID != nil}
+    /// Clears the value of `paymentRequestID`. Subsequent reads from it will return its default value.
+    public mutating func clearPaymentRequestID() {self._paymentRequestID = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId? = nil
   }
 
   public init() {}
@@ -384,7 +458,7 @@ extension Flipcash_Intent_V1_AppMetadata: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0\u{3}reaction_boost\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0\u{3}reaction_boost\0\u{3}requested_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -445,6 +519,19 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
           self.type = .reactionBoost(v)
         }
       }()
+      case 6: try {
+        var v: Flipcash_Intent_V1_ChatMetadata.RequestedPayment?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .requestedPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .requestedPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -474,6 +561,10 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
     case .reactionBoost?: try {
       guard case .reactionBoost(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
+    case .requestedPayment?: try {
+      guard case .requestedPayment(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     }()
     case nil: break
     }
@@ -630,6 +721,40 @@ extension Flipcash_Intent_V1_ChatMetadata.ReactionBoost: SwiftProtobuf.Message, 
   public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.ReactionBoost, rhs: Flipcash_Intent_V1_ChatMetadata.ReactionBoost) -> Bool {
     if lhs._messageID != rhs._messageID {return false}
     if lhs._emoji != rhs._emoji {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Intent_V1_ChatMetadata.RequestedPayment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Intent_V1_ChatMetadata.protoMessageName + ".RequestedPayment"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}payment_request_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._paymentRequestID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._paymentRequestID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.RequestedPayment, rhs: Flipcash_Intent_V1_ChatMetadata.RequestedPayment) -> Bool {
+    if lhs._paymentRequestID != rhs._paymentRequestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

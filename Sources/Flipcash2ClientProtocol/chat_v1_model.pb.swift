@@ -1189,6 +1189,17 @@ public struct Flipcash_Chat_V1_ViewerState: Sendable {
   /// Clears the value of `permissions`. Subsequent reads from it will return its default value.
   public mutating func clearPermissions() {self._permissions = nil}
 
+  /// State the chat's creator set on the viewer (see Chat.SilenceUser).
+  /// Absent when the creator has set none.
+  public var restrictions: Flipcash_Chat_V1_ViewerState.Restrictions {
+    get {return _restrictions ?? Flipcash_Chat_V1_ViewerState.Restrictions()}
+    set {_restrictions = newValue}
+  }
+  /// Returns true if `restrictions` has been explicitly set.
+  public var hasRestrictions: Bool {return self._restrictions != nil}
+  /// Clears the value of `restrictions`. Subsequent reads from it will return its default value.
+  public mutating func clearRestrictions() {self._restrictions = nil}
+
   /// Advanced by exactly one on every real change to any field of this
   /// message, never by a no-op. Compared like RosterSummary.version: apply
   /// the greater value and drop the rest, so delivery order does not matter.
@@ -1234,15 +1245,207 @@ public struct Flipcash_Chat_V1_ViewerState: Sendable {
     /// edit it.
     public var canEdit: Bool = false
 
+    /// What the viewer may do to moderate the chat's users. Unset when
+    /// they may do none of it, as for every DM.
+    public var moderation: Flipcash_Chat_V1_ViewerState.ModerationPermissions {
+      get {return _moderation ?? Flipcash_Chat_V1_ViewerState.ModerationPermissions()}
+      set {_moderation = newValue}
+    }
+    /// Returns true if `moderation` has been explicitly set.
+    public var hasModeration: Bool {return self._moderation != nil}
+    /// Clears the value of `moderation`. Subsequent reads from it will return its default value.
+    public mutating func clearModeration() {self._moderation = nil}
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     public init() {}
+
+    fileprivate var _moderation: Flipcash_Chat_V1_ViewerState.ModerationPermissions? = nil
+  }
+
+  /// ModerationPermissions are the moderation actions the viewer may take
+  /// in the chat. Like Permissions, each flag defaults to false. A viewer
+  /// holding either may call Chat.GetRestrictedUsers.
+  public struct ModerationPermissions: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Whether the viewer may call Chat.SilenceUser and
+    /// Chat.UnsilenceUser on this chat.
+    public var canSilence: Bool = false
+
+    /// Whether the viewer may call Chat.BanUser and Chat.UnbanUser on
+    /// this chat.
+    public var canBan: Bool = false
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+  }
+
+  /// Restrictions are what the chat's creator has imposed on the viewer.
+  /// A ban is not carried here: a banned user is not a member, and a
+  /// non-member is shown no ViewerState. A banned member's devices receive
+  /// the RosterUpdate.MemberLeft of any departure, which does not say why;
+  /// they learn of the ban from a BANNED result when they try to return.
+  public struct Restrictions: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Present if and only if the viewer is silenced in the chat: they
+    /// may read, react and vote, but not send, edit, show typing, or do
+    /// anything else that requires speaking in the chat. They may still
+    /// delete their own messages. A client hides the composer while a
+    /// silence is in force. A timed silence lapses on its own and nothing
+    /// is sent when it does, so the client owns the countdown.
+    public var silence: Flipcash_Chat_V1_SilenceState {
+      get {return _silence ?? Flipcash_Chat_V1_SilenceState()}
+      set {_silence = newValue}
+    }
+    /// Returns true if `silence` has been explicitly set.
+    public var hasSilence: Bool {return self._silence != nil}
+    /// Clears the value of `silence`. Subsequent reads from it will return its default value.
+    public mutating func clearSilence() {self._silence = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _silence: Flipcash_Chat_V1_SilenceState? = nil
   }
 
   public init() {}
 
   fileprivate var _settings: Flipcash_Chat_V1_ViewerState.Settings? = nil
   fileprivate var _permissions: Flipcash_Chat_V1_ViewerState.Permissions? = nil
+  fileprivate var _restrictions: Flipcash_Chat_V1_ViewerState.Restrictions? = nil
+}
+
+public struct Flipcash_Chat_V1_SilenceState: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var duration: Flipcash_Chat_V1_SilenceState.OneOf_Duration? = nil
+
+  /// Silenced until this time, after which the silence lapses.
+  public var until: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {
+      if case .until(let v)? = duration {return v}
+      return SwiftProtobuf.Google_Protobuf_Timestamp()
+    }
+    set {duration = .until(newValue)}
+  }
+
+  /// Silenced until explicitly unsilenced.
+  public var forever: Flipcash_Chat_V1_SilenceState.Forever {
+    get {
+      if case .forever(let v)? = duration {return v}
+      return Flipcash_Chat_V1_SilenceState.Forever()
+    }
+    set {duration = .forever(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Duration: Equatable, Sendable {
+    /// Silenced until this time, after which the silence lapses.
+    case until(SwiftProtobuf.Google_Protobuf_Timestamp)
+    /// Silenced until explicitly unsilenced.
+    case forever(Flipcash_Chat_V1_SilenceState.Forever)
+
+  }
+
+  public struct Forever: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+  }
+
+  public init() {}
+}
+
+/// BanState is a ban the chat's creator has set on a user (see Chat.BanUser).
+/// A ban lasts until it is lifted (see Chat.UnbanUser).
+public struct Flipcash_Chat_V1_BanState: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// When the ban was made.
+  public var bannedAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _bannedAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_bannedAt = newValue}
+  }
+  /// Returns true if `bannedAt` has been explicitly set.
+  public var hasBannedAt: Bool {return self._bannedAt != nil}
+  /// Clears the value of `bannedAt`. Subsequent reads from it will return its default value.
+  public mutating func clearBannedAt() {self._bannedAt = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _bannedAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+}
+
+/// RestrictedUser is a user the chat's creator has silenced or banned, as
+/// listed by Chat.GetRestrictedUsers. At least one of silence and ban is set.
+public struct Flipcash_Chat_V1_RestrictedUser: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var userID: Flipcash_Common_V1_UserId {
+    get {return _storage._userID ?? Flipcash_Common_V1_UserId()}
+    set {_uniqueStorage()._userID = newValue}
+  }
+  /// Returns true if `userID` has been explicitly set.
+  public var hasUserID: Bool {return _storage._userID != nil}
+  /// Clears the value of `userID`. Subsequent reads from it will return its default value.
+  public mutating func clearUserID() {_uniqueStorage()._userID = nil}
+
+  /// The user's public profile.
+  public var userProfile: Flipcash_Profile_V1_UserProfile {
+    get {return _storage._userProfile ?? Flipcash_Profile_V1_UserProfile()}
+    set {_uniqueStorage()._userProfile = newValue}
+  }
+  /// Returns true if `userProfile` has been explicitly set.
+  public var hasUserProfile: Bool {return _storage._userProfile != nil}
+  /// Clears the value of `userProfile`. Subsequent reads from it will return its default value.
+  public mutating func clearUserProfile() {_uniqueStorage()._userProfile = nil}
+
+  /// Set when the user is silenced (see Chat.SilenceUser).
+  public var silence: Flipcash_Chat_V1_SilenceState {
+    get {return _storage._silence ?? Flipcash_Chat_V1_SilenceState()}
+    set {_uniqueStorage()._silence = newValue}
+  }
+  /// Returns true if `silence` has been explicitly set.
+  public var hasSilence: Bool {return _storage._silence != nil}
+  /// Clears the value of `silence`. Subsequent reads from it will return its default value.
+  public mutating func clearSilence() {_uniqueStorage()._silence = nil}
+
+  /// Set when the user is banned (see Chat.BanUser).
+  public var ban: Flipcash_Chat_V1_BanState {
+    get {return _storage._ban ?? Flipcash_Chat_V1_BanState()}
+    set {_uniqueStorage()._ban = newValue}
+  }
+  /// Returns true if `ban` has been explicitly set.
+  public var hasBan: Bool {return _storage._ban != nil}
+  /// Clears the value of `ban`. Subsequent reads from it will return its default value.
+  public mutating func clearBan() {_uniqueStorage()._ban = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 public struct Flipcash_Chat_V1_MuteState: Sendable {
@@ -3082,7 +3285,7 @@ extension Flipcash_Chat_V1_RosterUpdateBatch: SwiftProtobuf.Message, SwiftProtob
 
 extension Flipcash_Chat_V1_ViewerState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ViewerState"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{1}permissions\0\u{2}\u{8}version\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{1}permissions\0\u{1}restrictions\0\u{2}\u{7}version\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3092,6 +3295,7 @@ extension Flipcash_Chat_V1_ViewerState: SwiftProtobuf.Message, SwiftProtobuf._Me
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._settings) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._permissions) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._restrictions) }()
       case 10: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
       default: break
       }
@@ -3109,6 +3313,9 @@ extension Flipcash_Chat_V1_ViewerState: SwiftProtobuf.Message, SwiftProtobuf._Me
     try { if let v = self._permissions {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    try { if let v = self._restrictions {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
     if self.version != 0 {
       try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 10)
     }
@@ -3118,6 +3325,7 @@ extension Flipcash_Chat_V1_ViewerState: SwiftProtobuf.Message, SwiftProtobuf._Me
   public static func ==(lhs: Flipcash_Chat_V1_ViewerState, rhs: Flipcash_Chat_V1_ViewerState) -> Bool {
     if lhs._settings != rhs._settings {return false}
     if lhs._permissions != rhs._permissions {return false}
+    if lhs._restrictions != rhs._restrictions {return false}
     if lhs.version != rhs.version {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -3160,7 +3368,7 @@ extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".Permissions"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_edit\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_edit\0\u{1}moderation\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3169,20 +3377,309 @@ extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, Swift
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularBoolField(value: &self.canEdit) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._moderation) }()
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if self.canEdit != false {
       try visitor.visitSingularBoolField(value: self.canEdit, fieldNumber: 1)
     }
+    try { if let v = self._moderation {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_ViewerState.Permissions, rhs: Flipcash_Chat_V1_ViewerState.Permissions) -> Bool {
     if lhs.canEdit != rhs.canEdit {return false}
+    if lhs._moderation != rhs._moderation {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_ViewerState.ModerationPermissions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".ModerationPermissions"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_silence\0\u{3}can_ban\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.canSilence) }()
+      case 2: try { try decoder.decodeSingularBoolField(value: &self.canBan) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.canSilence != false {
+      try visitor.visitSingularBoolField(value: self.canSilence, fieldNumber: 1)
+    }
+    if self.canBan != false {
+      try visitor.visitSingularBoolField(value: self.canBan, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_ViewerState.ModerationPermissions, rhs: Flipcash_Chat_V1_ViewerState.ModerationPermissions) -> Bool {
+    if lhs.canSilence != rhs.canSilence {return false}
+    if lhs.canBan != rhs.canBan {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_ViewerState.Restrictions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".Restrictions"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}silence\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._silence) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._silence {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_ViewerState.Restrictions, rhs: Flipcash_Chat_V1_ViewerState.Restrictions) -> Bool {
+    if lhs._silence != rhs._silence {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_SilenceState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".SilenceState"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}until\0\u{1}forever\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: SwiftProtobuf.Google_Protobuf_Timestamp?
+        var hadOneofValue = false
+        if let current = self.duration {
+          hadOneofValue = true
+          if case .until(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.duration = .until(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Chat_V1_SilenceState.Forever?
+        var hadOneofValue = false
+        if let current = self.duration {
+          hadOneofValue = true
+          if case .forever(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.duration = .forever(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.duration {
+    case .until?: try {
+      guard case .until(let v)? = self.duration else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .forever?: try {
+      guard case .forever(let v)? = self.duration else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_SilenceState, rhs: Flipcash_Chat_V1_SilenceState) -> Bool {
+    if lhs.duration != rhs.duration {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_SilenceState.Forever: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_SilenceState.protoMessageName + ".Forever"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_SilenceState.Forever, rhs: Flipcash_Chat_V1_SilenceState.Forever) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_BanState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".BanState"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}banned_at\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._bannedAt) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._bannedAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_BanState, rhs: Flipcash_Chat_V1_BanState) -> Bool {
+    if lhs._bannedAt != rhs._bannedAt {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_RestrictedUser: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RestrictedUser"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{3}user_profile\0\u{1}silence\0\u{1}ban\0")
+
+  fileprivate class _StorageClass {
+    var _userID: Flipcash_Common_V1_UserId? = nil
+    var _userProfile: Flipcash_Profile_V1_UserProfile? = nil
+    var _silence: Flipcash_Chat_V1_SilenceState? = nil
+    var _ban: Flipcash_Chat_V1_BanState? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _userID = source._userID
+      _userProfile = source._userProfile
+      _silence = source._silence
+      _ban = source._ban
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularMessageField(value: &_storage._userID) }()
+        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._userProfile) }()
+        case 3: try { try decoder.decodeSingularMessageField(value: &_storage._silence) }()
+        case 4: try { try decoder.decodeSingularMessageField(value: &_storage._ban) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      try { if let v = _storage._userID {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      } }()
+      try { if let v = _storage._userProfile {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      } }()
+      try { if let v = _storage._silence {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+      } }()
+      try { if let v = _storage._ban {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+      } }()
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_RestrictedUser, rhs: Flipcash_Chat_V1_RestrictedUser) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._userID != rhs_storage._userID {return false}
+        if _storage._userProfile != rhs_storage._userProfile {return false}
+        if _storage._silence != rhs_storage._silence {return false}
+        if _storage._ban != rhs_storage._ban {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
