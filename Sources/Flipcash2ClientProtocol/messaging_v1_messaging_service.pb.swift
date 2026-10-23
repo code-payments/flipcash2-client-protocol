@@ -477,7 +477,7 @@ public struct Flipcash_Messaging_V1_SendMessageResponse: Sendable {
     /// private group, or its scheme is not the one the chat uses.
     case encryptionNotAllowed // = 2
 
-    /// The chat is a private group and the content is not EncryptedContent.
+    /// The chat is a DM or a private group and the content is not EncryptedContent.
     case encryptionRequired // = 3
     case UNRECOGNIZED(Int)
 
@@ -614,7 +614,7 @@ public struct Flipcash_Messaging_V1_EditMessageResponse: Sendable {
     /// private group, or its scheme is not the one the chat uses.
     case encryptionNotAllowed // = 5
 
-    /// The chat is a private group and the content is not EncryptedContent.
+    /// The chat is a DM or a private group and the content is not EncryptedContent.
     case encryptionRequired // = 6
     case UNRECOGNIZED(Int)
 

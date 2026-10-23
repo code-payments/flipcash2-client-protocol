@@ -8,6 +8,74 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.21.0
+
+Synced to [`flipcash2-protobuf-api@b77bf78f`](https://github.com/code-payments/flipcash2-protobuf-api/commit/b77bf78ff8d9ea1bcbf9aa3afa6696ba7edd37a9),
+picking up [#151](https://github.com/code-payments/flipcash2-protobuf-api/pull/151),
+[#152](https://github.com/code-payments/flipcash2-protobuf-api/pull/152) (docs only),
+[#154](https://github.com/code-payments/flipcash2-protobuf-api/pull/154) (docs only),
+[#155](https://github.com/code-payments/flipcash2-protobuf-api/pull/155) and
+[#156](https://github.com/code-payments/flipcash2-protobuf-api/pull/156). `paymentrequest.v1` is
+new. `activity.v1`, `chat.v1`, `intent.v1` and `messaging.v1` moved.
+
+This release adds payment requests (group splits), payments to several group members at once, and
+moderation RPCs for group creators. Upgrading breaks source, not the wire. `CashContent` renamed
+two fields and moved one into a oneof, so code reading `amount` or `receiver` stops compiling. Two
+enums gained a case, appended at the end, so no existing value moved.
+
+### Breaking
+
+- `messaging.v1.CashContent.amount` (field 2) is now `total_amount`. Same type and number. For a
+  payment to several people it is the whole payment.
+- `messaging.v1.CashContent.receiver` (field 3) is now `single_receiver`, inside a new
+  `oneof recipient`. Kotlin's `getReceiver()`/`hasReceiver()` become `getSingleReceiver()`/
+  `hasSingleReceiver()`; Swift's `receiver` becomes `singleReceiver`. An older DM message that
+  predates per-message receivers still has neither member of the oneof set.
+
+The binary encoding of both fields is unchanged, so messages written before and after the rename
+decode the same way.
+
+### Added
+
+- `paymentrequest.v1.PaymentRequest`, a new service with five RPCs: `CreatePaymentRequest`,
+  `GetPaymentRequest`, `GetChatPaymentRequests`, `ClosePaymentRequest` and `MarkPaid`. The one kind
+  today is a split in a group chat (`GroupChatPaymentRequest` with a `Split` of per-member
+  `Share`s). DMs are not supported. No event announces a change to a request; clients refetch it.
+  - In a private group the split's title and description are `EncryptedPaymentRequestText` under
+    the chat key. Everything else, including shares and payments, is visible to the server.
+  - `GetPaymentRequestResponse.payment_intent_id` is the intent ID a debtor's payment of their share
+    must use. The server issues one per share, so a share is paid at most once.
+- `messaging.v1.PaymentRequestWidget`, sent as `WidgetContent.payment_request` (oneof field 3). It
+  carries only the request's ID.
+- `intent.v1.ChatMetadata.requested_payment` (oneof field 6), a `RequestedPayment` naming the
+  `payment_request_id` whose share a `SendPublicPayment` pays.
+- `messaging.v1.CashContent.multi_receiver` (oneof field 5), a `Payments` list of 2 to 10
+  `Payment { receiver, native_amount, quarks }`. A group payment to several members is an ocp
+  `SendPublicMultiPayment`.
+- `messaging.v1.CashContent.payment_request_id` (field 6), set only on the cash message posted when
+  a debtor pays their share.
+- Chat moderation RPCs on `chat.v1.Chat`: `SilenceUser`, `UnsilenceUser`, `BanUser`, `UnbanUser` and
+  `GetRestrictedUsers`, with `SilenceState`, `BanState` and `RestrictedUser`. The chat's creator
+  cannot be silenced or banned.
+- `chat.v1.ViewerState.restrictions` (field 3), carrying the viewer's `silence`. A timed silence
+  lapses with no event, so the client owns the countdown.
+- `chat.v1.ViewerState.Permissions.moderation` (field 2), a `ModerationPermissions` with
+  `can_silence` and `can_ban`.
+- `JoinChatResponse.Result.BANNED = 4` and `EnterLobbyResponse.Result.BANNED = 6`, both appended.
+  An exhaustive `switch` or `when` over either needs the new case before it compiles.
+
+### Changed
+
+- Reaction boosts are now allowed in DMs. A DM boost pays the other member the whole amount as one
+  `SendPublicPayment`. No field changed; the `activity.v1.BoostedReaction` and
+  `intent.v1.ChatMetadata.ReactionBoost` docs now cover DMs.
+- `SendMessage` and `EditMessage` document that `ENCRYPTION_REQUIRED` also applies to DMs.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC or enum case was removed. Apart from the `CashContent`
+rename above, no field was removed or changed type.
+
 ## 0.20.0
 
 Synced to [`flipcash2-protobuf-api@733ea7f9`](https://github.com/code-payments/flipcash2-protobuf-api/commit/733ea7f9f33291b9631f0176fab5485acf161fab),

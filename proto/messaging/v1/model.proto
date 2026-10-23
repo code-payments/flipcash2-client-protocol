@@ -9,6 +9,7 @@ option objc_class_prefix = "FPBMessagingV1";
 import "blob/v1/model.proto";
 import "common/v1/common.proto";
 import "google/protobuf/timestamp.proto";
+import "paymentrequest/v1/model.proto";
 import "poll/v1/model.proto";
 import "validate/validate.proto";
 
@@ -291,21 +292,64 @@ message CashContent {
     // Intent ID identifying the cash transaction at the OCP layer
     common.v1.IntentId intent_id = 1 [(validate.rules).message.required = true];
 
-    // The amount of cash that was sent
-    common.v1.CryptoPaymentAmount amount = 2 [(validate.rules).message.required = true];
+    // The total amount of cash that was sent. For a payment to several people
+    // (see multi_receiver), the whole payment, every receiver's part together.
+    common.v1.CryptoPaymentAmount total_amount = 2 [(validate.rules).message.required = true];
 
-    // The user who received the cash. Always set in a group chat, where it
-    // names which member was paid. In a DM it is set on new messages but unset
-    // on older ones, whose receiver is the DM member who is not the sender.
-    common.v1.UserId receiver = 3;
+    // Who received the cash. Always set in a group chat. In a DM,
+    // single_receiver is set on new messages, and neither is set on older
+    // ones, whose receiver is the DM member who is not the sender.
+    oneof recipient {
+        // The user who received the cash, for a payment to one person
+        common.v1.UserId single_receiver = 3;
+
+        // Who was paid and how much, for a payment to several people at once,
+        // made in a group chat alone. total_amount is the whole payment, so a
+        // client that does not know this field shows the sender paying the
+        // total to no one in particular.
+        Payments multi_receiver = 5;
+    }
 
     // Verb for how the cash was sent. Clients should always show SENT as a
-    // fallback.
+    // fallback. For a payment to several people, it applies to every one of
+    // them.
     enum Verb {
         SENT   = 0;
         TIPPED = 1;
     }
     Verb verb = 4;
+
+    // The payment request whose share this payment paid. Set only on the cash
+    // message posted when a debtor pays their share with a payment (see
+    // intent.v1.ChatMetadata.RequestedPayment), so clients render it
+    // against the request; such a message is from the debtor, with the
+    // request's creator as its single_receiver. Unset on every other cash
+    // message.
+    paymentrequest.v1.PaymentRequestId payment_request_id = 6;
+
+    // The receivers of a payment to several people at once
+    message Payments {
+        // One entry per receiver, in the payment's own order. Each receiver is
+        // a distinct member of the group other than the sender, and every
+        // entry is in total_amount's currency and mint.
+        repeated Payment items = 1 [(validate.rules).repeated = {
+            min_items: 2
+            max_items: 10
+        }];
+    }
+
+    // One receiver's part of a payment to several people (see Payments). The
+    // currency and mint are total_amount's.
+    message Payment {
+        // The user who received this part
+        common.v1.UserId receiver = 1 [(validate.rules).message.required = true];
+
+        // The amount this receiver was paid, in total_amount's currency
+        double native_amount = 2 [(validate.rules).double.gte = 0];
+
+        // The amount in quarks of total_amount's mint this receiver was paid
+        uint64 quarks = 3;
+    }
 }
 
 // Reply content
@@ -396,8 +440,9 @@ message WidgetContent {
     oneof type {
         option (validate.required) = true;
 
-        ShareProfileWidget share_profile = 1;
-        PollWidget         poll          = 2;
+        ShareProfileWidget   share_profile   = 1;
+        PollWidget           poll            = 2;
+        PaymentRequestWidget payment_request = 3;
     }
 }
 
@@ -424,6 +469,29 @@ message ShareProfileWidget {
 // message's sender.
 message PollWidget {
     poll.v1.PollId poll_id = 1 [(validate.rules).message.required = true];
+}
+
+// A widget that shows a payment request. It carries only the request's ID:
+// clients get the title, shares, and state from
+// paymentrequest.v1.PaymentRequest's GetPaymentRequest.
+//
+// The creator sends it after calling
+// paymentrequest.v1.PaymentRequest.CreatePaymentRequest, and may send the same
+// request in its chat any number of times. The request is live from creation,
+// whether or not it has been sent. Deleting a message that carries it does not
+// touch the request.
+//
+// In a group that is not private, it is sent as plain WidgetContent:
+// SendMessage accepts it only from the request's creator, in the chat the
+// request was created for, whatever the request's status; otherwise the send
+// is DENIED.
+//
+// In a private group, it is sent inside EncryptedContent, so the server cannot
+// check any of this. Clients render the widget as unsupported if the request's
+// chat (GroupChatPaymentRequest.chat_id) is not the chat the message is in, or
+// the request's creator is not the message's sender.
+message PaymentRequestWidget {
+    paymentrequest.v1.PaymentRequestId payment_request_id = 1 [(validate.rules).message.required = true];
 }
 
 // Deleted message content

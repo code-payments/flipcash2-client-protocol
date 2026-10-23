@@ -387,7 +387,7 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
 
   /// Set when the payment was the recipient's share of a boost of a
   /// reaction (see BoostedReaction), paid to them as the boosted message's
-  /// sender or the group's creator. source_identifier names the payer, and
+  /// sender or its group's creator. source_identifier names the payer, and
   /// payment_amount is the recipient's share alone.
   public var boostedReaction: Flipcash_Activity_V1_BoostedReaction {
     get {return _boostedReaction ?? Flipcash_Activity_V1_BoostedReaction()}
@@ -412,16 +412,16 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
 }
 
 /// The reaction a payment boosted: the payer's reaction with emoji on a
-/// message in a group chat (see intent.v1.ChatMetadata.ReactionBoost). It is
-/// what the payment was for when it was made and is not kept up to date: the
-/// message may since have been deleted, and the viewer may no longer be a
+/// message in a group chat or a DM (see intent.v1.ChatMetadata.ReactionBoost).
+/// It is what the payment was for when it was made and is not kept up to date:
+/// the message may since have been deleted, and the viewer may no longer be a
 /// member of the chat.
 public struct Flipcash_Activity_V1_BoostedReaction: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  /// The group chat the boosted message is in.
+  /// The chat, a group or a DM, the boosted message is in.
   public var chatID: Flipcash_Common_V1_ChatId {
     get {return _chatID ?? Flipcash_Common_V1_ChatId()}
     set {_chatID = newValue}

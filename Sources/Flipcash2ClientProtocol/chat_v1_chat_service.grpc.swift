@@ -272,6 +272,66 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetFeaturedGroups"
             )
         }
+        /// Namespace for "SilenceUser" metadata.
+        public enum SilenceUser {
+            /// Request type for "SilenceUser".
+            public typealias Input = Flipcash_Chat_V1_SilenceUserRequest
+            /// Response type for "SilenceUser".
+            public typealias Output = Flipcash_Chat_V1_SilenceUserResponse
+            /// Descriptor for "SilenceUser".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "SilenceUser"
+            )
+        }
+        /// Namespace for "UnsilenceUser" metadata.
+        public enum UnsilenceUser {
+            /// Request type for "UnsilenceUser".
+            public typealias Input = Flipcash_Chat_V1_UnsilenceUserRequest
+            /// Response type for "UnsilenceUser".
+            public typealias Output = Flipcash_Chat_V1_UnsilenceUserResponse
+            /// Descriptor for "UnsilenceUser".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "UnsilenceUser"
+            )
+        }
+        /// Namespace for "BanUser" metadata.
+        public enum BanUser {
+            /// Request type for "BanUser".
+            public typealias Input = Flipcash_Chat_V1_BanUserRequest
+            /// Response type for "BanUser".
+            public typealias Output = Flipcash_Chat_V1_BanUserResponse
+            /// Descriptor for "BanUser".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "BanUser"
+            )
+        }
+        /// Namespace for "UnbanUser" metadata.
+        public enum UnbanUser {
+            /// Request type for "UnbanUser".
+            public typealias Input = Flipcash_Chat_V1_UnbanUserRequest
+            /// Response type for "UnbanUser".
+            public typealias Output = Flipcash_Chat_V1_UnbanUserResponse
+            /// Descriptor for "UnbanUser".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "UnbanUser"
+            )
+        }
+        /// Namespace for "GetRestrictedUsers" metadata.
+        public enum GetRestrictedUsers {
+            /// Request type for "GetRestrictedUsers".
+            public typealias Input = Flipcash_Chat_V1_GetRestrictedUsersRequest
+            /// Response type for "GetRestrictedUsers".
+            public typealias Output = Flipcash_Chat_V1_GetRestrictedUsersResponse
+            /// Descriptor for "GetRestrictedUsers".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetRestrictedUsers"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.chat.v1.Chat" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetChat.descriptor,
@@ -294,7 +354,12 @@ public enum Flipcash_Chat_V1_Chat {
             SetKeyEnvelope.descriptor,
             GetKeyEnvelope.descriptor,
             SetFeaturedGroups.descriptor,
-            GetFeaturedGroups.descriptor
+            GetFeaturedGroups.descriptor,
+            SilenceUser.descriptor,
+            UnsilenceUser.descriptor,
+            BanUser.descriptor,
+            UnbanUser.descriptor,
+            GetRestrictedUsers.descriptor
         ]
     }
 }
@@ -1092,6 +1157,175 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetFeaturedGroupsResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetFeaturedGroupsResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SilenceUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SilenceUser silences a user in a group chat, until a time or
+        /// > indefinitely: they may still read the chat, react and vote, but not
+        /// > send, edit, show typing, or do anything else that requires speaking
+        /// > in it (see ViewerState.Restrictions.silence). They may still delete
+        /// > their own messages.
+        /// > 
+        /// > Public and private groups alike. Only a member the server permits to
+        /// > silence users in the chat may call it, as reported by
+        /// > ViewerState.Permissions.moderation.can_silence; anyone else, and any
+        /// > DM, is DENIED. The chat's creator cannot be silenced.
+        /// > 
+        /// > The user need not be a member: a silence survives leaving and
+        /// > rejoining, and may be set before the user ever joins. Calling it again
+        /// > with a different duration replaces the silence; an identical request
+        /// > is a no-op that returns OK. A timed silence must end in the future;
+        /// > the server rejects one that does not.
+        /// > 
+        /// > A real change reaches the silenced user's devices, while they are a
+        /// > member, as a MetadataUpdate.ViewerStateChanged on the event stream.
+        /// > Nobody else is told.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SilenceUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SilenceUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SilenceUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func silenceUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SilenceUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SilenceUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SilenceUserResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SilenceUserResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "UnsilenceUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnsilenceUser clears a user's silence in a group chat. Gated as
+        /// > SilenceUser. Unsilencing a user who is not silenced is a no-op that
+        /// > returns OK. A real change reaches the user's devices as SilenceUser's
+        /// > does.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnsilenceUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnsilenceUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnsilenceUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func unsilenceUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnsilenceUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnsilenceUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnsilenceUserResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnsilenceUserResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "BanUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > BanUser bans a user from a group chat: a member is removed from its
+        /// > roster, a user waiting in a private group's lobby is removed from it,
+        /// > and the user cannot join, enter the lobby or be admitted until they
+        /// > are unbanned. A banned user may not read the chat as a non-member
+        /// > either (see the listener rules), though anyone may still see its
+        /// > redacted public view. Only a member the server permits to ban users
+        /// > in the chat may call it, as reported by
+        /// > ViewerState.Permissions.moderation.can_ban; anyone else, and any DM,
+        /// > is DENIED. The chat's creator cannot be banned.
+        /// > 
+        /// > The user need not be a member, so a creator can ban someone before
+        /// > they join. Banning a user who is already banned is a no-op that
+        /// > returns OK. A ban leaves a silence as it is, and the user's messages
+        /// > stay in the chat.
+        /// > 
+        /// > Removing a member is announced exactly like a departure: a
+        /// > RosterUpdate.MemberLeft to the banned user's devices, which does not
+        /// > say why, and the roster change to the chat's other members. A banned
+        /// > member of a private group loses their key envelope (see KeyEnvelope),
+        /// > as when leaving. They cannot fetch anything from the chat afterwards,
+        /// > but the server cannot take back the chat key they already opened:
+        /// > ciphertext of later messages that reached them some other way is
+        /// > readable to them, since the key is not rotated.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_BanUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_BanUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_BanUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func banUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_BanUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_BanUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_BanUserResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_BanUserResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "UnbanUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnbanUser lifts a user's ban from a group chat. Gated as BanUser.
+        /// > It does not return them to the chat: they join (or enter a private
+        /// > group's lobby) again like anyone else. Unbanning a user who is not
+        /// > banned is a no-op that returns OK. Nothing is published.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnbanUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnbanUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnbanUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func unbanUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnbanUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnbanUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnbanUserResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnbanUserResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetRestrictedUsers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetRestrictedUsers pages the users silenced or banned in a group chat,
+        /// > most recently restricted first, by the time of the latest silence or
+        /// > ban set on them. A silence that has lapsed is left out. Only a member
+        /// > the server permits to silence or to ban users in the chat may call it
+        /// > (see ViewerState.Permissions.moderation); anyone else, and any DM, is
+        /// > DENIED. The page is read from an index that trails writes
+        /// > briefly, so a user just restricted may be absent and one just
+        /// > released may be present.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetRestrictedUsersRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetRestrictedUsersRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetRestrictedUsersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getRestrictedUsers<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRestrictedUsersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetRestrictedUsersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRestrictedUsersResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRestrictedUsersResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -2121,6 +2355,230 @@ extension Flipcash_Chat_V1_Chat {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "SilenceUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SilenceUser silences a user in a group chat, until a time or
+        /// > indefinitely: they may still read the chat, react and vote, but not
+        /// > send, edit, show typing, or do anything else that requires speaking
+        /// > in it (see ViewerState.Restrictions.silence). They may still delete
+        /// > their own messages.
+        /// > 
+        /// > Public and private groups alike. Only a member the server permits to
+        /// > silence users in the chat may call it, as reported by
+        /// > ViewerState.Permissions.moderation.can_silence; anyone else, and any
+        /// > DM, is DENIED. The chat's creator cannot be silenced.
+        /// > 
+        /// > The user need not be a member: a silence survives leaving and
+        /// > rejoining, and may be set before the user ever joins. Calling it again
+        /// > with a different duration replaces the silence; an identical request
+        /// > is a no-op that returns OK. A timed silence must end in the future;
+        /// > the server rejects one that does not.
+        /// > 
+        /// > A real change reaches the silenced user's devices, while they are a
+        /// > member, as a MetadataUpdate.ViewerStateChanged on the event stream.
+        /// > Nobody else is told.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_SilenceUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_SilenceUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_SilenceUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func silenceUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SilenceUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_SilenceUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_SilenceUserResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SilenceUserResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.SilenceUser.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "UnsilenceUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnsilenceUser clears a user's silence in a group chat. Gated as
+        /// > SilenceUser. Unsilencing a user who is not silenced is a no-op that
+        /// > returns OK. A real change reaches the user's devices as SilenceUser's
+        /// > does.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnsilenceUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnsilenceUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnsilenceUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func unsilenceUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnsilenceUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnsilenceUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnsilenceUserResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnsilenceUserResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.UnsilenceUser.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "BanUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > BanUser bans a user from a group chat: a member is removed from its
+        /// > roster, a user waiting in a private group's lobby is removed from it,
+        /// > and the user cannot join, enter the lobby or be admitted until they
+        /// > are unbanned. A banned user may not read the chat as a non-member
+        /// > either (see the listener rules), though anyone may still see its
+        /// > redacted public view. Only a member the server permits to ban users
+        /// > in the chat may call it, as reported by
+        /// > ViewerState.Permissions.moderation.can_ban; anyone else, and any DM,
+        /// > is DENIED. The chat's creator cannot be banned.
+        /// > 
+        /// > The user need not be a member, so a creator can ban someone before
+        /// > they join. Banning a user who is already banned is a no-op that
+        /// > returns OK. A ban leaves a silence as it is, and the user's messages
+        /// > stay in the chat.
+        /// > 
+        /// > Removing a member is announced exactly like a departure: a
+        /// > RosterUpdate.MemberLeft to the banned user's devices, which does not
+        /// > say why, and the roster change to the chat's other members. A banned
+        /// > member of a private group loses their key envelope (see KeyEnvelope),
+        /// > as when leaving. They cannot fetch anything from the chat afterwards,
+        /// > but the server cannot take back the chat key they already opened:
+        /// > ciphertext of later messages that reached them some other way is
+        /// > readable to them, since the key is not rotated.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_BanUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_BanUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_BanUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func banUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_BanUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_BanUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_BanUserResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_BanUserResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.BanUser.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "UnbanUser" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnbanUser lifts a user's ban from a group chat. Gated as BanUser.
+        /// > It does not return them to the chat: they join (or enter a private
+        /// > group's lobby) again like anyone else. Unbanning a user who is not
+        /// > banned is a no-op that returns OK. Nothing is published.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnbanUserRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnbanUserRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnbanUserResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func unbanUser<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnbanUserRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnbanUserRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnbanUserResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnbanUserResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.UnbanUser.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetRestrictedUsers" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetRestrictedUsers pages the users silenced or banned in a group chat,
+        /// > most recently restricted first, by the time of the latest silence or
+        /// > ban set on them. A silence that has lapsed is left out. Only a member
+        /// > the server permits to silence or to ban users in the chat may call it
+        /// > (see ViewerState.Permissions.moderation); anyone else, and any DM, is
+        /// > DENIED. The page is read from an index that trails writes
+        /// > briefly, so a user just restricted may be absent and one just
+        /// > released may be present.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetRestrictedUsersRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetRestrictedUsersRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetRestrictedUsersResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getRestrictedUsers<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRestrictedUsersRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetRestrictedUsersRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRestrictedUsersResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRestrictedUsersResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetRestrictedUsers.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -3028,6 +3486,205 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetFeaturedGroupsRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetFeaturedGroupsResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SilenceUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SilenceUser silences a user in a group chat, until a time or
+    /// > indefinitely: they may still read the chat, react and vote, but not
+    /// > send, edit, show typing, or do anything else that requires speaking
+    /// > in it (see ViewerState.Restrictions.silence). They may still delete
+    /// > their own messages.
+    /// > 
+    /// > Public and private groups alike. Only a member the server permits to
+    /// > silence users in the chat may call it, as reported by
+    /// > ViewerState.Permissions.moderation.can_silence; anyone else, and any
+    /// > DM, is DENIED. The chat's creator cannot be silenced.
+    /// > 
+    /// > The user need not be a member: a silence survives leaving and
+    /// > rejoining, and may be set before the user ever joins. Calling it again
+    /// > with a different duration replaces the silence; an identical request
+    /// > is a no-op that returns OK. A timed silence must end in the future;
+    /// > the server rejects one that does not.
+    /// > 
+    /// > A real change reaches the silenced user's devices, while they are a
+    /// > member, as a MetadataUpdate.ViewerStateChanged on the event stream.
+    /// > Nobody else is told.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_SilenceUserRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func silenceUser<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_SilenceUserRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SilenceUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.silenceUser(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_SilenceUserRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_SilenceUserResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnsilenceUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnsilenceUser clears a user's silence in a group chat. Gated as
+    /// > SilenceUser. Unsilencing a user who is not silenced is a no-op that
+    /// > returns OK. A real change reaches the user's devices as SilenceUser's
+    /// > does.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_UnsilenceUserRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unsilenceUser<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnsilenceUserRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnsilenceUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.unsilenceUser(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_UnsilenceUserRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_UnsilenceUserResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "BanUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > BanUser bans a user from a group chat: a member is removed from its
+    /// > roster, a user waiting in a private group's lobby is removed from it,
+    /// > and the user cannot join, enter the lobby or be admitted until they
+    /// > are unbanned. A banned user may not read the chat as a non-member
+    /// > either (see the listener rules), though anyone may still see its
+    /// > redacted public view. Only a member the server permits to ban users
+    /// > in the chat may call it, as reported by
+    /// > ViewerState.Permissions.moderation.can_ban; anyone else, and any DM,
+    /// > is DENIED. The chat's creator cannot be banned.
+    /// > 
+    /// > The user need not be a member, so a creator can ban someone before
+    /// > they join. Banning a user who is already banned is a no-op that
+    /// > returns OK. A ban leaves a silence as it is, and the user's messages
+    /// > stay in the chat.
+    /// > 
+    /// > Removing a member is announced exactly like a departure: a
+    /// > RosterUpdate.MemberLeft to the banned user's devices, which does not
+    /// > say why, and the roster change to the chat's other members. A banned
+    /// > member of a private group loses their key envelope (see KeyEnvelope),
+    /// > as when leaving. They cannot fetch anything from the chat afterwards,
+    /// > but the server cannot take back the chat key they already opened:
+    /// > ciphertext of later messages that reached them some other way is
+    /// > readable to them, since the key is not rotated.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_BanUserRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func banUser<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_BanUserRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_BanUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.banUser(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_BanUserRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_BanUserResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnbanUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnbanUser lifts a user's ban from a group chat. Gated as BanUser.
+    /// > It does not return them to the chat: they join (or enter a private
+    /// > group's lobby) again like anyone else. Unbanning a user who is not
+    /// > banned is a no-op that returns OK. Nothing is published.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_UnbanUserRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unbanUser<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnbanUserRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnbanUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.unbanUser(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_UnbanUserRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_UnbanUserResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetRestrictedUsers" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetRestrictedUsers pages the users silenced or banned in a group chat,
+    /// > most recently restricted first, by the time of the latest silence or
+    /// > ban set on them. A silence that has lapsed is left out. Only a member
+    /// > the server permits to silence or to ban users in the chat may call it
+    /// > (see ViewerState.Permissions.moderation); anyone else, and any DM, is
+    /// > DENIED. The page is read from an index that trails writes
+    /// > briefly, so a user just restricted may be absent and one just
+    /// > released may be present.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetRestrictedUsersRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getRestrictedUsers<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRestrictedUsersRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRestrictedUsersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getRestrictedUsers(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetRestrictedUsersRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetRestrictedUsersResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -4021,6 +4678,225 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getFeaturedGroups(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SilenceUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SilenceUser silences a user in a group chat, until a time or
+    /// > indefinitely: they may still read the chat, react and vote, but not
+    /// > send, edit, show typing, or do anything else that requires speaking
+    /// > in it (see ViewerState.Restrictions.silence). They may still delete
+    /// > their own messages.
+    /// > 
+    /// > Public and private groups alike. Only a member the server permits to
+    /// > silence users in the chat may call it, as reported by
+    /// > ViewerState.Permissions.moderation.can_silence; anyone else, and any
+    /// > DM, is DENIED. The chat's creator cannot be silenced.
+    /// > 
+    /// > The user need not be a member: a silence survives leaving and
+    /// > rejoining, and may be set before the user ever joins. Calling it again
+    /// > with a different duration replaces the silence; an identical request
+    /// > is a no-op that returns OK. A timed silence must end in the future;
+    /// > the server rejects one that does not.
+    /// > 
+    /// > A real change reaches the silenced user's devices, while they are a
+    /// > member, as a MetadataUpdate.ViewerStateChanged on the event stream.
+    /// > Nobody else is told.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func silenceUser<Result>(
+        _ message: Flipcash_Chat_V1_SilenceUserRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_SilenceUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_SilenceUserRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.silenceUser(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnsilenceUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnsilenceUser clears a user's silence in a group chat. Gated as
+    /// > SilenceUser. Unsilencing a user who is not silenced is a no-op that
+    /// > returns OK. A real change reaches the user's devices as SilenceUser's
+    /// > does.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unsilenceUser<Result>(
+        _ message: Flipcash_Chat_V1_UnsilenceUserRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnsilenceUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_UnsilenceUserRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unsilenceUser(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "BanUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > BanUser bans a user from a group chat: a member is removed from its
+    /// > roster, a user waiting in a private group's lobby is removed from it,
+    /// > and the user cannot join, enter the lobby or be admitted until they
+    /// > are unbanned. A banned user may not read the chat as a non-member
+    /// > either (see the listener rules), though anyone may still see its
+    /// > redacted public view. Only a member the server permits to ban users
+    /// > in the chat may call it, as reported by
+    /// > ViewerState.Permissions.moderation.can_ban; anyone else, and any DM,
+    /// > is DENIED. The chat's creator cannot be banned.
+    /// > 
+    /// > The user need not be a member, so a creator can ban someone before
+    /// > they join. Banning a user who is already banned is a no-op that
+    /// > returns OK. A ban leaves a silence as it is, and the user's messages
+    /// > stay in the chat.
+    /// > 
+    /// > Removing a member is announced exactly like a departure: a
+    /// > RosterUpdate.MemberLeft to the banned user's devices, which does not
+    /// > say why, and the roster change to the chat's other members. A banned
+    /// > member of a private group loses their key envelope (see KeyEnvelope),
+    /// > as when leaving. They cannot fetch anything from the chat afterwards,
+    /// > but the server cannot take back the chat key they already opened:
+    /// > ciphertext of later messages that reached them some other way is
+    /// > readable to them, since the key is not rotated.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func banUser<Result>(
+        _ message: Flipcash_Chat_V1_BanUserRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_BanUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_BanUserRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.banUser(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnbanUser" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnbanUser lifts a user's ban from a group chat. Gated as BanUser.
+    /// > It does not return them to the chat: they join (or enter a private
+    /// > group's lobby) again like anyone else. Unbanning a user who is not
+    /// > banned is a no-op that returns OK. Nothing is published.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unbanUser<Result>(
+        _ message: Flipcash_Chat_V1_UnbanUserRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnbanUserResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_UnbanUserRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unbanUser(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetRestrictedUsers" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetRestrictedUsers pages the users silenced or banned in a group chat,
+    /// > most recently restricted first, by the time of the latest silence or
+    /// > ban set on them. A silence that has lapsed is left out. Only a member
+    /// > the server permits to silence or to ban users in the chat may call it
+    /// > (see ViewerState.Permissions.moderation); anyone else, and any DM, is
+    /// > DENIED. The page is read from an index that trails writes
+    /// > briefly, so a user just restricted may be absent and one just
+    /// > released may be present.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getRestrictedUsers<Result>(
+        _ message: Flipcash_Chat_V1_GetRestrictedUsersRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRestrictedUsersResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetRestrictedUsersRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getRestrictedUsers(
             request: request,
             options: options,
             onResponse: handleResponse
