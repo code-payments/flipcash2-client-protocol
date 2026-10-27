@@ -248,6 +248,54 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetKeyEnvelope"
             )
         }
+        /// Namespace for "CreateInvite" metadata.
+        public enum CreateInvite {
+            /// Request type for "CreateInvite".
+            public typealias Input = Flipcash_Chat_V1_CreateInviteRequest
+            /// Response type for "CreateInvite".
+            public typealias Output = Flipcash_Chat_V1_CreateInviteResponse
+            /// Descriptor for "CreateInvite".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "CreateInvite"
+            )
+        }
+        /// Namespace for "GetInvite" metadata.
+        public enum GetInvite {
+            /// Request type for "GetInvite".
+            public typealias Input = Flipcash_Chat_V1_GetInviteRequest
+            /// Response type for "GetInvite".
+            public typealias Output = Flipcash_Chat_V1_GetInviteResponse
+            /// Descriptor for "GetInvite".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetInvite"
+            )
+        }
+        /// Namespace for "GetChatInvites" metadata.
+        public enum GetChatInvites {
+            /// Request type for "GetChatInvites".
+            public typealias Input = Flipcash_Chat_V1_GetChatInvitesRequest
+            /// Response type for "GetChatInvites".
+            public typealias Output = Flipcash_Chat_V1_GetChatInvitesResponse
+            /// Descriptor for "GetChatInvites".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetChatInvites"
+            )
+        }
+        /// Namespace for "RevokeInvite" metadata.
+        public enum RevokeInvite {
+            /// Request type for "RevokeInvite".
+            public typealias Input = Flipcash_Chat_V1_RevokeInviteRequest
+            /// Response type for "RevokeInvite".
+            public typealias Output = Flipcash_Chat_V1_RevokeInviteResponse
+            /// Descriptor for "RevokeInvite".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "RevokeInvite"
+            )
+        }
         /// Namespace for "SetFeaturedGroups" metadata.
         public enum SetFeaturedGroups {
             /// Request type for "SetFeaturedGroups".
@@ -353,6 +401,10 @@ public enum Flipcash_Chat_V1_Chat {
             DenyLobbyMember.descriptor,
             SetKeyEnvelope.descriptor,
             GetKeyEnvelope.descriptor,
+            CreateInvite.descriptor,
+            GetInvite.descriptor,
+            GetChatInvites.descriptor,
+            RevokeInvite.descriptor,
             SetFeaturedGroups.descriptor,
             GetFeaturedGroups.descriptor,
             SilenceUser.descriptor,
@@ -394,8 +446,8 @@ extension Flipcash_Chat_V1_Chat {
         /// > A private group (see Metadata.is_private) returns its record to any
         /// > registered user, so that one who is not a member can see what they are
         /// > asking to join, but its messaging state only to a member, whatever the
-        /// > view_mode. It has no public view: an unauthenticated read of one is
-        /// > DENIED. A private group whose creator has not stored its key yet (see
+        /// > view_mode. Its public view is that record alone, with no messaging
+        /// > state. A private group whose creator has not stored its key yet (see
         /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
         /// > other: it is visible, though nothing can happen in it.
         ///
@@ -536,9 +588,27 @@ extension Flipcash_Chat_V1_Chat {
         /// > carry none: group pointer advances are never broadcast, so a page of
         /// > them would be stale as soon as it was served.
         /// > 
-        /// > Requires that the caller is a member of the chat. Anyone else is
-        /// > DENIED, including a non-member whom a group's listener rules admit to
-        /// > read its messages: who is in a chat is shown only to its members.
+        /// > Requires that the caller is a member of the chat, or holds a link to an
+        /// > invite to it (see Invite) and sends the invite's token in
+        /// > invite_token. Anyone else is DENIED, including a non-member whom a
+        /// > group's listener rules admit to read its messages: who is in a chat is
+        /// > shown only to its members and to those holding a link that would let
+        /// > them join it.
+        /// > 
+        /// > The token is the credential, so auth is optional when it is sent (when
+        /// > set, auth must be valid). It is honored while its invite is ACTIVE and
+        /// > to chat_id; any other token is DENIED, as is a token sent for a public
+        /// > group or a DM. Whoever sends an honored token gets the page a member
+        /// > gets, registered or not, and a user the chat's creator banned
+        /// > included: a ban stops a user joining, not reading the roster through a
+        /// > link they hold, which the creator stops by revoking the invite.
+        /// > Reading the roster with a token counts no use of the invite, changes
+        /// > nothing, and is announced to no one. The invite is checked again on
+        /// > every page, so a walk ends with DENIED once it stops being ACTIVE.
+        /// > 
+        /// > A member is served whether or not they send a token, which is not
+        /// > checked for them. A request with neither auth nor invite_token is
+        /// > DENIED.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
@@ -681,10 +751,41 @@ extension Flipcash_Chat_V1_Chat {
         /// >
         /// > JoinChat adds the caller to a chat's roster.
         /// > 
-        /// > A private group (see Metadata.is_private) cannot be joined this way and
-        /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
-        /// > its creator. The one exception is the group's creator, who needs no
-        /// > approval and rejoins a private group they left with this RPC.
+        /// > A private group (see Metadata.is_private) is joined this way only with
+        /// > an invite (JoinChatRequest.invite) or by its creator. Anyone else is
+        /// > DENIED, and enters its lobby with EnterLobby to be admitted by the
+        /// > creator. The creator needs neither approval nor an invite, and rejoins
+        /// > a private group they left with this RPC; an invite they pass is
+        /// > ignored.
+        /// > 
+        /// > Joining with an invite (see Invite) needs no one's approval. The client
+        /// > previews the invite with GetInvite, which names the chat, and passes
+        /// > the invite's token here. The invite must be ACTIVE (INVITE_EXHAUSTED,
+        /// > INVITE_EXPIRED or INVITE_REVOKED otherwise), for a user who joined
+        /// > with it before as for anyone.
+        /// > 
+        /// > The join is atomic: the caller becomes a member, the join is counted as
+        /// > one use of the invite (a user who left and joins again with it uses
+        /// > another), and the invite's copy of the chat key is stored as their key
+        /// > envelope, with the link's secret encrypted by the caller for themself
+        /// > (JoinChatRequest.InviteParameters.secret_envelope), together, or
+        /// > nothing happens. A caller waiting in the chat's
+        /// > lobby leaves it in the same step. A caller who is already a member gets
+        /// > OK with nothing changed: the invite is not checked, no use is counted,
+        /// > and their stored envelope stays as it is. Only a public group's rules
+        /// > or a private group's invite are checked, never both: an invite to a
+        /// > public group is INVITE_NOT_FOUND.
+        /// > 
+        /// > Any of the joiner's devices then fetches the copy and the secret with
+        /// > GetKeyEnvelope (GetKeyEnvelopeResponse.invite_key_bundle), checks
+        /// > the copy's signature, opens the secret with the joiner's account key
+        /// > and the copy with the secret, wraps the chat key for the joiner and
+        /// > stores that envelope with SetKeyEnvelope (see KeyEnvelope). None of
+        /// > this needs the device the joiner joined with, or the link itself. A
+        /// > join with an invite is announced like an admission (see
+        /// > AdmitLobbyMember). A member whose copy turns out to hold the wrong key
+        /// > cannot fix it by joining again: they leave and are admitted from the
+        /// > lobby (see KeyEnvelope).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
@@ -710,9 +811,9 @@ extension Flipcash_Chat_V1_Chat {
         /// > LeaveChat removes the caller from a chat's roster.
         /// > 
         /// > Leaving a private group discards the caller's key envelope (see
-        /// > KeyEnvelope), so returning means entering the lobby and being admitted
-        /// > again. The creator's envelope is kept, since no one else could give
-        /// > them another.
+        /// > KeyEnvelope), so returning means being admitted from the lobby or
+        /// > joining with an invite again. The creator's envelope is kept, since no
+        /// > one else could give them another.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -834,8 +935,8 @@ extension Flipcash_Chat_V1_Chat {
         /// >
         /// > EnterLobby places the caller in a private group's lobby, where they
         /// > wait for the group's creator to admit them. It is how a user asks to
-        /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
-        /// > one.
+        /// > join a private group (see Metadata.is_private) when they hold no
+        /// > invite; JoinChat without one is DENIED for a private group.
         /// > 
         /// > Entering a lobby the caller is already in is a no-op that returns OK.
         /// > The server caps both how many users may wait in one lobby and how many
@@ -850,10 +951,10 @@ extension Flipcash_Chat_V1_Chat {
         /// > 
         /// > While the caller waits, the chat's Metadata carries in_lobby. The
         /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
-        /// > creator denies them (DenyLobbyMember), or when the creator admits them
-        /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
-        /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
-        /// > them.
+        /// > creator denies them (DenyLobbyMember), when the creator admits them
+        /// > (AdmitLobbyMember), or when they join with an invite (JoinChat). An
+        /// > admission reaches the caller's devices as a RosterUpdate.MemberJoined
+        /// > naming them; a denial is not announced to them.
         /// > 
         /// > There is no RPC that lists the lobbies a caller is waiting in. A client
         /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
@@ -942,10 +1043,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > Only the group's creator may call it, and only while a member of the
         /// > group; anyone else is DENIED. So is a creator who has not stored their
         /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
-        /// > nobody is admitted to a group before its creator holds its key. This is
-        /// > the only way to give another user a key envelope. Admitting a user who
-        /// > is already a member is a no-op that returns OK and leaves their stored
-        /// > envelope as it is.
+        /// > nobody is admitted to a group before its creator holds its key. Besides
+        /// > joining with an invite, which stores the invite's copy of the chat key
+        /// > for the joiner (see JoinChat), this is the only way to give another
+        /// > user a key envelope. Admitting a user who is already a member is a
+        /// > no-op that returns OK and leaves their stored envelope as it is.
         /// > 
         /// > The admission is announced like any other join: a
         /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
@@ -1005,7 +1107,7 @@ extension Flipcash_Chat_V1_Chat {
         /// > group. Only a member may call it, and only for themself: an envelope
         /// > for another user is stored by admitting them (AdmitLobbyMember).
         /// > 
-        /// > It is called in two situations (see KeyEnvelope):
+        /// > It is called in three situations (see KeyEnvelope):
         /// >  - By the group's creator, right after StartChat returns the chat's
         /// >    ID, to store the chat key they have just generated. This is the
         /// >    second step of creating a private group, and nothing can happen in
@@ -1016,6 +1118,11 @@ extension Flipcash_Chat_V1_Chat {
         /// >    with NO_ENVELOPE.
         /// >  - By an admitted member, after first opening the envelope the creator
         /// >    wrapped for them, to replace it with one wrapped by themself.
+        /// >  - By a member who joined with an invite, after first opening the
+        /// >    invite's copy of the chat key with the link's secret (from the
+        /// >    secret envelope stored with it, or from the link), to replace it
+        /// >    with one wrapped by themself. Storing it deletes the copy and that
+        /// >    secret envelope (see InviteKeyEnvelope).
         /// > 
         /// > The first envelope a caller stores for themself stands. Once the
         /// > stored envelope is one the caller wrapped, a call with a different
@@ -1054,6 +1161,14 @@ extension Flipcash_Chat_V1_Chat {
         /// > client calls this once per chat per install and keeps the key it
         /// > unwraps.
         /// > 
+        /// > For a member who joined with an invite and has not yet stored their
+        /// > own envelope, what is stored is the invite's copy of the chat key and
+        /// > the link's secret the member encrypted for themself when joining. Both
+        /// > are returned in invite_key_bundle in place of key_envelope. Any of
+        /// > the member's devices opens the secret with the member's account key,
+        /// > then the copy with the secret, and replaces the copy with an envelope
+        /// > of its own with SetKeyEnvelope (see InviteKeyEnvelope).
+        /// > 
         /// > NO_ENVELOPE is expected only for the creator of a group whose creation
         /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
         /// > receives it generates a chat key and stores its envelope with
@@ -1075,6 +1190,163 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetKeyEnvelopeResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetKeyEnvelopeResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "CreateInvite" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > CreateInvite creates an invite to a private group (see Invite): a link
+        /// > that lets users join it with JoinChat without the creator's approval.
+        /// > 
+        /// > Only a member the server permits to invite may call it, as reported by
+        /// > ViewerState.Permissions.can_invite; anyone else is DENIED. So is any
+        /// > call for a group whose creator has not stored its key yet (see
+        /// > StartChatRequest.PrivateGroupChatParameters).
+        /// > 
+        /// > The caller's client generates the link's secret and derives the
+        /// > invite's token, ID and wrap key from it (see Invite). It sends the
+        /// > token, the chat key encrypted under the wrap key and signed by the
+        /// > caller (InviteKeyEnvelope), and the secret encrypted for itself
+        /// > (InviteSecretEnvelope); the secret and the wrap key never leave it. The
+        /// > server computes the invite's ID from the token, which it never stores
+        /// > (see InviteToken), and checks the copy's signature against the
+        /// > caller's public key with that ID, refusing one that does not verify
+        /// > (INVALID_SIGNATURE), since no joiner could accept it. So a client that
+        /// > derived the ID wrongly is refused here, rather than sharing a link that
+        /// > admits no one. The server cannot check what either envelope holds: a
+        /// > copy that does not hold the chat key gives everyone who joins with the
+        /// > invite a key that reads nothing.
+        /// > 
+        /// > An existing invite with the ID computed from the request's token is
+        /// > looked up before anything else is checked. A retry with the same token,
+        /// > by the same caller for the same chat, returns the invite the first
+        /// > attempt created, with result OK, even if the other parameters differ
+        /// > and whatever its status now: it may since have been used up, expired
+        /// > or been revoked, so the client checks Invite.status before sharing the
+        /// > link. An ID already held by an invite to another chat, or by another
+        /// > user's, is DENIED.
+        /// > 
+        /// > Otherwise, the server caps how many ACTIVE invites a chat may hold
+        /// > (TOO_MANY_INVITES) and how far away expires_at may be
+        /// > (INVALID_EXPIRES_AT).
+        /// > 
+        /// > Nothing is published.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_CreateInviteRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_CreateInviteRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_CreateInviteResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func createInvite<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_CreateInviteRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_CreateInviteRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_CreateInviteResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_CreateInviteResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetInvite" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetInvite previews an invite from its link (see Invite): the chat it
+        /// > admits users to, whose chat_id the caller passes to JoinChat and
+        /// > derives the invite's wrap key with, and whether the invite still admits
+        /// > anyone. Anyone holding the link may call it, registered or not: the
+        /// > token is the credential, and auth is optional (when set, it must be
+        /// > valid). It counts no use, returns no key, and changes nothing.
+        /// > 
+        /// > An authenticated caller gets the chat as they see it with GetChat: a
+        /// > non-member gets its record, with in_lobby set while they wait in its
+        /// > lobby. A user banned from the chat gets only BANNED. An
+        /// > unauthenticated caller gets the chat's public view (see GetChat),
+        /// > which for a private group is its record alone, and is never BANNED,
+        /// > since the server does not know who they are. Use counts are shown only
+        /// > to those who may invite (GetChatInvites).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetInviteRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetInviteRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetInviteResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getInvite<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetInviteRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetInviteRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetInviteResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetInviteResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetChatInvites" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetChatInvites pages a private group's invites, most recently created
+        /// > first, whatever their status, each with its use count and its
+        /// > creator's copy of the link's secret (see InviteSecretEnvelope).
+        /// > 
+        /// > Only a member the server permits to invite may call it, as reported by
+        /// > ViewerState.Permissions.can_invite; anyone else is DENIED.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatInvitesRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetChatInvitesRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetChatInvitesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getChatInvites<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetChatInvitesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetChatInvitesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetChatInvitesResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetChatInvitesResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "RevokeInvite" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > RevokeInvite stops an invite admitting anyone and, in the same step,
+        /// > deletes the server's copy of the chat key held for it (see
+        /// > InviteKeyEnvelope). Users it already admitted stay members and keep
+        /// > the chat key: an invite never changes it, and the copies stored for
+        /// > those who have not yet replaced theirs are kept, since those are their
+        /// > only key. So revoking a link that leaked keeps new users out, but
+        /// > takes the key from no one who already opened it, nor from anyone
+        /// > holding the link who can read those copies (see Invite). A link that
+        /// > leaked is replaced by revoking it and creating another.
+        /// > 
+        /// > Gated like GetChatInvites. Revoking an invite already revoked is a
+        /// > no-op that returns OK; revoking one that has expired or been used up
+        /// > records it as revoked. Nothing is published.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_RevokeInviteRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_RevokeInviteRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_RevokeInviteResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func revokeInvite<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_RevokeInviteRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_RevokeInviteRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_RevokeInviteResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_RevokeInviteResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "SetFeaturedGroups" method.
@@ -1254,6 +1526,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > but the server cannot take back the chat key they already opened:
         /// > ciphertext of later messages that reached them some other way is
         /// > readable to them, since the key is not rotated.
+        /// > 
+        /// > A ban applies to the account, not to an invite link (see Invite). A
+        /// > banned user who still holds a link that admits users can join with it
+        /// > from another account, so banning someone who joined with an invite
+        /// > calls for revoking that invite too (RevokeInvite).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_BanUserRequest` message.
@@ -1360,8 +1637,8 @@ extension Flipcash_Chat_V1_Chat {
         /// > A private group (see Metadata.is_private) returns its record to any
         /// > registered user, so that one who is not a member can see what they are
         /// > asking to join, but its messaging state only to a member, whatever the
-        /// > view_mode. It has no public view: an unauthenticated read of one is
-        /// > DENIED. A private group whose creator has not stored its key yet (see
+        /// > view_mode. Its public view is that record alone, with no messaging
+        /// > state. A private group whose creator has not stored its key yet (see
         /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
         /// > other: it is visible, though nothing can happen in it.
         ///
@@ -1535,9 +1812,27 @@ extension Flipcash_Chat_V1_Chat {
         /// > carry none: group pointer advances are never broadcast, so a page of
         /// > them would be stale as soon as it was served.
         /// > 
-        /// > Requires that the caller is a member of the chat. Anyone else is
-        /// > DENIED, including a non-member whom a group's listener rules admit to
-        /// > read its messages: who is in a chat is shown only to its members.
+        /// > Requires that the caller is a member of the chat, or holds a link to an
+        /// > invite to it (see Invite) and sends the invite's token in
+        /// > invite_token. Anyone else is DENIED, including a non-member whom a
+        /// > group's listener rules admit to read its messages: who is in a chat is
+        /// > shown only to its members and to those holding a link that would let
+        /// > them join it.
+        /// > 
+        /// > The token is the credential, so auth is optional when it is sent (when
+        /// > set, auth must be valid). It is honored while its invite is ACTIVE and
+        /// > to chat_id; any other token is DENIED, as is a token sent for a public
+        /// > group or a DM. Whoever sends an honored token gets the page a member
+        /// > gets, registered or not, and a user the chat's creator banned
+        /// > included: a ban stops a user joining, not reading the roster through a
+        /// > link they hold, which the creator stops by revoking the invite.
+        /// > Reading the roster with a token counts no use of the invite, changes
+        /// > nothing, and is announced to no one. The invite is checked again on
+        /// > every page, so a walk ends with DENIED once it stops being ACTIVE.
+        /// > 
+        /// > A member is served whether or not they send a token, which is not
+        /// > checked for them. A request with neither auth nor invite_token is
+        /// > DENIED.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
@@ -1724,10 +2019,41 @@ extension Flipcash_Chat_V1_Chat {
         /// >
         /// > JoinChat adds the caller to a chat's roster.
         /// > 
-        /// > A private group (see Metadata.is_private) cannot be joined this way and
-        /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
-        /// > its creator. The one exception is the group's creator, who needs no
-        /// > approval and rejoins a private group they left with this RPC.
+        /// > A private group (see Metadata.is_private) is joined this way only with
+        /// > an invite (JoinChatRequest.invite) or by its creator. Anyone else is
+        /// > DENIED, and enters its lobby with EnterLobby to be admitted by the
+        /// > creator. The creator needs neither approval nor an invite, and rejoins
+        /// > a private group they left with this RPC; an invite they pass is
+        /// > ignored.
+        /// > 
+        /// > Joining with an invite (see Invite) needs no one's approval. The client
+        /// > previews the invite with GetInvite, which names the chat, and passes
+        /// > the invite's token here. The invite must be ACTIVE (INVITE_EXHAUSTED,
+        /// > INVITE_EXPIRED or INVITE_REVOKED otherwise), for a user who joined
+        /// > with it before as for anyone.
+        /// > 
+        /// > The join is atomic: the caller becomes a member, the join is counted as
+        /// > one use of the invite (a user who left and joins again with it uses
+        /// > another), and the invite's copy of the chat key is stored as their key
+        /// > envelope, with the link's secret encrypted by the caller for themself
+        /// > (JoinChatRequest.InviteParameters.secret_envelope), together, or
+        /// > nothing happens. A caller waiting in the chat's
+        /// > lobby leaves it in the same step. A caller who is already a member gets
+        /// > OK with nothing changed: the invite is not checked, no use is counted,
+        /// > and their stored envelope stays as it is. Only a public group's rules
+        /// > or a private group's invite are checked, never both: an invite to a
+        /// > public group is INVITE_NOT_FOUND.
+        /// > 
+        /// > Any of the joiner's devices then fetches the copy and the secret with
+        /// > GetKeyEnvelope (GetKeyEnvelopeResponse.invite_key_bundle), checks
+        /// > the copy's signature, opens the secret with the joiner's account key
+        /// > and the copy with the secret, wraps the chat key for the joiner and
+        /// > stores that envelope with SetKeyEnvelope (see KeyEnvelope). None of
+        /// > this needs the device the joiner joined with, or the link itself. A
+        /// > join with an invite is announced like an admission (see
+        /// > AdmitLobbyMember). A member whose copy turns out to hold the wrong key
+        /// > cannot fix it by joining again: they leave and are admitted from the
+        /// > lobby (see KeyEnvelope).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
@@ -1764,9 +2090,9 @@ extension Flipcash_Chat_V1_Chat {
         /// > LeaveChat removes the caller from a chat's roster.
         /// > 
         /// > Leaving a private group discards the caller's key envelope (see
-        /// > KeyEnvelope), so returning means entering the lobby and being admitted
-        /// > again. The creator's envelope is kept, since no one else could give
-        /// > them another.
+        /// > KeyEnvelope), so returning means being admitted from the lobby or
+        /// > joining with an invite again. The creator's envelope is kept, since no
+        /// > one else could give them another.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -1932,8 +2258,8 @@ extension Flipcash_Chat_V1_Chat {
         /// >
         /// > EnterLobby places the caller in a private group's lobby, where they
         /// > wait for the group's creator to admit them. It is how a user asks to
-        /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
-        /// > one.
+        /// > join a private group (see Metadata.is_private) when they hold no
+        /// > invite; JoinChat without one is DENIED for a private group.
         /// > 
         /// > Entering a lobby the caller is already in is a no-op that returns OK.
         /// > The server caps both how many users may wait in one lobby and how many
@@ -1948,10 +2274,10 @@ extension Flipcash_Chat_V1_Chat {
         /// > 
         /// > While the caller waits, the chat's Metadata carries in_lobby. The
         /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
-        /// > creator denies them (DenyLobbyMember), or when the creator admits them
-        /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
-        /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
-        /// > them.
+        /// > creator denies them (DenyLobbyMember), when the creator admits them
+        /// > (AdmitLobbyMember), or when they join with an invite (JoinChat). An
+        /// > admission reaches the caller's devices as a RosterUpdate.MemberJoined
+        /// > naming them; a denial is not announced to them.
         /// > 
         /// > There is no RPC that lists the lobbies a caller is waiting in. A client
         /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
@@ -2073,10 +2399,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > Only the group's creator may call it, and only while a member of the
         /// > group; anyone else is DENIED. So is a creator who has not stored their
         /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
-        /// > nobody is admitted to a group before its creator holds its key. This is
-        /// > the only way to give another user a key envelope. Admitting a user who
-        /// > is already a member is a no-op that returns OK and leaves their stored
-        /// > envelope as it is.
+        /// > nobody is admitted to a group before its creator holds its key. Besides
+        /// > joining with an invite, which stores the invite's copy of the chat key
+        /// > for the joiner (see JoinChat), this is the only way to give another
+        /// > user a key envelope. Admitting a user who is already a member is a
+        /// > no-op that returns OK and leaves their stored envelope as it is.
         /// > 
         /// > The admission is announced like any other join: a
         /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
@@ -2158,7 +2485,7 @@ extension Flipcash_Chat_V1_Chat {
         /// > group. Only a member may call it, and only for themself: an envelope
         /// > for another user is stored by admitting them (AdmitLobbyMember).
         /// > 
-        /// > It is called in two situations (see KeyEnvelope):
+        /// > It is called in three situations (see KeyEnvelope):
         /// >  - By the group's creator, right after StartChat returns the chat's
         /// >    ID, to store the chat key they have just generated. This is the
         /// >    second step of creating a private group, and nothing can happen in
@@ -2169,6 +2496,11 @@ extension Flipcash_Chat_V1_Chat {
         /// >    with NO_ENVELOPE.
         /// >  - By an admitted member, after first opening the envelope the creator
         /// >    wrapped for them, to replace it with one wrapped by themself.
+        /// >  - By a member who joined with an invite, after first opening the
+        /// >    invite's copy of the chat key with the link's secret (from the
+        /// >    secret envelope stored with it, or from the link), to replace it
+        /// >    with one wrapped by themself. Storing it deletes the copy and that
+        /// >    secret envelope (see InviteKeyEnvelope).
         /// > 
         /// > The first envelope a caller stores for themself stands. Once the
         /// > stored envelope is one the caller wrapped, a call with a different
@@ -2218,6 +2550,14 @@ extension Flipcash_Chat_V1_Chat {
         /// > client calls this once per chat per install and keeps the key it
         /// > unwraps.
         /// > 
+        /// > For a member who joined with an invite and has not yet stored their
+        /// > own envelope, what is stored is the invite's copy of the chat key and
+        /// > the link's secret the member encrypted for themself when joining. Both
+        /// > are returned in invite_key_bundle in place of key_envelope. Any of
+        /// > the member's devices opens the secret with the member's account key,
+        /// > then the copy with the secret, and replaces the copy with an envelope
+        /// > of its own with SetKeyEnvelope (see InviteKeyEnvelope).
+        /// > 
         /// > NO_ENVELOPE is expected only for the creator of a group whose creation
         /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
         /// > receives it generates a chat key and stores its envelope with
@@ -2245,6 +2585,207 @@ extension Flipcash_Chat_V1_Chat {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Chat_V1_Chat.Method.GetKeyEnvelope.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "CreateInvite" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > CreateInvite creates an invite to a private group (see Invite): a link
+        /// > that lets users join it with JoinChat without the creator's approval.
+        /// > 
+        /// > Only a member the server permits to invite may call it, as reported by
+        /// > ViewerState.Permissions.can_invite; anyone else is DENIED. So is any
+        /// > call for a group whose creator has not stored its key yet (see
+        /// > StartChatRequest.PrivateGroupChatParameters).
+        /// > 
+        /// > The caller's client generates the link's secret and derives the
+        /// > invite's token, ID and wrap key from it (see Invite). It sends the
+        /// > token, the chat key encrypted under the wrap key and signed by the
+        /// > caller (InviteKeyEnvelope), and the secret encrypted for itself
+        /// > (InviteSecretEnvelope); the secret and the wrap key never leave it. The
+        /// > server computes the invite's ID from the token, which it never stores
+        /// > (see InviteToken), and checks the copy's signature against the
+        /// > caller's public key with that ID, refusing one that does not verify
+        /// > (INVALID_SIGNATURE), since no joiner could accept it. So a client that
+        /// > derived the ID wrongly is refused here, rather than sharing a link that
+        /// > admits no one. The server cannot check what either envelope holds: a
+        /// > copy that does not hold the chat key gives everyone who joins with the
+        /// > invite a key that reads nothing.
+        /// > 
+        /// > An existing invite with the ID computed from the request's token is
+        /// > looked up before anything else is checked. A retry with the same token,
+        /// > by the same caller for the same chat, returns the invite the first
+        /// > attempt created, with result OK, even if the other parameters differ
+        /// > and whatever its status now: it may since have been used up, expired
+        /// > or been revoked, so the client checks Invite.status before sharing the
+        /// > link. An ID already held by an invite to another chat, or by another
+        /// > user's, is DENIED.
+        /// > 
+        /// > Otherwise, the server caps how many ACTIVE invites a chat may hold
+        /// > (TOO_MANY_INVITES) and how far away expires_at may be
+        /// > (INVALID_EXPIRES_AT).
+        /// > 
+        /// > Nothing is published.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_CreateInviteRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_CreateInviteRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_CreateInviteResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func createInvite<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_CreateInviteRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_CreateInviteRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_CreateInviteResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_CreateInviteResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.CreateInvite.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetInvite" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetInvite previews an invite from its link (see Invite): the chat it
+        /// > admits users to, whose chat_id the caller passes to JoinChat and
+        /// > derives the invite's wrap key with, and whether the invite still admits
+        /// > anyone. Anyone holding the link may call it, registered or not: the
+        /// > token is the credential, and auth is optional (when set, it must be
+        /// > valid). It counts no use, returns no key, and changes nothing.
+        /// > 
+        /// > An authenticated caller gets the chat as they see it with GetChat: a
+        /// > non-member gets its record, with in_lobby set while they wait in its
+        /// > lobby. A user banned from the chat gets only BANNED. An
+        /// > unauthenticated caller gets the chat's public view (see GetChat),
+        /// > which for a private group is its record alone, and is never BANNED,
+        /// > since the server does not know who they are. Use counts are shown only
+        /// > to those who may invite (GetChatInvites).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetInviteRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetInviteRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetInviteResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getInvite<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetInviteRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetInviteRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetInviteResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetInviteResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetInvite.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetChatInvites" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetChatInvites pages a private group's invites, most recently created
+        /// > first, whatever their status, each with its use count and its
+        /// > creator's copy of the link's secret (see InviteSecretEnvelope).
+        /// > 
+        /// > Only a member the server permits to invite may call it, as reported by
+        /// > ViewerState.Permissions.can_invite; anyone else is DENIED.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatInvitesRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetChatInvitesRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetChatInvitesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getChatInvites<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetChatInvitesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetChatInvitesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetChatInvitesResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetChatInvitesResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetChatInvites.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "RevokeInvite" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > RevokeInvite stops an invite admitting anyone and, in the same step,
+        /// > deletes the server's copy of the chat key held for it (see
+        /// > InviteKeyEnvelope). Users it already admitted stay members and keep
+        /// > the chat key: an invite never changes it, and the copies stored for
+        /// > those who have not yet replaced theirs are kept, since those are their
+        /// > only key. So revoking a link that leaked keeps new users out, but
+        /// > takes the key from no one who already opened it, nor from anyone
+        /// > holding the link who can read those copies (see Invite). A link that
+        /// > leaked is replaced by revoking it and creating another.
+        /// > 
+        /// > Gated like GetChatInvites. Revoking an invite already revoked is a
+        /// > no-op that returns OK; revoking one that has expired or been used up
+        /// > records it as revoked. Nothing is published.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_RevokeInviteRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_RevokeInviteRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_RevokeInviteResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func revokeInvite<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_RevokeInviteRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_RevokeInviteRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_RevokeInviteResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_RevokeInviteResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.RevokeInvite.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -2473,6 +3014,11 @@ extension Flipcash_Chat_V1_Chat {
         /// > but the server cannot take back the chat key they already opened:
         /// > ciphertext of later messages that reached them some other way is
         /// > readable to them, since the key is not rotated.
+        /// > 
+        /// > A ban applies to the account, not to an invite link (see Invite). A
+        /// > banned user who still holds a link that admits users can join with it
+        /// > from another account, so banning someone who joined with an invite
+        /// > calls for revoking that invite too (RevokeInvite).
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_BanUserRequest` message.
@@ -2600,8 +3146,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > A private group (see Metadata.is_private) returns its record to any
     /// > registered user, so that one who is not a member can see what they are
     /// > asking to join, but its messaging state only to a member, whatever the
-    /// > view_mode. It has no public view: an unauthenticated read of one is
-    /// > DENIED. A private group whose creator has not stored its key yet (see
+    /// > view_mode. Its public view is that record alone, with no messaging
+    /// > state. A private group whose creator has not stored its key yet (see
     /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
     /// > other: it is visible, though nothing can happen in it.
     ///
@@ -2760,9 +3306,27 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > carry none: group pointer advances are never broadcast, so a page of
     /// > them would be stale as soon as it was served.
     /// > 
-    /// > Requires that the caller is a member of the chat. Anyone else is
-    /// > DENIED, including a non-member whom a group's listener rules admit to
-    /// > read its messages: who is in a chat is shown only to its members.
+    /// > Requires that the caller is a member of the chat, or holds a link to an
+    /// > invite to it (see Invite) and sends the invite's token in
+    /// > invite_token. Anyone else is DENIED, including a non-member whom a
+    /// > group's listener rules admit to read its messages: who is in a chat is
+    /// > shown only to its members and to those holding a link that would let
+    /// > them join it.
+    /// > 
+    /// > The token is the credential, so auth is optional when it is sent (when
+    /// > set, auth must be valid). It is honored while its invite is ACTIVE and
+    /// > to chat_id; any other token is DENIED, as is a token sent for a public
+    /// > group or a DM. Whoever sends an honored token gets the page a member
+    /// > gets, registered or not, and a user the chat's creator banned
+    /// > included: a ban stops a user joining, not reading the roster through a
+    /// > link they hold, which the creator stops by revoking the invite.
+    /// > Reading the roster with a token counts no use of the invite, changes
+    /// > nothing, and is announced to no one. The invite is checked again on
+    /// > every page, so a walk ends with DENIED once it stops being ACTIVE.
+    /// > 
+    /// > A member is served whether or not they send a token, which is not
+    /// > checked for them. A request with neither auth nor invite_token is
+    /// > DENIED.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_GetRosterRequest` message.
@@ -2929,10 +3493,41 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// >
     /// > JoinChat adds the caller to a chat's roster.
     /// > 
-    /// > A private group (see Metadata.is_private) cannot be joined this way and
-    /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
-    /// > its creator. The one exception is the group's creator, who needs no
-    /// > approval and rejoins a private group they left with this RPC.
+    /// > A private group (see Metadata.is_private) is joined this way only with
+    /// > an invite (JoinChatRequest.invite) or by its creator. Anyone else is
+    /// > DENIED, and enters its lobby with EnterLobby to be admitted by the
+    /// > creator. The creator needs neither approval nor an invite, and rejoins
+    /// > a private group they left with this RPC; an invite they pass is
+    /// > ignored.
+    /// > 
+    /// > Joining with an invite (see Invite) needs no one's approval. The client
+    /// > previews the invite with GetInvite, which names the chat, and passes
+    /// > the invite's token here. The invite must be ACTIVE (INVITE_EXHAUSTED,
+    /// > INVITE_EXPIRED or INVITE_REVOKED otherwise), for a user who joined
+    /// > with it before as for anyone.
+    /// > 
+    /// > The join is atomic: the caller becomes a member, the join is counted as
+    /// > one use of the invite (a user who left and joins again with it uses
+    /// > another), and the invite's copy of the chat key is stored as their key
+    /// > envelope, with the link's secret encrypted by the caller for themself
+    /// > (JoinChatRequest.InviteParameters.secret_envelope), together, or
+    /// > nothing happens. A caller waiting in the chat's
+    /// > lobby leaves it in the same step. A caller who is already a member gets
+    /// > OK with nothing changed: the invite is not checked, no use is counted,
+    /// > and their stored envelope stays as it is. Only a public group's rules
+    /// > or a private group's invite are checked, never both: an invite to a
+    /// > public group is INVITE_NOT_FOUND.
+    /// > 
+    /// > Any of the joiner's devices then fetches the copy and the secret with
+    /// > GetKeyEnvelope (GetKeyEnvelopeResponse.invite_key_bundle), checks
+    /// > the copy's signature, opens the secret with the joiner's account key
+    /// > and the copy with the secret, wraps the chat key for the joiner and
+    /// > stores that envelope with SetKeyEnvelope (see KeyEnvelope). None of
+    /// > this needs the device the joiner joined with, or the link itself. A
+    /// > join with an invite is announced like an admission (see
+    /// > AdmitLobbyMember). A member whose copy turns out to hold the wrong key
+    /// > cannot fix it by joining again: they leave and are admitted from the
+    /// > lobby (see KeyEnvelope).
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_JoinChatRequest` message.
@@ -2964,9 +3559,9 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > LeaveChat removes the caller from a chat's roster.
     /// > 
     /// > Leaving a private group discards the caller's key envelope (see
-    /// > KeyEnvelope), so returning means entering the lobby and being admitted
-    /// > again. The creator's envelope is kept, since no one else could give
-    /// > them another.
+    /// > KeyEnvelope), so returning means being admitted from the lobby or
+    /// > joining with an invite again. The creator's envelope is kept, since no
+    /// > one else could give them another.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -3112,8 +3707,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// >
     /// > EnterLobby places the caller in a private group's lobby, where they
     /// > wait for the group's creator to admit them. It is how a user asks to
-    /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
-    /// > one.
+    /// > join a private group (see Metadata.is_private) when they hold no
+    /// > invite; JoinChat without one is DENIED for a private group.
     /// > 
     /// > Entering a lobby the caller is already in is a no-op that returns OK.
     /// > The server caps both how many users may wait in one lobby and how many
@@ -3128,10 +3723,10 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > 
     /// > While the caller waits, the chat's Metadata carries in_lobby. The
     /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
-    /// > creator denies them (DenyLobbyMember), or when the creator admits them
-    /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
-    /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
-    /// > them.
+    /// > creator denies them (DenyLobbyMember), when the creator admits them
+    /// > (AdmitLobbyMember), or when they join with an invite (JoinChat). An
+    /// > admission reaches the caller's devices as a RosterUpdate.MemberJoined
+    /// > naming them; a denial is not announced to them.
     /// > 
     /// > There is no RPC that lists the lobbies a caller is waiting in. A client
     /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
@@ -3238,10 +3833,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Only the group's creator may call it, and only while a member of the
     /// > group; anyone else is DENIED. So is a creator who has not stored their
     /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
-    /// > nobody is admitted to a group before its creator holds its key. This is
-    /// > the only way to give another user a key envelope. Admitting a user who
-    /// > is already a member is a no-op that returns OK and leaves their stored
-    /// > envelope as it is.
+    /// > nobody is admitted to a group before its creator holds its key. Besides
+    /// > joining with an invite, which stores the invite's copy of the chat key
+    /// > for the joiner (see JoinChat), this is the only way to give another
+    /// > user a key envelope. Admitting a user who is already a member is a
+    /// > no-op that returns OK and leaves their stored envelope as it is.
     /// > 
     /// > The admission is announced like any other join: a
     /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
@@ -3313,7 +3909,7 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > group. Only a member may call it, and only for themself: an envelope
     /// > for another user is stored by admitting them (AdmitLobbyMember).
     /// > 
-    /// > It is called in two situations (see KeyEnvelope):
+    /// > It is called in three situations (see KeyEnvelope):
     /// >  - By the group's creator, right after StartChat returns the chat's
     /// >    ID, to store the chat key they have just generated. This is the
     /// >    second step of creating a private group, and nothing can happen in
@@ -3324,6 +3920,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// >    with NO_ENVELOPE.
     /// >  - By an admitted member, after first opening the envelope the creator
     /// >    wrapped for them, to replace it with one wrapped by themself.
+    /// >  - By a member who joined with an invite, after first opening the
+    /// >    invite's copy of the chat key with the link's secret (from the
+    /// >    secret envelope stored with it, or from the link), to replace it
+    /// >    with one wrapped by themself. Storing it deletes the copy and that
+    /// >    secret envelope (see InviteKeyEnvelope).
     /// > 
     /// > The first envelope a caller stores for themself stands. Once the
     /// > stored envelope is one the caller wrapped, a call with a different
@@ -3368,6 +3969,14 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > client calls this once per chat per install and keeps the key it
     /// > unwraps.
     /// > 
+    /// > For a member who joined with an invite and has not yet stored their
+    /// > own envelope, what is stored is the invite's copy of the chat key and
+    /// > the link's secret the member encrypted for themself when joining. Both
+    /// > are returned in invite_key_bundle in place of key_envelope. Any of
+    /// > the member's devices opens the secret with the member's account key,
+    /// > then the copy with the secret, and replaces the copy with an envelope
+    /// > of its own with SetKeyEnvelope (see InviteKeyEnvelope).
+    /// > 
     /// > NO_ENVELOPE is expected only for the creator of a group whose creation
     /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
     /// > receives it generates a chat key and stores its envelope with
@@ -3392,6 +4001,187 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetKeyEnvelopeRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetKeyEnvelopeResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "CreateInvite" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > CreateInvite creates an invite to a private group (see Invite): a link
+    /// > that lets users join it with JoinChat without the creator's approval.
+    /// > 
+    /// > Only a member the server permits to invite may call it, as reported by
+    /// > ViewerState.Permissions.can_invite; anyone else is DENIED. So is any
+    /// > call for a group whose creator has not stored its key yet (see
+    /// > StartChatRequest.PrivateGroupChatParameters).
+    /// > 
+    /// > The caller's client generates the link's secret and derives the
+    /// > invite's token, ID and wrap key from it (see Invite). It sends the
+    /// > token, the chat key encrypted under the wrap key and signed by the
+    /// > caller (InviteKeyEnvelope), and the secret encrypted for itself
+    /// > (InviteSecretEnvelope); the secret and the wrap key never leave it. The
+    /// > server computes the invite's ID from the token, which it never stores
+    /// > (see InviteToken), and checks the copy's signature against the
+    /// > caller's public key with that ID, refusing one that does not verify
+    /// > (INVALID_SIGNATURE), since no joiner could accept it. So a client that
+    /// > derived the ID wrongly is refused here, rather than sharing a link that
+    /// > admits no one. The server cannot check what either envelope holds: a
+    /// > copy that does not hold the chat key gives everyone who joins with the
+    /// > invite a key that reads nothing.
+    /// > 
+    /// > An existing invite with the ID computed from the request's token is
+    /// > looked up before anything else is checked. A retry with the same token,
+    /// > by the same caller for the same chat, returns the invite the first
+    /// > attempt created, with result OK, even if the other parameters differ
+    /// > and whatever its status now: it may since have been used up, expired
+    /// > or been revoked, so the client checks Invite.status before sharing the
+    /// > link. An ID already held by an invite to another chat, or by another
+    /// > user's, is DENIED.
+    /// > 
+    /// > Otherwise, the server caps how many ACTIVE invites a chat may hold
+    /// > (TOO_MANY_INVITES) and how far away expires_at may be
+    /// > (INVALID_EXPIRES_AT).
+    /// > 
+    /// > Nothing is published.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_CreateInviteRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func createInvite<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_CreateInviteRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_CreateInviteResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.createInvite(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_CreateInviteRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_CreateInviteResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetInvite" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetInvite previews an invite from its link (see Invite): the chat it
+    /// > admits users to, whose chat_id the caller passes to JoinChat and
+    /// > derives the invite's wrap key with, and whether the invite still admits
+    /// > anyone. Anyone holding the link may call it, registered or not: the
+    /// > token is the credential, and auth is optional (when set, it must be
+    /// > valid). It counts no use, returns no key, and changes nothing.
+    /// > 
+    /// > An authenticated caller gets the chat as they see it with GetChat: a
+    /// > non-member gets its record, with in_lobby set while they wait in its
+    /// > lobby. A user banned from the chat gets only BANNED. An
+    /// > unauthenticated caller gets the chat's public view (see GetChat),
+    /// > which for a private group is its record alone, and is never BANNED,
+    /// > since the server does not know who they are. Use counts are shown only
+    /// > to those who may invite (GetChatInvites).
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetInviteRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getInvite<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetInviteRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetInviteResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getInvite(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetInviteRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetInviteResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetChatInvites" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetChatInvites pages a private group's invites, most recently created
+    /// > first, whatever their status, each with its use count and its
+    /// > creator's copy of the link's secret (see InviteSecretEnvelope).
+    /// > 
+    /// > Only a member the server permits to invite may call it, as reported by
+    /// > ViewerState.Permissions.can_invite; anyone else is DENIED.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetChatInvitesRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getChatInvites<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetChatInvitesRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetChatInvitesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getChatInvites(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetChatInvitesRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetChatInvitesResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "RevokeInvite" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > RevokeInvite stops an invite admitting anyone and, in the same step,
+    /// > deletes the server's copy of the chat key held for it (see
+    /// > InviteKeyEnvelope). Users it already admitted stay members and keep
+    /// > the chat key: an invite never changes it, and the copies stored for
+    /// > those who have not yet replaced theirs are kept, since those are their
+    /// > only key. So revoking a link that leaked keeps new users out, but
+    /// > takes the key from no one who already opened it, nor from anyone
+    /// > holding the link who can read those copies (see Invite). A link that
+    /// > leaked is replaced by revoking it and creating another.
+    /// > 
+    /// > Gated like GetChatInvites. Revoking an invite already revoked is a
+    /// > no-op that returns OK; revoking one that has expired or been used up
+    /// > records it as revoked. Nothing is published.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_RevokeInviteRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func revokeInvite<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_RevokeInviteRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_RevokeInviteResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.revokeInvite(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_RevokeInviteRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_RevokeInviteResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -3598,6 +4388,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > but the server cannot take back the chat key they already opened:
     /// > ciphertext of later messages that reached them some other way is
     /// > readable to them, since the key is not rotated.
+    /// > 
+    /// > A ban applies to the account, not to an invite link (see Invite). A
+    /// > banned user who still holds a link that admits users can join with it
+    /// > from another account, so banning someone who joined with an invite
+    /// > calls for revoking that invite too (RevokeInvite).
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_BanUserRequest` message.
@@ -3709,8 +4504,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > A private group (see Metadata.is_private) returns its record to any
     /// > registered user, so that one who is not a member can see what they are
     /// > asking to join, but its messaging state only to a member, whatever the
-    /// > view_mode. It has no public view: an unauthenticated read of one is
-    /// > DENIED. A private group whose creator has not stored its key yet (see
+    /// > view_mode. Its public view is that record alone, with no messaging
+    /// > state. A private group whose creator has not stored its key yet (see
     /// > StartChatRequest.PrivateGroupChatParameters) is returned like any
     /// > other: it is visible, though nothing can happen in it.
     ///
@@ -3881,9 +4676,27 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > carry none: group pointer advances are never broadcast, so a page of
     /// > them would be stale as soon as it was served.
     /// > 
-    /// > Requires that the caller is a member of the chat. Anyone else is
-    /// > DENIED, including a non-member whom a group's listener rules admit to
-    /// > read its messages: who is in a chat is shown only to its members.
+    /// > Requires that the caller is a member of the chat, or holds a link to an
+    /// > invite to it (see Invite) and sends the invite's token in
+    /// > invite_token. Anyone else is DENIED, including a non-member whom a
+    /// > group's listener rules admit to read its messages: who is in a chat is
+    /// > shown only to its members and to those holding a link that would let
+    /// > them join it.
+    /// > 
+    /// > The token is the credential, so auth is optional when it is sent (when
+    /// > set, auth must be valid). It is honored while its invite is ACTIVE and
+    /// > to chat_id; any other token is DENIED, as is a token sent for a public
+    /// > group or a DM. Whoever sends an honored token gets the page a member
+    /// > gets, registered or not, and a user the chat's creator banned
+    /// > included: a ban stops a user joining, not reading the roster through a
+    /// > link they hold, which the creator stops by revoking the invite.
+    /// > Reading the roster with a token counts no use of the invite, changes
+    /// > nothing, and is announced to no one. The invite is checked again on
+    /// > every page, so a walk ends with DENIED once it stops being ACTIVE.
+    /// > 
+    /// > A member is served whether or not they send a token, which is not
+    /// > checked for them. A request with neither auth nor invite_token is
+    /// > DENIED.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -4066,10 +4879,41 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// >
     /// > JoinChat adds the caller to a chat's roster.
     /// > 
-    /// > A private group (see Metadata.is_private) cannot be joined this way and
-    /// > is DENIED: a user enters its lobby with EnterLobby and is admitted by
-    /// > its creator. The one exception is the group's creator, who needs no
-    /// > approval and rejoins a private group they left with this RPC.
+    /// > A private group (see Metadata.is_private) is joined this way only with
+    /// > an invite (JoinChatRequest.invite) or by its creator. Anyone else is
+    /// > DENIED, and enters its lobby with EnterLobby to be admitted by the
+    /// > creator. The creator needs neither approval nor an invite, and rejoins
+    /// > a private group they left with this RPC; an invite they pass is
+    /// > ignored.
+    /// > 
+    /// > Joining with an invite (see Invite) needs no one's approval. The client
+    /// > previews the invite with GetInvite, which names the chat, and passes
+    /// > the invite's token here. The invite must be ACTIVE (INVITE_EXHAUSTED,
+    /// > INVITE_EXPIRED or INVITE_REVOKED otherwise), for a user who joined
+    /// > with it before as for anyone.
+    /// > 
+    /// > The join is atomic: the caller becomes a member, the join is counted as
+    /// > one use of the invite (a user who left and joins again with it uses
+    /// > another), and the invite's copy of the chat key is stored as their key
+    /// > envelope, with the link's secret encrypted by the caller for themself
+    /// > (JoinChatRequest.InviteParameters.secret_envelope), together, or
+    /// > nothing happens. A caller waiting in the chat's
+    /// > lobby leaves it in the same step. A caller who is already a member gets
+    /// > OK with nothing changed: the invite is not checked, no use is counted,
+    /// > and their stored envelope stays as it is. Only a public group's rules
+    /// > or a private group's invite are checked, never both: an invite to a
+    /// > public group is INVITE_NOT_FOUND.
+    /// > 
+    /// > Any of the joiner's devices then fetches the copy and the secret with
+    /// > GetKeyEnvelope (GetKeyEnvelopeResponse.invite_key_bundle), checks
+    /// > the copy's signature, opens the secret with the joiner's account key
+    /// > and the copy with the secret, wraps the chat key for the joiner and
+    /// > stores that envelope with SetKeyEnvelope (see KeyEnvelope). None of
+    /// > this needs the device the joiner joined with, or the link itself. A
+    /// > join with an invite is announced like an admission (see
+    /// > AdmitLobbyMember). A member whose copy turns out to hold the wrong key
+    /// > cannot fix it by joining again: they leave and are admitted from the
+    /// > lobby (see KeyEnvelope).
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -4105,9 +4949,9 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > LeaveChat removes the caller from a chat's roster.
     /// > 
     /// > Leaving a private group discards the caller's key envelope (see
-    /// > KeyEnvelope), so returning means entering the lobby and being admitted
-    /// > again. The creator's envelope is kept, since no one else could give
-    /// > them another.
+    /// > KeyEnvelope), so returning means being admitted from the lobby or
+    /// > joining with an invite again. The creator's envelope is kept, since no
+    /// > one else could give them another.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -4269,8 +5113,8 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// >
     /// > EnterLobby places the caller in a private group's lobby, where they
     /// > wait for the group's creator to admit them. It is how a user asks to
-    /// > join a private group (see Metadata.is_private); JoinChat is DENIED for
-    /// > one.
+    /// > join a private group (see Metadata.is_private) when they hold no
+    /// > invite; JoinChat without one is DENIED for a private group.
     /// > 
     /// > Entering a lobby the caller is already in is a no-op that returns OK.
     /// > The server caps both how many users may wait in one lobby and how many
@@ -4285,10 +5129,10 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > 
     /// > While the caller waits, the chat's Metadata carries in_lobby. The
     /// > caller leaves the lobby when they withdraw (LeaveLobby), when the
-    /// > creator denies them (DenyLobbyMember), or when the creator admits them
-    /// > (AdmitLobbyMember). An admission reaches the caller's devices as a
-    /// > RosterUpdate.MemberJoined naming them; a denial is not announced to
-    /// > them.
+    /// > creator denies them (DenyLobbyMember), when the creator admits them
+    /// > (AdmitLobbyMember), or when they join with an invite (JoinChat). An
+    /// > admission reaches the caller's devices as a RosterUpdate.MemberJoined
+    /// > naming them; a denial is not announced to them.
     /// > 
     /// > There is no RPC that lists the lobbies a caller is waiting in. A client
     /// > keeps the chats it entered itself, and reads in_lobby from GetChat to
@@ -4407,10 +5251,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Only the group's creator may call it, and only while a member of the
     /// > group; anyone else is DENIED. So is a creator who has not stored their
     /// > own key envelope yet (see StartChatRequest.PrivateGroupChatParameters):
-    /// > nobody is admitted to a group before its creator holds its key. This is
-    /// > the only way to give another user a key envelope. Admitting a user who
-    /// > is already a member is a no-op that returns OK and leaves their stored
-    /// > envelope as it is.
+    /// > nobody is admitted to a group before its creator holds its key. Besides
+    /// > joining with an invite, which stores the invite's copy of the chat key
+    /// > for the joiner (see JoinChat), this is the only way to give another
+    /// > user a key envelope. Admitting a user who is already a member is a
+    /// > no-op that returns OK and leaves their stored envelope as it is.
     /// > 
     /// > The admission is announced like any other join: a
     /// > RosterUpdate.MemberJoined to the chat's members and to the admitted
@@ -4490,7 +5335,7 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > group. Only a member may call it, and only for themself: an envelope
     /// > for another user is stored by admitting them (AdmitLobbyMember).
     /// > 
-    /// > It is called in two situations (see KeyEnvelope):
+    /// > It is called in three situations (see KeyEnvelope):
     /// >  - By the group's creator, right after StartChat returns the chat's
     /// >    ID, to store the chat key they have just generated. This is the
     /// >    second step of creating a private group, and nothing can happen in
@@ -4501,6 +5346,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// >    with NO_ENVELOPE.
     /// >  - By an admitted member, after first opening the envelope the creator
     /// >    wrapped for them, to replace it with one wrapped by themself.
+    /// >  - By a member who joined with an invite, after first opening the
+    /// >    invite's copy of the chat key with the link's secret (from the
+    /// >    secret envelope stored with it, or from the link), to replace it
+    /// >    with one wrapped by themself. Storing it deletes the copy and that
+    /// >    secret envelope (see InviteKeyEnvelope).
     /// > 
     /// > The first envelope a caller stores for themself stands. Once the
     /// > stored envelope is one the caller wrapped, a call with a different
@@ -4549,6 +5399,14 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > client calls this once per chat per install and keeps the key it
     /// > unwraps.
     /// > 
+    /// > For a member who joined with an invite and has not yet stored their
+    /// > own envelope, what is stored is the invite's copy of the chat key and
+    /// > the link's secret the member encrypted for themself when joining. Both
+    /// > are returned in invite_key_bundle in place of key_envelope. Any of
+    /// > the member's devices opens the secret with the member's account key,
+    /// > then the copy with the secret, and replaces the copy with an envelope
+    /// > of its own with SetKeyEnvelope (see InviteKeyEnvelope).
+    /// > 
     /// > NO_ENVELOPE is expected only for the creator of a group whose creation
     /// > stopped between StartChat and SetKeyEnvelope. A creator's client that
     /// > receives it generates a chat key and stores its envelope with
@@ -4576,6 +5434,203 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getKeyEnvelope(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "CreateInvite" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > CreateInvite creates an invite to a private group (see Invite): a link
+    /// > that lets users join it with JoinChat without the creator's approval.
+    /// > 
+    /// > Only a member the server permits to invite may call it, as reported by
+    /// > ViewerState.Permissions.can_invite; anyone else is DENIED. So is any
+    /// > call for a group whose creator has not stored its key yet (see
+    /// > StartChatRequest.PrivateGroupChatParameters).
+    /// > 
+    /// > The caller's client generates the link's secret and derives the
+    /// > invite's token, ID and wrap key from it (see Invite). It sends the
+    /// > token, the chat key encrypted under the wrap key and signed by the
+    /// > caller (InviteKeyEnvelope), and the secret encrypted for itself
+    /// > (InviteSecretEnvelope); the secret and the wrap key never leave it. The
+    /// > server computes the invite's ID from the token, which it never stores
+    /// > (see InviteToken), and checks the copy's signature against the
+    /// > caller's public key with that ID, refusing one that does not verify
+    /// > (INVALID_SIGNATURE), since no joiner could accept it. So a client that
+    /// > derived the ID wrongly is refused here, rather than sharing a link that
+    /// > admits no one. The server cannot check what either envelope holds: a
+    /// > copy that does not hold the chat key gives everyone who joins with the
+    /// > invite a key that reads nothing.
+    /// > 
+    /// > An existing invite with the ID computed from the request's token is
+    /// > looked up before anything else is checked. A retry with the same token,
+    /// > by the same caller for the same chat, returns the invite the first
+    /// > attempt created, with result OK, even if the other parameters differ
+    /// > and whatever its status now: it may since have been used up, expired
+    /// > or been revoked, so the client checks Invite.status before sharing the
+    /// > link. An ID already held by an invite to another chat, or by another
+    /// > user's, is DENIED.
+    /// > 
+    /// > Otherwise, the server caps how many ACTIVE invites a chat may hold
+    /// > (TOO_MANY_INVITES) and how far away expires_at may be
+    /// > (INVALID_EXPIRES_AT).
+    /// > 
+    /// > Nothing is published.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func createInvite<Result>(
+        _ message: Flipcash_Chat_V1_CreateInviteRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_CreateInviteResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_CreateInviteRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.createInvite(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetInvite" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetInvite previews an invite from its link (see Invite): the chat it
+    /// > admits users to, whose chat_id the caller passes to JoinChat and
+    /// > derives the invite's wrap key with, and whether the invite still admits
+    /// > anyone. Anyone holding the link may call it, registered or not: the
+    /// > token is the credential, and auth is optional (when set, it must be
+    /// > valid). It counts no use, returns no key, and changes nothing.
+    /// > 
+    /// > An authenticated caller gets the chat as they see it with GetChat: a
+    /// > non-member gets its record, with in_lobby set while they wait in its
+    /// > lobby. A user banned from the chat gets only BANNED. An
+    /// > unauthenticated caller gets the chat's public view (see GetChat),
+    /// > which for a private group is its record alone, and is never BANNED,
+    /// > since the server does not know who they are. Use counts are shown only
+    /// > to those who may invite (GetChatInvites).
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getInvite<Result>(
+        _ message: Flipcash_Chat_V1_GetInviteRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetInviteResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetInviteRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getInvite(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetChatInvites" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetChatInvites pages a private group's invites, most recently created
+    /// > first, whatever their status, each with its use count and its
+    /// > creator's copy of the link's secret (see InviteSecretEnvelope).
+    /// > 
+    /// > Only a member the server permits to invite may call it, as reported by
+    /// > ViewerState.Permissions.can_invite; anyone else is DENIED.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getChatInvites<Result>(
+        _ message: Flipcash_Chat_V1_GetChatInvitesRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetChatInvitesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetChatInvitesRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getChatInvites(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "RevokeInvite" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > RevokeInvite stops an invite admitting anyone and, in the same step,
+    /// > deletes the server's copy of the chat key held for it (see
+    /// > InviteKeyEnvelope). Users it already admitted stay members and keep
+    /// > the chat key: an invite never changes it, and the copies stored for
+    /// > those who have not yet replaced theirs are kept, since those are their
+    /// > only key. So revoking a link that leaked keeps new users out, but
+    /// > takes the key from no one who already opened it, nor from anyone
+    /// > holding the link who can read those copies (see Invite). A link that
+    /// > leaked is replaced by revoking it and creating another.
+    /// > 
+    /// > Gated like GetChatInvites. Revoking an invite already revoked is a
+    /// > no-op that returns OK; revoking one that has expired or been used up
+    /// > records it as revoked. Nothing is published.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func revokeInvite<Result>(
+        _ message: Flipcash_Chat_V1_RevokeInviteRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_RevokeInviteResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_RevokeInviteRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.revokeInvite(
             request: request,
             options: options,
             onResponse: handleResponse
@@ -4799,6 +5854,11 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > but the server cannot take back the chat key they already opened:
     /// > ciphertext of later messages that reached them some other way is
     /// > readable to them, since the key is not rotated.
+    /// > 
+    /// > A ban applies to the account, not to an invite link (see Invite). A
+    /// > banned user who still holds a link that admits users can join with it
+    /// > from another account, so banning someone who joined with an invite
+    /// > calls for revoking that invite too (RevokeInvite).
     ///
     /// - Parameters:
     ///   - message: request message to send.

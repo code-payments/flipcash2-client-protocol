@@ -781,6 +781,14 @@ public struct Flipcash_Messaging_V1_SystemContent: Sendable {
       set {method = .admitted(newValue)}
     }
 
+    public var invited: Flipcash_Messaging_V1_SystemContent.UserJoined.Invited {
+      get {
+        if case .invited(let v)? = method {return v}
+        return Flipcash_Messaging_V1_SystemContent.UserJoined.Invited()
+      }
+      set {method = .invited(newValue)}
+    }
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     /// How they joined. Always set. A client that finds it unset (a way of
@@ -788,6 +796,7 @@ public struct Flipcash_Messaging_V1_SystemContent: Sendable {
     public enum OneOf_Method: Equatable, Sendable {
       case direct(Flipcash_Messaging_V1_SystemContent.UserJoined.Direct)
       case admitted(Flipcash_Messaging_V1_SystemContent.UserJoined.Admitted)
+      case invited(Flipcash_Messaging_V1_SystemContent.UserJoined.Invited)
 
     }
 
@@ -825,6 +834,30 @@ public struct Flipcash_Messaging_V1_SystemContent: Sendable {
       public init() {}
 
       fileprivate var _admittedBy: Flipcash_Common_V1_UserId? = nil
+    }
+
+    /// They joined with someone's invite, needing no one's approval (see
+    /// chat.v1.Invite).
+    public struct Invited: Sendable {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      /// The user that created the invite
+      public var invitedBy: Flipcash_Common_V1_UserId {
+        get {return _invitedBy ?? Flipcash_Common_V1_UserId()}
+        set {_invitedBy = newValue}
+      }
+      /// Returns true if `invitedBy` has been explicitly set.
+      public var hasInvitedBy: Bool {return self._invitedBy != nil}
+      /// Clears the value of `invitedBy`. Subsequent reads from it will return its default value.
+      public mutating func clearInvitedBy() {self._invitedBy = nil}
+
+      public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      public init() {}
+
+      fileprivate var _invitedBy: Flipcash_Common_V1_UserId? = nil
     }
 
     public init() {}
@@ -2645,7 +2678,7 @@ extension Flipcash_Messaging_V1_SystemContent: SwiftProtobuf.Message, SwiftProto
 
 extension Flipcash_Messaging_V1_SystemContent.UserJoined: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Messaging_V1_SystemContent.protoMessageName + ".UserJoined"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{1}direct\0\u{1}admitted\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}user_id\0\u{1}direct\0\u{1}admitted\0\u{1}invited\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2680,6 +2713,19 @@ extension Flipcash_Messaging_V1_SystemContent.UserJoined: SwiftProtobuf.Message,
           self.method = .admitted(v)
         }
       }()
+      case 4: try {
+        var v: Flipcash_Messaging_V1_SystemContent.UserJoined.Invited?
+        var hadOneofValue = false
+        if let current = self.method {
+          hadOneofValue = true
+          if case .invited(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.method = .invited(v)
+        }
+      }()
       default: break
       }
     }
@@ -2701,6 +2747,10 @@ extension Flipcash_Messaging_V1_SystemContent.UserJoined: SwiftProtobuf.Message,
     case .admitted?: try {
       guard case .admitted(let v)? = self.method else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }()
+    case .invited?: try {
+      guard case .invited(let v)? = self.method else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
     }()
     case nil: break
     }
@@ -2763,6 +2813,40 @@ extension Flipcash_Messaging_V1_SystemContent.UserJoined.Admitted: SwiftProtobuf
 
   public static func ==(lhs: Flipcash_Messaging_V1_SystemContent.UserJoined.Admitted, rhs: Flipcash_Messaging_V1_SystemContent.UserJoined.Admitted) -> Bool {
     if lhs._admittedBy != rhs._admittedBy {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_SystemContent.UserJoined.Invited: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Messaging_V1_SystemContent.UserJoined.protoMessageName + ".Invited"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}invited_by\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._invitedBy) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._invitedBy {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_SystemContent.UserJoined.Invited, rhs: Flipcash_Messaging_V1_SystemContent.UserJoined.Invited) -> Bool {
+    if lhs._invitedBy != rhs._invitedBy {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

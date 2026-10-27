@@ -173,7 +173,7 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   /// Rules governing participation in this chat. Only supported for group
   /// chats. If not set, the chat has no participation requirements. Never
   /// set for a private group (see is_private), which admits a user by its
-  /// creator's approval instead.
+  /// creator's approval or an invite instead.
   public var rules: Flipcash_Chat_V1_Rules {
     get {return _storage._rules ?? Flipcash_Chat_V1_Rules()}
     set {_uniqueStorage()._rules = newValue}
@@ -208,9 +208,10 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   /// and fixed when the chat is created (see
   /// StartChatRequest.private_group).
   ///
-  /// A private group has no rules. Nobody joins it with Chat.JoinChat: a
-  /// user enters its lobby with Chat.EnterLobby and is admitted by its
-  /// creator. Only its members can read its messages, under any
+  /// A private group has no rules. A user joins it in one of two ways: they
+  /// enter its lobby with Chat.EnterLobby and are admitted by its creator,
+  /// or they join with Chat.JoinChat carrying an invite the creator made
+  /// (see Invite). Only its members can read its messages, under any
   /// messaging.v1.ViewMode, and every message a client sends in it is
   /// messaging.v1.EncryptedContent, encrypted with the group's chat key
   /// (see KeyEnvelope).
@@ -1256,6 +1257,14 @@ public struct Flipcash_Chat_V1_ViewerState: Sendable {
     /// Clears the value of `moderation`. Subsequent reads from it will return its default value.
     public mutating func clearModeration() {self._moderation = nil}
 
+    /// Whether the viewer may call Chat.CreateInvite, Chat.GetChatInvites
+    /// and Chat.RevokeInvite on this chat. Today that is a private group's
+    /// creator while a member, and no one else: false for every other
+    /// member, and for every chat that is not a private group. Granting
+    /// it to anyone else would let them hand joiners a wrong chat key (see
+    /// Invite).
+    public var canInvite: Bool = false
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     public init() {}
@@ -1590,14 +1599,48 @@ public struct Flipcash_Chat_V1_IdempotencyKey: Sendable {
 /// the wrapper. When wrapped_by is the recipient, that is the recipient's own
 /// key. Otherwise wrapped_by must be Metadata.creator, and the client uses
 /// the creator's public key, preferring one it learned outside this service
-/// (for example, from the invitation that led it to the chat) over one the
-/// server reports. A client rejects an envelope that names any other wrapper
-/// or that fails to open, and does not send in the chat.
+/// over the one the server reports with the envelope (wrapped_by_public_key
+/// in Chat.GetKeyEnvelope's response). A client rejects an envelope that
+/// names any other wrapper or that fails to open, and does not send in the
+/// chat.
 ///
 /// A member who opens an envelope wrapped by the creator wraps the chat key
 /// again for itself and stores that envelope with Chat.SetKeyEnvelope, so
 /// that opening it later, on any of the member's devices, depends on no one
 /// else's key.
+///
+/// A member who joins with an invite (Chat.JoinChat) is given, along with
+/// their membership, the invite's copy of the chat key (see
+/// InviteKeyEnvelope) in place of an envelope the creator wrapped.
+/// Chat.GetKeyEnvelope returns it until they replace it: they check its
+/// signature, open it with the link's secret, wrap the chat key for
+/// themself and store that envelope with Chat.SetKeyEnvelope, as a member
+/// admitted from the lobby does. Until they have, opening their key depends
+/// on the link's secret, which they encrypted for themself when joining (see
+/// InviteSecretEnvelope) and which is stored and returned with the copy, so
+/// any of their devices can do this, whether or not it holds the link.
+///
+/// The copy carries the creator's signature, which the member checks against
+/// the creator's public key, preferring one learned outside this service as
+/// above. So the copy holds as far as an envelope the creator wrapped does:
+/// substituting a chat key in it takes the creator's private key, or the
+/// server reporting a false public key for the creator. A member whose copy
+/// fails that check, or fails to open, treats it as the wrong key.
+///
+/// A member whose chat's messages do not open under their key treats it as
+/// the wrong key, warns the user and does not send in the chat. That catches
+/// a key made wrong by mistake, but is no defence against the server, which
+/// decides what messages a member is shown and who sent them.
+///
+/// A member holding the wrong key, or an invite's copy none of their devices
+/// can open, has one way to repair it: leave the chat
+/// (Chat.LeaveChat), which discards their envelope, then enter its lobby
+/// (Chat.EnterLobby) and be admitted by the creator, who wraps the chat key
+/// for them. Nothing else gives them another key: Chat.SetKeyEnvelope keeps an
+/// envelope they wrapped themself (ALREADY_SET), Chat.AdmitLobbyMember leaves
+/// a member's envelope as it is, and joining with the same invite again gives
+/// the same copy. An invite whose copy holds the wrong key should be revoked
+/// (Chat.RevokeInvite).
 ///
 /// Like EncryptedContent, this has no forward secrecy: anyone who later
 /// obtains a member's private key can open that member's envelope and read
@@ -1804,9 +1847,9 @@ public struct Flipcash_Chat_V1_LobbyUpdate: Sendable {
   }
 
   /// A user is no longer in the lobby: they withdrew (Chat.LeaveLobby),
-  /// were denied (Chat.DenyLobbyMember) or were admitted
-  /// (Chat.AdmitLobbyMember). An admission also arrives as a
-  /// RosterUpdate.MemberJoined.
+  /// were denied (Chat.DenyLobbyMember), were admitted
+  /// (Chat.AdmitLobbyMember) or joined with an invite (Chat.JoinChat).
+  /// Either of the last two also arrives as a RosterUpdate.MemberJoined.
   public struct MemberLeft: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -1840,6 +1883,490 @@ public struct Flipcash_Chat_V1_LobbyUpdateBatch: Sendable {
   public var lobbyUpdates: [Flipcash_Chat_V1_LobbyUpdate] = []
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// InviteId names an invite to a private group (see Invite). Clients derive
+/// it from the invite's link; it is not secret, and does not let anyone join.
+public struct Flipcash_Chat_V1_InviteId: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// InviteToken proves its sender holds an invite's link (see Invite). Clients
+/// derive it from the link's secret and send it only to create the invite
+/// (Chat.CreateInvite), preview it (Chat.GetInvite), read the chat's roster
+/// with it (Chat.GetRoster) or join with it (Chat.JoinChat). The server never
+/// stores it, in its records or its logs: anyone who reads a token can join
+/// with the invite and use up its limit, and read the roster without an
+/// account.
+public struct Flipcash_Chat_V1_InviteToken: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var value: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+}
+
+/// Invite is a link that lets users join a private group (see
+/// Metadata.is_private) without its creator's approval, up to a number of
+/// joins or without limit. It is created with Chat.CreateInvite by a
+/// member the server permits to invite (see
+/// ViewerState.Permissions.can_invite), which today is the group's creator
+/// alone. An invite admits whoever holds the link, including a user the
+/// creator denied from the lobby (Chat.DenyLobbyMember).
+///
+/// Should the server ever let members other than the creator invite, such a
+/// member's invites must stop admitting anyone once they are banned, leave
+/// the chat, or otherwise lose can_invite, and those permitted to ban
+/// (ViewerState.Permissions.moderation.can_ban) must be able to revoke any
+/// invite. That rule is for them alone: the chat's creator also loses
+/// can_invite while not a member, but their invites keep working (see
+/// below).
+///
+/// Letting other members invite would also weaken what a joiner can trust:
+/// today only the creator can hand out the chat key, but a member permitted
+/// to invite could give the users who join with their invite a wrong key,
+/// which the signature on the copy (see InviteKeyEnvelope) cannot catch,
+/// since it proves only who made the copy. Clients would then also need a way
+/// to check a key against one the creator vouches for.
+///
+/// A user joins with an invite with Chat.JoinChat, which in one step makes
+/// them a member, counts their use of the invite, and stores the invite's
+/// copy of the chat key (see InviteKeyEnvelope) as their key envelope, with
+/// the link's secret the joiner encrypted for themself (see
+/// InviteSecretEnvelope). Any of their devices then fetches both with
+/// Chat.GetKeyEnvelope, checks the copy's signature, opens the secret and
+/// then the copy, wraps the chat key for the joiner and stores that envelope
+/// with Chat.SetKeyEnvelope, as a member admitted from the lobby does (see
+/// KeyEnvelope). The server gives the copy to members alone, so it reaches no
+/// more users than the invite's limit allows.
+///
+/// The link carries one secret: 32 random bytes the inviter's client
+/// generates for this invite alone. It travels in the link's URL fragment,
+/// which a browser never sends in a request, and the server never learns it.
+/// A web page that a link opens can still read the fragment, so such a page
+/// must never send it anywhere or log it. It is not the chat key. Every
+/// client derives three values from it, with HKDF-SHA256 (RFC 5869):
+///
+///   invite_token = HKDF(ikm  = secret,
+///                       salt = "",
+///                       info = "flipcash-group-invite-token-v1",
+///                       L    = 32)
+///   wrap_key     = HKDF(ikm  = secret,
+///                       salt = "",
+///                       info = "flipcash-group-invite-wrap-v1" || chat_id,
+///                       L    = 32)
+///   invite_id    = SHA-256("flipcash-group-invite-id-v1" || invite_token)[:16]
+///
+/// where chat_id is the raw bytes of common.v1.ChatId.value. The link holds
+/// no chat ID, so a joiner learns it from Chat.GetInvite and derives the wrap
+/// key only then.
+///
+///  - The invite token (InviteToken) proves the caller holds the link. The
+///    server finds the invite by computing its ID from the token, so neither
+///    the server's records nor anything it returns lets anyone join.
+///  - The wrap key opens the invite's copy of the chat key (see
+///    InviteKeyEnvelope). It is never sent anywhere, so the token does not
+///    let anyone open the copy. Binding the chat ID into it makes the copy
+///    open only as the key of the chat it was made for, so the server cannot
+///    steer a joiner into another chat.
+///  - The invite ID (InviteId) names the invite. The server computes it from
+///    the token whenever one is sent, creation included, and the inviter
+///    lists and revokes the invite by it.
+///
+/// The limit counts joins: each join with the invite that makes someone a
+/// member uses one, so a user who leaves and joins again with it uses
+/// another, and leaving gives no use back. A retry of a join that succeeded
+/// uses none, since the caller is a member by then (see Chat.JoinChat). The
+/// server does not record who joined with which invite. An invite admits
+/// anyone, those who joined with it before included,
+/// only while it is ACTIVE: once it is used up, expires or is revoked, it
+/// admits no one, and a user returning to the chat is admitted from the lobby
+/// instead. The users it already admitted stay members. Nothing about the
+/// chat's creator's own standing stops an invite they made: it keeps working
+/// while they are not a member, though they cannot list or revoke it until
+/// they rejoin.
+///
+/// An invite never changes the chat key. Revoking a link that leaked keeps
+/// new users out, but cannot take the key from anyone who already joined
+/// with it.
+///
+/// While an invite is ACTIVE, its link also shows who is in the chat to
+/// whoever holds it, with no account needed: the token alone previews the
+/// invite (Chat.GetInvite) and reads the chat's roster (Chat.GetRoster), so
+/// that a web page the link opens can show both before anyone joins. A ban
+/// does not stop a user who holds the link from reading the roster; revoking
+/// the invite stops everyone.
+///
+/// The link and the server's records together are as good as the chat key:
+/// anyone holding the link who can read what the server stores can open a
+/// copy of the chat key (see InviteKeyEnvelope), and with it every message
+/// in the chat, without ever joining. The server deletes each copy once it
+/// is no longer needed (see InviteKeyEnvelope), which bounds this but does
+/// not end it. A copy that opens with the link is still stored:
+///  - while the invite is ACTIVE, which is inherent, since anyone holding
+///    the link could join with it anyway;
+///  - for each member who joined with the invite and has not yet replaced
+///    their copy, for as long as that takes, whether or not the invite has
+///    since stopped admitting anyone;
+///  - in the server's backups, which deleting a copy does not reach.
+/// So a link is to be treated like the chat key, and shared only with those
+/// who may read the chat.
+///
+/// A ban (Chat.BanUser) applies to one account, not to a link. A banned user
+/// who still holds a link that admits users can join with it from another
+/// account, so a creator banning someone who joined with an invite
+/// should revoke that invite too (Chat.RevokeInvite), and make another for
+/// everyone else.
+public struct Flipcash_Chat_V1_Invite: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var inviteID: Flipcash_Chat_V1_InviteId {
+    get {return _inviteID ?? Flipcash_Chat_V1_InviteId()}
+    set {_inviteID = newValue}
+  }
+  /// Returns true if `inviteID` has been explicitly set.
+  public var hasInviteID: Bool {return self._inviteID != nil}
+  /// Clears the value of `inviteID`. Subsequent reads from it will return its default value.
+  public mutating func clearInviteID() {self._inviteID = nil}
+
+  /// The private group the invite admits users to.
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The user that created the invite.
+  public var createdBy: Flipcash_Common_V1_UserId {
+    get {return _createdBy ?? Flipcash_Common_V1_UserId()}
+    set {_createdBy = newValue}
+  }
+  /// Returns true if `createdBy` has been explicitly set.
+  public var hasCreatedBy: Bool {return self._createdBy != nil}
+  /// Clears the value of `createdBy`. Subsequent reads from it will return its default value.
+  public mutating func clearCreatedBy() {self._createdBy = nil}
+
+  /// How many joins the invite allows (see Invite). 0 means unlimited.
+  public var maxUses: UInt32 = 0
+
+  /// How many joins the invite has admitted, whether or not those users are
+  /// still members. Never decreases.
+  public var useCount: UInt32 = 0
+
+  /// When the invite was created.
+  public var createdAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _createdAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_createdAt = newValue}
+  }
+  /// Returns true if `createdAt` has been explicitly set.
+  public var hasCreatedAt: Bool {return self._createdAt != nil}
+  /// Clears the value of `createdAt`. Subsequent reads from it will return its default value.
+  public mutating func clearCreatedAt() {self._createdAt = nil}
+
+  /// When the invite stops admitting anyone. Unset when it never expires.
+  public var expiresAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _expiresAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_expiresAt = newValue}
+  }
+  /// Returns true if `expiresAt` has been explicitly set.
+  public var hasExpiresAt: Bool {return self._expiresAt != nil}
+  /// Clears the value of `expiresAt`. Subsequent reads from it will return its default value.
+  public mutating func clearExpiresAt() {self._expiresAt = nil}
+
+  /// What the invite still allows. When more than one reason applies, the
+  /// status is the first of REVOKED, EXPIRED and EXHAUSTED.
+  public var status: Flipcash_Chat_V1_Invite.Status = .unknown
+
+  /// The link's secret, encrypted so that only the invite's creator can open
+  /// it, so that any of their devices can rebuild the link to share it again.
+  public var secretEnvelope: Flipcash_Chat_V1_InviteSecretEnvelope {
+    get {return _secretEnvelope ?? Flipcash_Chat_V1_InviteSecretEnvelope()}
+    set {_secretEnvelope = newValue}
+  }
+  /// Returns true if `secretEnvelope` has been explicitly set.
+  public var hasSecretEnvelope: Bool {return self._secretEnvelope != nil}
+  /// Clears the value of `secretEnvelope`. Subsequent reads from it will return its default value.
+  public mutating func clearSecretEnvelope() {self._secretEnvelope = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Status: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unknown // = 0
+
+    /// The invite admits users
+    case active // = 1
+
+    /// It has admitted max_uses joins; it admits no one
+    case exhausted // = 2
+
+    /// expires_at has passed; it admits no one
+    case expired // = 3
+
+    /// It was revoked (see Chat.RevokeInvite); it admits no one
+    case revoked // = 4
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unknown
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unknown
+      case 1: self = .active
+      case 2: self = .exhausted
+      case 3: self = .expired
+      case 4: self = .revoked
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unknown: return 0
+      case .active: return 1
+      case .exhausted: return 2
+      case .expired: return 3
+      case .revoked: return 4
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_Invite.Status] = [
+      .unknown,
+      .active,
+      .exhausted,
+      .expired,
+      .revoked,
+    ]
+
+  }
+
+  public init() {}
+
+  fileprivate var _inviteID: Flipcash_Chat_V1_InviteId? = nil
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _createdBy: Flipcash_Common_V1_UserId? = nil
+  fileprivate var _createdAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  fileprivate var _expiresAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  fileprivate var _secretEnvelope: Flipcash_Chat_V1_InviteSecretEnvelope? = nil
+}
+
+/// InviteKeyEnvelope is an invite's copy of a private group's chat key,
+/// encrypted under the invite's wrap key (see Invite), so that anyone holding
+/// the link can open it and nobody else can, the server included, and signed
+/// by the user who created the invite, so that a joiner can tell it came from
+/// them. The inviter makes it when creating the invite (Chat.CreateInvite).
+/// Joining with the invite (Chat.JoinChat) stores it as the joiner's key
+/// envelope, which Chat.GetKeyEnvelope returns
+/// (GetKeyEnvelopeResponse.invite_key_bundle), with the link's secret the
+/// member encrypted for themself (see InviteSecretEnvelope), until the member
+/// checks its signature, opens it, wraps the chat key for themself and stores
+/// that envelope with Chat.SetKeyEnvelope (see KeyEnvelope).
+///
+/// The server deletes copies it no longer needs, since anyone holding the
+/// link who can read them can open them (see Invite). It deletes the
+/// invite's own copy once the invite stops being ACTIVE: in the same step
+/// that revokes it (Chat.RevokeInvite) or counts its last use
+/// (Chat.JoinChat), and at or soon after expires_at for one that expires.
+/// It deletes a member's copy, and the secret envelope stored with it, in
+/// the same step that stores the envelope replacing them
+/// (Chat.SetKeyEnvelope). A member who never replaces their copy keeps it,
+/// whatever becomes of the invite, since it is their only key.
+///
+/// For scheme XCHACHA20POLY1305, encrypt with XChaCha20-Poly1305 (the IETF
+/// construction in libsodium's crypto_aead_xchacha20poly1305_ietf_encrypt):
+///   key       = the invite's wrap key
+///   nonce     = 24 fresh random bytes, set in `nonce` below
+///   plaintext = the 32-byte chat key
+///   aad       = "flipcash-group-invite-wrap-v1" || chat_id || invite_id
+/// where chat_id and invite_id are the raw bytes of common.v1.ChatId.value and
+/// InviteId.value. The ciphertext, with its 16-byte Poly1305 tag appended, is
+/// set in `ciphertext` below.
+///
+/// The inviter then signs the copy with the Ed25519 private key of their
+/// account:
+///   message   = "flipcash-group-invite-sig-v1" || chat_id || invite_id
+///               || nonce || ciphertext
+///   signature = Ed25519-Sign(inviter_private_key, message), set in
+///               `signature` below
+/// with chat_id and invite_id as above. The inviter is Invite.created_by,
+/// reported to a member holding the copy as GetKeyEnvelopeResponse.wrapped_by.
+/// Today only the chat's creator may invite (see
+/// ViewerState.Permissions.can_invite), so the member first checks that
+/// wrapped_by is Metadata.creator, and rejects the copy otherwise: without
+/// that check, a server could name an account it controls as the inviter and
+/// sign with that account's key. The member then verifies the signature
+/// against the inviter's public key (wrapped_by_public_key in the same
+/// response, or one learned outside this service, which it prefers), and
+/// only then opens the copy.
+///
+/// Only a holder of the link's secret can derive the wrap key, so a copy that
+/// opens was made by one, and only the creator can sign it. Neither the
+/// server, even with a link it made itself, nor anyone else holding the link
+/// can substitute a chat key of its choosing, except by the server reporting
+/// a false public key for the creator, the trust every KeyEnvelope rests on
+/// too. A client rejects a copy whose inviter is not the creator, whose
+/// signature does not verify or that fails to open, treats it as the wrong
+/// key (see KeyEnvelope), and does not send in the chat. Since the copy is
+/// given only on joining, a user who joined with a forged link is a member
+/// by the time their client finds this out.
+public struct Flipcash_Chat_V1_InviteKeyEnvelope: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The scheme used, which determines how every other field is
+  /// interpreted. Clients treat an unrecognized scheme as a copy they cannot
+  /// open.
+  public var scheme: Flipcash_Chat_V1_InviteKeyEnvelope.Scheme = .unknown
+
+  /// The random XChaCha20-Poly1305 nonce, unique per envelope.
+  public var nonce: Data = Data()
+
+  /// The encrypted 32-byte chat key with the 16-byte Poly1305 tag appended.
+  public var ciphertext: Data = Data()
+
+  /// The inviter's Ed25519 signature over the copy, as described above.
+  public var signature: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Scheme: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unknown // = 0
+    case xchacha20Poly1305 // = 1
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unknown
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unknown
+      case 1: self = .xchacha20Poly1305
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unknown: return 0
+      case .xchacha20Poly1305: return 1
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_InviteKeyEnvelope.Scheme] = [
+      .unknown,
+      .xchacha20Poly1305,
+    ]
+
+  }
+
+  public init() {}
+}
+
+/// InviteSecretEnvelope is an invite link's secret (see Invite), encrypted by
+/// a user for themself, so that only they can open it, on any of their
+/// devices, and the server cannot. Two users make one:
+///
+///  - The user who creates the invite (Invite.created_by, not necessarily
+///    the chat's creator), with Chat.CreateInvite. The server returns it with
+///    the invite (Chat.GetChatInvites), so that any of their devices can
+///    rebuild the link to share it again.
+///  - A user joining with the invite, with Chat.JoinChat. The server stores
+///    it with the invite's copy of the chat key and returns it with the copy
+///    (Chat.GetKeyEnvelope), so that any of their devices can open the copy
+///    until they replace it with an envelope of their own.
+///
+/// "Owner" below is the user who made it. For scheme
+/// X25519_XCHACHA20POLY1305, it is made exactly as a KeyEnvelope a user wraps
+/// for themself, with the owner as both wrapper and recipient (so the peer
+/// key in step 1 is the owner's own public key), and these values in place of
+/// the KeyEnvelope ones:
+///   info (step 3)      = "flipcash-group-invite-secret-v1" || chat_id
+///                        || invite_id
+///   plaintext (step 4) = the link's 32-byte secret
+///   aad (step 4)       = "flipcash-group-invite-secret-v1" || chat_id
+///                        || invite_id || owner_pk || owner_pk
+/// where chat_id and invite_id are the raw bytes of common.v1.ChatId.value and
+/// InviteId.value, and owner_pk is the owner's 32-byte Ed25519 public key. So
+/// it opens only as the secret of the invite and chat it was made for.
+public struct Flipcash_Chat_V1_InviteSecretEnvelope: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The scheme used, which determines how every other field is
+  /// interpreted. Clients treat an unrecognized scheme as an envelope they
+  /// cannot open.
+  public var scheme: Flipcash_Chat_V1_InviteSecretEnvelope.Scheme = .unknown
+
+  /// The random XChaCha20-Poly1305 nonce, unique per envelope.
+  public var nonce: Data = Data()
+
+  /// The encrypted 32-byte secret with the 16-byte Poly1305 tag appended.
+  public var ciphertext: Data = Data()
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum Scheme: SwiftProtobuf.Enum, Swift.CaseIterable {
+    public typealias RawValue = Int
+    case unknown // = 0
+    case x25519Xchacha20Poly1305 // = 1
+    case UNRECOGNIZED(Int)
+
+    public init() {
+      self = .unknown
+    }
+
+    public init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .unknown
+      case 1: self = .x25519Xchacha20Poly1305
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    public var rawValue: Int {
+      switch self {
+      case .unknown: return 0
+      case .x25519Xchacha20Poly1305: return 1
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+    // The compiler won't synthesize support with the UNRECOGNIZED case.
+    public static let allCases: [Flipcash_Chat_V1_InviteSecretEnvelope.Scheme] = [
+      .unknown,
+      .x25519Xchacha20Poly1305,
+    ]
+
+  }
 
   public init() {}
 }
@@ -3368,7 +3895,7 @@ extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".Permissions"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_edit\0\u{1}moderation\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_edit\0\u{1}moderation\0\u{3}can_invite\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3378,6 +3905,7 @@ extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, Swift
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularBoolField(value: &self.canEdit) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._moderation) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.canInvite) }()
       default: break
       }
     }
@@ -3394,12 +3922,16 @@ extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, Swift
     try { if let v = self._moderation {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    if self.canInvite != false {
+      try visitor.visitSingularBoolField(value: self.canInvite, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_ViewerState.Permissions, rhs: Flipcash_Chat_V1_ViewerState.Permissions) -> Bool {
     if lhs.canEdit != rhs.canEdit {return false}
     if lhs._moderation != rhs._moderation {return false}
+    if lhs.canInvite != rhs.canInvite {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -4131,4 +4663,235 @@ extension Flipcash_Chat_V1_LobbyUpdateBatch: SwiftProtobuf.Message, SwiftProtobu
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Flipcash_Chat_V1_InviteId: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InviteId"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.value.isEmpty {
+      try visitor.visitSingularBytesField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_InviteId, rhs: Flipcash_Chat_V1_InviteId) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_InviteToken: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InviteToken"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}value\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self.value) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.value.isEmpty {
+      try visitor.visitSingularBytesField(value: self.value, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_InviteToken, rhs: Flipcash_Chat_V1_InviteToken) -> Bool {
+    if lhs.value != rhs.value {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_Invite: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Invite"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}invite_id\0\u{3}chat_id\0\u{3}created_by\0\u{3}max_uses\0\u{3}use_count\0\u{3}created_at\0\u{3}expires_at\0\u{1}status\0\u{3}secret_envelope\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._inviteID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._createdBy) }()
+      case 4: try { try decoder.decodeSingularUInt32Field(value: &self.maxUses) }()
+      case 5: try { try decoder.decodeSingularUInt32Field(value: &self.useCount) }()
+      case 6: try { try decoder.decodeSingularMessageField(value: &self._createdAt) }()
+      case 7: try { try decoder.decodeSingularMessageField(value: &self._expiresAt) }()
+      case 8: try { try decoder.decodeSingularEnumField(value: &self.status) }()
+      case 9: try { try decoder.decodeSingularMessageField(value: &self._secretEnvelope) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._inviteID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._createdBy {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    if self.maxUses != 0 {
+      try visitor.visitSingularUInt32Field(value: self.maxUses, fieldNumber: 4)
+    }
+    if self.useCount != 0 {
+      try visitor.visitSingularUInt32Field(value: self.useCount, fieldNumber: 5)
+    }
+    try { if let v = self._createdAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    } }()
+    try { if let v = self._expiresAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    } }()
+    if self.status != .unknown {
+      try visitor.visitSingularEnumField(value: self.status, fieldNumber: 8)
+    }
+    try { if let v = self._secretEnvelope {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_Invite, rhs: Flipcash_Chat_V1_Invite) -> Bool {
+    if lhs._inviteID != rhs._inviteID {return false}
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._createdBy != rhs._createdBy {return false}
+    if lhs.maxUses != rhs.maxUses {return false}
+    if lhs.useCount != rhs.useCount {return false}
+    if lhs._createdAt != rhs._createdAt {return false}
+    if lhs._expiresAt != rhs._expiresAt {return false}
+    if lhs.status != rhs.status {return false}
+    if lhs._secretEnvelope != rhs._secretEnvelope {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_Invite.Status: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}ACTIVE\0\u{1}EXHAUSTED\0\u{1}EXPIRED\0\u{1}REVOKED\0")
+}
+
+extension Flipcash_Chat_V1_InviteKeyEnvelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InviteKeyEnvelope"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}scheme\0\u{1}nonce\0\u{1}ciphertext\0\u{1}signature\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.scheme) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self.nonce) }()
+      case 3: try { try decoder.decodeSingularBytesField(value: &self.ciphertext) }()
+      case 4: try { try decoder.decodeSingularBytesField(value: &self.signature) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.scheme != .unknown {
+      try visitor.visitSingularEnumField(value: self.scheme, fieldNumber: 1)
+    }
+    if !self.nonce.isEmpty {
+      try visitor.visitSingularBytesField(value: self.nonce, fieldNumber: 2)
+    }
+    if !self.ciphertext.isEmpty {
+      try visitor.visitSingularBytesField(value: self.ciphertext, fieldNumber: 3)
+    }
+    if !self.signature.isEmpty {
+      try visitor.visitSingularBytesField(value: self.signature, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_InviteKeyEnvelope, rhs: Flipcash_Chat_V1_InviteKeyEnvelope) -> Bool {
+    if lhs.scheme != rhs.scheme {return false}
+    if lhs.nonce != rhs.nonce {return false}
+    if lhs.ciphertext != rhs.ciphertext {return false}
+    if lhs.signature != rhs.signature {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_InviteKeyEnvelope.Scheme: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}XCHACHA20POLY1305\0")
+}
+
+extension Flipcash_Chat_V1_InviteSecretEnvelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".InviteSecretEnvelope"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}scheme\0\u{1}nonce\0\u{1}ciphertext\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.scheme) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self.nonce) }()
+      case 3: try { try decoder.decodeSingularBytesField(value: &self.ciphertext) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.scheme != .unknown {
+      try visitor.visitSingularEnumField(value: self.scheme, fieldNumber: 1)
+    }
+    if !self.nonce.isEmpty {
+      try visitor.visitSingularBytesField(value: self.nonce, fieldNumber: 2)
+    }
+    if !self.ciphertext.isEmpty {
+      try visitor.visitSingularBytesField(value: self.ciphertext, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_InviteSecretEnvelope, rhs: Flipcash_Chat_V1_InviteSecretEnvelope) -> Bool {
+    if lhs.scheme != rhs.scheme {return false}
+    if lhs.nonce != rhs.nonce {return false}
+    if lhs.ciphertext != rhs.ciphertext {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_InviteSecretEnvelope.Scheme: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}X25519_XCHACHA20POLY1305\0")
 }

@@ -8,6 +8,68 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.22.0
+
+Synced to [`flipcash2-protobuf-api@b655df17`](https://github.com/code-payments/flipcash2-protobuf-api/commit/b655df1770f1d588736ee3dcb712d9be5ca2cf41),
+picking up [#157](https://github.com/code-payments/flipcash2-protobuf-api/pull/157),
+[#158](https://github.com/code-payments/flipcash2-protobuf-api/pull/158) and
+[#159](https://github.com/code-payments/flipcash2-protobuf-api/pull/159). `chat.v1`,
+`messaging.v1` and `common.v1` moved.
+
+This release adds invite links for private groups, plus anonymous reads of an invite and the
+chat's roster. Upgrading breaks source in Swift only, not the wire. One enum gained cases,
+appended at the end, so no existing value moved.
+
+### Breaking
+
+- `chat.v1.GetKeyEnvelopeResponse.key_envelope` (field 2) moved into a new `oneof envelope`, next
+  to `invite_key_bundle`. Swift loses `hasKeyEnvelope` and `clearKeyEnvelope`; switch on
+  `envelope` instead. Kotlin keeps `hasKeyEnvelope()` and gains `getEnvelopeCase()`. In either
+  language, a client that reads only `key_envelope` sees an empty envelope for a member who joined
+  with an invite.
+- `common.v1.Username` now accepts 2 to 30 characters, up from 15. Nothing fails to compile, but a
+  client that validates, matches or encodes usernames at 15 will reject or truncate names the
+  server now issues.
+
+### Added
+
+- Invite RPCs on `chat.v1.Chat`: `CreateInvite`, `GetInvite`, `GetChatInvites` and
+  `RevokeInvite`, with `Invite`, `Invite.Status`, `InviteId`, `InviteToken`, `InviteKeyEnvelope`
+  and `InviteSecretEnvelope`. Only a private group's creator may create, list or revoke invites
+  today. `GetInvite` takes optional `auth`, so a link can be previewed without an account.
+- The `Invite` docs specify the client-side crypto: how the token, wrap key and invite ID derive
+  from the link's secret (HKDF-SHA256 and SHA-256), the XChaCha20-Poly1305 encryption of the
+  chat key, and the creator's Ed25519 signature over it. iOS and Android must compute these
+  identically.
+- `JoinChatRequest.invite` (field 2), an `InviteParameters` with the invite token and the joiner's
+  `InviteSecretEnvelope`. A private group can now be joined with an invite.
+- `JoinChatResponse.Result` cases `INVITE_NOT_FOUND = 5`, `INVITE_EXHAUSTED = 6`,
+  `INVITE_EXPIRED = 7` and `INVITE_REVOKED = 8`, all appended. An exhaustive `switch` or `when`
+  over the result needs them before it compiles.
+- `GetKeyEnvelopeResponse.invite_key_bundle` (oneof field 5), returned instead of `key_envelope`
+  to a member who joined with an invite and has not yet stored their own envelope with
+  `SetKeyEnvelope`.
+- `GetKeyEnvelopeResponse.wrapped_by_public_key` (field 4).
+- `GetRosterRequest.invite_token` (field 3). A link holder can read the roster with it.
+- `chat.v1.ViewerState.Permissions.can_invite` (field 3).
+- `messaging.v1.SystemContent` member-joined oneof gains `invited` (field 4), an `Invited` naming
+  `invited_by`. A client that renders join messages needs a case for it.
+
+### Changed
+
+- `GetRosterRequest.auth` is no longer required when `invite_token` is set. A request with
+  neither is still `DENIED`.
+- `GetChat` on a private group without auth now returns its `Metadata` record instead of
+  `DENIED`. Its messaging state stays private.
+- `JoinChat` on a private group by anyone but the creator is no longer always `DENIED`: it
+  succeeds with an `ACTIVE` invite. An invite join also removes the user from the lobby and is
+  announced as `RosterUpdate.MemberJoined`, like an admission.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC, field or enum case was removed. Apart from the oneof
+move above, no field changed type or number.
+
 ## 0.21.0
 
 Synced to [`flipcash2-protobuf-api@b77bf78f`](https://github.com/code-payments/flipcash2-protobuf-api/commit/b77bf78ff8d9ea1bcbf9aa3afa6696ba7edd37a9),
