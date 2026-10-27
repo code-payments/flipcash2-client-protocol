@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: b77bf78ff8d9ea1bcbf9aa3afa6696ba7edd37a9
-subject: Add chat moderation RPCs for group creators (#156)
+commit: b655df1770f1d588736ee3dcb712d9be5ca2cf41
+subject: Add anonymous reads for group invite flows (#159)
