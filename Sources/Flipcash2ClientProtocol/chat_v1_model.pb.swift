@@ -294,6 +294,28 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   /// Clears the value of `holdingsSummary`. Subsequent reads from it will return its default value.
   public mutating func clearHoldingsSummary() {_uniqueStorage()._holdingsSummary = nil}
 
+  /// The chat's pinned messages, summarized: how many there are and the
+  /// most recently pinned one, with its message, for a client to show
+  /// above the conversation. Chat.GetPinnedMessages pages them all.
+  ///
+  /// Messaging state, like last_message: withheld from a viewer who may not
+  /// read the chat, and the pinned message may be redacted (see
+  /// messaging.v1.Message.redacted) under the same view mode. Otherwise
+  /// always set, with count 0 and no latest when nothing is pinned.
+  ///
+  /// It may be unset on a chat returned by an RPC meant for list views
+  /// (e.g. Chat.GetDmChatFeed, Chat.GetGroupChatFeed), so an unset value
+  /// there does not mean nothing is pinned. Fetch it with Chat.GetChat, and
+  /// don't let a list result clear a summary the client already holds.
+  public var pinSummary: Flipcash_Chat_V1_PinSummary {
+    get {return _storage._pinSummary ?? Flipcash_Chat_V1_PinSummary()}
+    set {_uniqueStorage()._pinSummary = newValue}
+  }
+  /// Returns true if `pinSummary` has been explicitly set.
+  public var hasPinSummary: Bool {return _storage._pinSummary != nil}
+  /// Clears the value of `pinSummary`. Subsequent reads from it will return its default value.
+  public mutating func clearPinSummary() {_uniqueStorage()._pinSummary = nil}
+
   /// Whether messages in this chat are end-to-end encrypted (see
   /// messaging.v1.EncryptedContent). Only supported for DMs (CONTACT_DM or DM);
   /// always false for group chats. A private group is always end-to-end
@@ -751,6 +773,124 @@ public struct Flipcash_Chat_V1_HoldingsSummary: Sendable {
   fileprivate var _asOf: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
 }
 
+/// Pin is one pinned message in a chat (see Chat.PinMessage). A chat's pins
+/// are ordered most recently pinned first; pinning a message that is already
+/// pinned does not move it.
+public struct Flipcash_Chat_V1_Pin: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The pinned message.
+  public var messageID: Flipcash_Messaging_V1_MessageId {
+    get {return _messageID ?? Flipcash_Messaging_V1_MessageId()}
+    set {_messageID = newValue}
+  }
+  /// Returns true if `messageID` has been explicitly set.
+  public var hasMessageID: Bool {return self._messageID != nil}
+  /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
+  public mutating func clearMessageID() {self._messageID = nil}
+
+  /// The user who pinned it.
+  public var pinnedBy: Flipcash_Common_V1_UserId {
+    get {return _pinnedBy ?? Flipcash_Common_V1_UserId()}
+    set {_pinnedBy = newValue}
+  }
+  /// Returns true if `pinnedBy` has been explicitly set.
+  public var hasPinnedBy: Bool {return self._pinnedBy != nil}
+  /// Clears the value of `pinnedBy`. Subsequent reads from it will return its default value.
+  public mutating func clearPinnedBy() {self._pinnedBy = nil}
+
+  /// When it was pinned.
+  public var pinnedAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _pinnedAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_pinnedAt = newValue}
+  }
+  /// Returns true if `pinnedAt` has been explicitly set.
+  public var hasPinnedAt: Bool {return self._pinnedAt != nil}
+  /// Clears the value of `pinnedAt`. Subsequent reads from it will return its default value.
+  public mutating func clearPinnedAt() {self._pinnedAt = nil}
+
+  /// The pinned message itself, as the viewer may read it: redacted (see
+  /// messaging.v1.Message.redacted) when the read that returned it was
+  /// redacted. Always set.
+  ///
+  /// A snapshot as of the read or event that carried it. Editing or
+  /// deleting a pinned message does not move PinSummary.version and
+  /// publishes no MetadataUpdate.PinsChanged; the change arrives on the
+  /// chat's event log like any other (see messaging.v1.Messaging.GetDelta),
+  /// and clients apply it to the copies they hold in their pins.
+  ///
+  /// A message deleted after it was pinned stays pinned, carrying its
+  /// tombstone, until someone permitted to pin unpins it, and it still
+  /// counts toward the cap on a chat's pins. Clients should not show such a
+  /// pin. When PinSummary.latest is one, a client that shows the next pin
+  /// fetches it with Chat.GetPinnedMessages.
+  public var message: Flipcash_Messaging_V1_Message {
+    get {return _message ?? Flipcash_Messaging_V1_Message()}
+    set {_message = newValue}
+  }
+  /// Returns true if `message` has been explicitly set.
+  public var hasMessage: Bool {return self._message != nil}
+  /// Clears the value of `message`. Subsequent reads from it will return its default value.
+  public mutating func clearMessage() {self._message = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
+  fileprivate var _pinnedBy: Flipcash_Common_V1_UserId? = nil
+  fileprivate var _pinnedAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  fileprivate var _message: Flipcash_Messaging_V1_Message? = nil
+}
+
+/// PinSummary is the state of a chat's pinned messages that is shown with the
+/// chat (see Metadata.pin_summary).
+public struct Flipcash_Chat_V1_PinSummary: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The most recently pinned message. Unset when nothing is pinned.
+  public var latest: Flipcash_Chat_V1_Pin {
+    get {return _storage._latest ?? Flipcash_Chat_V1_Pin()}
+    set {_uniqueStorage()._latest = newValue}
+  }
+  /// Returns true if `latest` has been explicitly set.
+  public var hasLatest: Bool {return _storage._latest != nil}
+  /// Clears the value of `latest`. Subsequent reads from it will return its default value.
+  public mutating func clearLatest() {_uniqueStorage()._latest = nil}
+
+  /// The number of pinned messages. The server caps how many messages a
+  /// chat may have pinned, 5 today (see Chat.PinMessage).
+  public var count: UInt32 {
+    get {return _storage._count}
+    set {_uniqueStorage()._count = newValue}
+  }
+
+  /// Version of the chat's pins: advanced by exactly one on every pin and
+  /// unpin, never by a no-op, and 0 for a chat that has never had a pin.
+  /// A pinned message being edited or deleted does not move it (see
+  /// Pin.message).
+  ///
+  /// Compared like RosterSummary.version: apply the greater value and drop
+  /// the rest, so delivery order does not matter. It is not the chat event
+  /// sequence and has no delta to fetch against it; a client that finds
+  /// itself behind refetches its pins with Chat.GetPinnedMessages (see
+  /// MetadataUpdate.PinsChanged).
+  public var version: UInt64 {
+    get {return _storage._version}
+    set {_uniqueStorage()._version = newValue}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
+}
+
 public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -822,6 +962,14 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     set {kind = .rulesChanged(newValue)}
   }
 
+  public var pinsChanged: Flipcash_Chat_V1_MetadataUpdate.PinsChanged {
+    get {
+      if case .pinsChanged(let v)? = kind {return v}
+      return Flipcash_Chat_V1_MetadataUpdate.PinsChanged()
+    }
+    set {kind = .pinsChanged(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Kind: Equatable, Sendable {
@@ -833,6 +981,7 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     case descriptionChanged(Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged)
     case coverPictureChanged(Flipcash_Chat_V1_MetadataUpdate.CoverPictureChanged)
     case rulesChanged(Flipcash_Chat_V1_MetadataUpdate.RulesChanged)
+    case pinsChanged(Flipcash_Chat_V1_MetadataUpdate.PinsChanged)
 
   }
 
@@ -1015,6 +1164,70 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     public init() {}
 
     fileprivate var _newRules: Flipcash_Chat_V1_Rules? = nil
+  }
+
+  /// A message was pinned or unpinned (see Chat.PinMessage and
+  /// Chat.UnpinMessage). Delivered to the chat's members, including the
+  /// caller's other devices, and to a chat preview, where the pinned
+  /// message is redacted as the preview's messages are. Best-effort.
+  ///
+  /// A client holding the chat's pins at summary.version - 1 applies change
+  /// to them and takes summary. A client further behind may have missed a
+  /// change, so it takes summary and refetches its pins with
+  /// Chat.GetPinnedMessages. A client at summary.version or later has
+  /// already seen it and drops it.
+  public struct PinsChanged: @unchecked Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    public var change: OneOf_Change? {
+      get {return _storage._change}
+      set {_uniqueStorage()._change = newValue}
+    }
+
+    /// The pin made, now the chat's most recently pinned message.
+    public var pinned: Flipcash_Chat_V1_Pin {
+      get {
+        if case .pinned(let v)? = _storage._change {return v}
+        return Flipcash_Chat_V1_Pin()
+      }
+      set {_uniqueStorage()._change = .pinned(newValue)}
+    }
+
+    /// The message unpinned.
+    public var unpinned: Flipcash_Messaging_V1_MessageId {
+      get {
+        if case .unpinned(let v)? = _storage._change {return v}
+        return Flipcash_Messaging_V1_MessageId()
+      }
+      set {_uniqueStorage()._change = .unpinned(newValue)}
+    }
+
+    /// The chat's pin summary after the change, replacing
+    /// Metadata.pin_summary.
+    public var summary: Flipcash_Chat_V1_PinSummary {
+      get {return _storage._summary ?? Flipcash_Chat_V1_PinSummary()}
+      set {_uniqueStorage()._summary = newValue}
+    }
+    /// Returns true if `summary` has been explicitly set.
+    public var hasSummary: Bool {return _storage._summary != nil}
+    /// Clears the value of `summary`. Subsequent reads from it will return its default value.
+    public mutating func clearSummary() {_uniqueStorage()._summary = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public enum OneOf_Change: Equatable, Sendable {
+      /// The pin made, now the chat's most recently pinned message.
+      case pinned(Flipcash_Chat_V1_Pin)
+      /// The message unpinned.
+      case unpinned(Flipcash_Messaging_V1_MessageId)
+
+    }
+
+    public init() {}
+
+    fileprivate var _storage = _StorageClass.defaultInstance
   }
 
   public init() {}
@@ -1300,6 +1513,11 @@ public struct Flipcash_Chat_V1_ViewerState: Sendable {
     /// it to anyone else would let them hand joiners a wrong chat key (see
     /// Invite).
     public var canInvite: Bool = false
+
+    /// Whether the viewer may call Chat.PinMessage and Chat.UnpinMessage
+    /// on this chat. Today that is either member of a DM, and a group's
+    /// creator while a member: false for every other group member.
+    public var canPin: Bool = false
 
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -2417,7 +2635,7 @@ extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Metadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{3}profile_picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{3}is_private\0\u{3}in_lobby\0\u{1}description\0\u{3}cover_picture\0\u{3}holdings_summary\0\u{4}R\u{1}use_e2ee\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}type\0\u{1}members\0\u{3}last_message\0\u{3}last_activity\0\u{3}latest_event_sequence\0\u{3}is_hidden\0\u{1}title\0\u{3}profile_picture\0\u{3}roster_summary\0\u{1}rules\0\u{3}viewer_state\0\u{1}creator\0\u{3}is_private\0\u{3}in_lobby\0\u{1}description\0\u{3}cover_picture\0\u{3}holdings_summary\0\u{3}pin_summary\0\u{4}Q\u{1}use_e2ee\0")
 
   fileprivate class _StorageClass {
     var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -2438,6 +2656,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
     var _description_p: String = String()
     var _coverPicture: Flipcash_Blob_V1_Media? = nil
     var _holdingsSummary: Flipcash_Chat_V1_HoldingsSummary? = nil
+    var _pinSummary: Flipcash_Chat_V1_PinSummary? = nil
     var _useE2Ee: Bool = false
 
       // This property is used as the initial default value for new instances of the type.
@@ -2467,6 +2686,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       _description_p = source._description_p
       _coverPicture = source._coverPicture
       _holdingsSummary = source._holdingsSummary
+      _pinSummary = source._pinSummary
       _useE2Ee = source._useE2Ee
     }
   }
@@ -2504,6 +2724,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         case 16: try { try decoder.decodeSingularStringField(value: &_storage._description_p) }()
         case 17: try { try decoder.decodeSingularMessageField(value: &_storage._coverPicture) }()
         case 18: try { try decoder.decodeSingularMessageField(value: &_storage._holdingsSummary) }()
+        case 19: try { try decoder.decodeSingularMessageField(value: &_storage._pinSummary) }()
         case 100: try { try decoder.decodeSingularBoolField(value: &_storage._useE2Ee) }()
         default: break
         }
@@ -2571,6 +2792,9 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
       try { if let v = _storage._holdingsSummary {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
       } }()
+      try { if let v = _storage._pinSummary {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 19)
+      } }()
       if _storage._useE2Ee != false {
         try visitor.visitSingularBoolField(value: _storage._useE2Ee, fieldNumber: 100)
       }
@@ -2601,6 +2825,7 @@ extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._Messa
         if _storage._description_p != rhs_storage._description_p {return false}
         if _storage._coverPicture != rhs_storage._coverPicture {return false}
         if _storage._holdingsSummary != rhs_storage._holdingsSummary {return false}
+        if _storage._pinSummary != rhs_storage._pinSummary {return false}
         if _storage._useE2Ee != rhs_storage._useE2Ee {return false}
         return true
       }
@@ -3253,9 +3478,142 @@ extension Flipcash_Chat_V1_HoldingsSummary: SwiftProtobuf.Message, SwiftProtobuf
   }
 }
 
+extension Flipcash_Chat_V1_Pin: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".Pin"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0\u{3}pinned_by\0\u{3}pinned_at\0\u{1}message\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._pinnedBy) }()
+      case 3: try { try decoder.decodeSingularMessageField(value: &self._pinnedAt) }()
+      case 4: try { try decoder.decodeSingularMessageField(value: &self._message) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._messageID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._pinnedBy {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._pinnedAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._message {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_Pin, rhs: Flipcash_Chat_V1_Pin) -> Bool {
+    if lhs._messageID != rhs._messageID {return false}
+    if lhs._pinnedBy != rhs._pinnedBy {return false}
+    if lhs._pinnedAt != rhs._pinnedAt {return false}
+    if lhs._message != rhs._message {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_PinSummary: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PinSummary"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}latest\0\u{1}count\0\u{1}version\0")
+
+  fileprivate class _StorageClass {
+    var _latest: Flipcash_Chat_V1_Pin? = nil
+    var _count: UInt32 = 0
+    var _version: UInt64 = 0
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _latest = source._latest
+      _count = source._count
+      _version = source._version
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularMessageField(value: &_storage._latest) }()
+        case 2: try { try decoder.decodeSingularUInt32Field(value: &_storage._count) }()
+        case 3: try { try decoder.decodeSingularUInt64Field(value: &_storage._version) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      try { if let v = _storage._latest {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      } }()
+      if _storage._count != 0 {
+        try visitor.visitSingularUInt32Field(value: _storage._count, fieldNumber: 2)
+      }
+      if _storage._version != 0 {
+        try visitor.visitSingularUInt64Field(value: _storage._version, fieldNumber: 3)
+      }
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_PinSummary, rhs: Flipcash_Chat_V1_PinSummary) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._latest != rhs_storage._latest {return false}
+        if _storage._count != rhs_storage._count {return false}
+        if _storage._version != rhs_storage._version {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MetadataUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0\u{3}title_changed\0\u{3}profile_picture_changed\0\u{3}description_changed\0\u{3}cover_picture_changed\0\u{3}rules_changed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0\u{3}title_changed\0\u{3}profile_picture_changed\0\u{3}description_changed\0\u{3}cover_picture_changed\0\u{3}rules_changed\0\u{3}pins_changed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3367,6 +3725,19 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
           self.kind = .rulesChanged(v)
         }
       }()
+      case 9: try {
+        var v: Flipcash_Chat_V1_MetadataUpdate.PinsChanged?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .pinsChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .pinsChanged(v)
+        }
+      }()
       default: break
       }
     }
@@ -3409,6 +3780,10 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
     case .rulesChanged?: try {
       guard case .rulesChanged(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
+    }()
+    case .pinsChanged?: try {
+      guard case .pinsChanged(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
     }()
     case nil: break
     }
@@ -3681,6 +4056,116 @@ extension Flipcash_Chat_V1_MetadataUpdate.RulesChanged: SwiftProtobuf.Message, S
 
   public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.RulesChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.RulesChanged) -> Bool {
     if lhs._newRules != rhs._newRules {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MetadataUpdate.PinsChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_MetadataUpdate.protoMessageName + ".PinsChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}pinned\0\u{1}unpinned\0\u{1}summary\0")
+
+  fileprivate class _StorageClass {
+    var _change: Flipcash_Chat_V1_MetadataUpdate.PinsChanged.OneOf_Change?
+    var _summary: Flipcash_Chat_V1_PinSummary? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _change = source._change
+      _summary = source._summary
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try {
+          var v: Flipcash_Chat_V1_Pin?
+          var hadOneofValue = false
+          if let current = _storage._change {
+            hadOneofValue = true
+            if case .pinned(let m) = current {v = m}
+          }
+          try decoder.decodeSingularMessageField(value: &v)
+          if let v = v {
+            if hadOneofValue {try decoder.handleConflictingOneOf()}
+            _storage._change = .pinned(v)
+          }
+        }()
+        case 2: try {
+          var v: Flipcash_Messaging_V1_MessageId?
+          var hadOneofValue = false
+          if let current = _storage._change {
+            hadOneofValue = true
+            if case .unpinned(let m) = current {v = m}
+          }
+          try decoder.decodeSingularMessageField(value: &v)
+          if let v = v {
+            if hadOneofValue {try decoder.handleConflictingOneOf()}
+            _storage._change = .unpinned(v)
+          }
+        }()
+        case 3: try { try decoder.decodeSingularMessageField(value: &_storage._summary) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      switch _storage._change {
+      case .pinned?: try {
+        guard case .pinned(let v)? = _storage._change else { preconditionFailure() }
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      }()
+      case .unpinned?: try {
+        guard case .unpinned(let v)? = _storage._change else { preconditionFailure() }
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      }()
+      case nil: break
+      }
+      try { if let v = _storage._summary {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+      } }()
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.PinsChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.PinsChanged) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._change != rhs_storage._change {return false}
+        if _storage._summary != rhs_storage._summary {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -3982,7 +4467,7 @@ extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftPro
 
 extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".Permissions"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_edit\0\u{1}moderation\0\u{3}can_invite\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}can_edit\0\u{1}moderation\0\u{3}can_invite\0\u{3}can_pin\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3993,6 +4478,7 @@ extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, Swift
       case 1: try { try decoder.decodeSingularBoolField(value: &self.canEdit) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._moderation) }()
       case 3: try { try decoder.decodeSingularBoolField(value: &self.canInvite) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.canPin) }()
       default: break
       }
     }
@@ -4012,6 +4498,9 @@ extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, Swift
     if self.canInvite != false {
       try visitor.visitSingularBoolField(value: self.canInvite, fieldNumber: 3)
     }
+    if self.canPin != false {
+      try visitor.visitSingularBoolField(value: self.canPin, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -4019,6 +4508,7 @@ extension Flipcash_Chat_V1_ViewerState.Permissions: SwiftProtobuf.Message, Swift
     if lhs.canEdit != rhs.canEdit {return false}
     if lhs._moderation != rhs._moderation {return false}
     if lhs.canInvite != rhs.canInvite {return false}
+    if lhs.canPin != rhs.canPin {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
