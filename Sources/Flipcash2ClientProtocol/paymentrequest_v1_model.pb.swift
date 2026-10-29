@@ -132,9 +132,11 @@ public struct Flipcash_Paymentrequest_V1_IdempotencyKey: Sendable {
 /// EXPIRED over OPEN, and judges an OPEN request past its ends_at as EXPIRED
 /// itself.
 ///
-/// Nothing announces a change in real time: no event carries a payment request
-/// today. Clients refetch a request to see payments and closes land, for
-/// example when they show its widget.
+/// Changes are announced in real time, best effort, by a PaymentRequestUpdate
+/// on the chat's event stream (event.v1.ChatUpdate.payment_request_updates):
+/// the request whole when it is created, and each change after that as the
+/// changes it made at its version. Clients refetch a request to reconcile any
+/// update they missed, for example when they show its widget.
 ///
 /// Requests are layered. The first layer is where the request lives: today a
 /// group chat (GroupChatPaymentRequest). Within it, the second layer is the
@@ -615,6 +617,213 @@ public struct Flipcash_Paymentrequest_V1_PaidShare: Sendable {
   public init() {}
 
   fileprivate var _paidAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+}
+
+/// PaymentRequestUpdate is a best-effort, real-time change to a payment
+/// request, carried on its chat's event stream (see
+/// event.v1.ChatUpdate.payment_request_updates). It is sent when a request is
+/// created, carrying it whole (`created`), and on every change that advances
+/// its version, carrying what that change did (`updates`): a share paid, by
+/// payment or by hand, or a hand mark replaced by a payment; the last share
+/// paid, which also completes the request; and a close. Expiry is not
+/// announced: it comes from the clock and moves no version, so clients judge
+/// it from ends_at (see PAYMENT_REQUEST_STATUS_EXPIRED).
+///
+/// Updates may arrive out of order, more than once, or not at all. A client
+/// applies them to its copy of the request by version:
+///   - `created`: like a fetched copy, keeping the one with the greater
+///     version (at an equal version, EXPIRED over OPEN).
+///   - `updates` at version V, to a copy at version L:
+///       - V <= L: already applied; ignore it.
+///       - V == L + 1: apply every Update, in order, then set version to V.
+///       - V > L + 1: an update was missed; refetch the request.
+///     A client holding no copy ignores it and fetches the request when it
+///     shows it. A client that meets an Update it cannot apply (a kind it does
+///     not know, or a share its copy does not have) applies none of them and
+///     refetches, rather than taking version V for a copy missing a change.
+///
+/// A missed update is reconciled by refetching the request. A share paid by a
+/// payment is also announced by the payment's messaging.v1.CashContent
+/// message, which carries the request's payment_request_id and is part of the
+/// chat's gap-detected event log, so a client that sees one for a share it
+/// holds unpaid can refetch the request.
+///
+/// Like GetPaymentRequest, an update reaches only those who can read the chat
+/// in full. It never carries the caller-specific payment_intent_id of
+/// GetPaymentRequestResponse; a debtor fetches the request to pay their share.
+public struct Flipcash_Paymentrequest_V1_PaymentRequestUpdate: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId {
+    get {return _storage._paymentRequestID ?? Flipcash_Paymentrequest_V1_PaymentRequestId()}
+    set {_uniqueStorage()._paymentRequestID = newValue}
+  }
+  /// Returns true if `paymentRequestID` has been explicitly set.
+  public var hasPaymentRequestID: Bool {return _storage._paymentRequestID != nil}
+  /// Clears the value of `paymentRequestID`. Subsequent reads from it will return its default value.
+  public mutating func clearPaymentRequestID() {_uniqueStorage()._paymentRequestID = nil}
+
+  public var kind: OneOf_Kind? {
+    get {return _storage._kind}
+    set {_uniqueStorage()._kind = newValue}
+  }
+
+  /// The request was created. It is carried whole, as GetPaymentRequest
+  /// returns it, and is applied like a fetched copy.
+  public var created: Flipcash_Paymentrequest_V1_PaymentRequestMetadata {
+    get {
+      if case .created(let v)? = _storage._kind {return v}
+      return Flipcash_Paymentrequest_V1_PaymentRequestMetadata()
+    }
+    set {_uniqueStorage()._kind = .created(newValue)}
+  }
+
+  /// One change to the request: everything it did, at one version.
+  public var updates: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates {
+    get {
+      if case .updates(let v)? = _storage._kind {return v}
+      return Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates()
+    }
+    set {_uniqueStorage()._kind = .updates(newValue)}
+  }
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public enum OneOf_Kind: Equatable, Sendable {
+    /// The request was created. It is carried whole, as GetPaymentRequest
+    /// returns it, and is applied like a fetched copy.
+    case created(Flipcash_Paymentrequest_V1_PaymentRequestMetadata)
+    /// One change to the request: everything it did, at one version.
+    case updates(Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates)
+
+  }
+
+  /// Updates is everything one change to the request did, at the version
+  /// it produced.
+  public struct Updates: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The request's version after these updates. It advances by exactly
+    /// one per change, so a client holding version - 1 applies them, and
+    /// one holding less has missed one.
+    public var version: UInt64 = 0
+
+    /// What the change did, applied in order, all or nothing. A
+    /// StatusUpdate is at most one, and the last.
+    public var updates: [Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Update] = []
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+  }
+
+  public struct Update: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    public var kind: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Update.OneOf_Kind? = nil
+
+    public var sharePaymentUpdate: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate {
+      get {
+        if case .sharePaymentUpdate(let v)? = kind {return v}
+        return Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate()
+      }
+      set {kind = .sharePaymentUpdate(newValue)}
+    }
+
+    public var statusUpdate: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate {
+      get {
+        if case .statusUpdate(let v)? = kind {return v}
+        return Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate()
+      }
+      set {kind = .statusUpdate(newValue)}
+    }
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public enum OneOf_Kind: Equatable, Sendable {
+      case sharePaymentUpdate(Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate)
+      case statusUpdate(Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate)
+
+    }
+
+    public init() {}
+  }
+
+  /// SharePaymentUpdate is a share paid, by payment or by hand, or a hand
+  /// mark replaced by a payment (see PaidShare). Clients replace the share
+  /// with the same user_id by this one.
+  public struct SharePaymentUpdate: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The share as it now stands. Its paid is always set.
+    public var share: Flipcash_Paymentrequest_V1_Share {
+      get {return _share ?? Flipcash_Paymentrequest_V1_Share()}
+      set {_share = newValue}
+    }
+    /// Returns true if `share` has been explicitly set.
+    public var hasShare: Bool {return self._share != nil}
+    /// Clears the value of `share`. Subsequent reads from it will return its default value.
+    public mutating func clearShare() {self._share = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _share: Flipcash_Paymentrequest_V1_Share? = nil
+  }
+
+  /// StatusUpdate is the request leaving OPEN: CLOSED by its creator, or
+  /// COMPLETED by the payment of its last unpaid share, which comes in the
+  /// same Updates, before it. Both are final, so a request's status changes
+  /// at most once. Expiry is never announced (see above).
+  public struct StatusUpdate: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    public var status: Flipcash_Paymentrequest_V1_PaymentRequestStatus = .unknown
+
+    /// When the request stopped being OPEN (see
+    /// PaymentRequestMetadata.closed_at).
+    public var closedAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+      get {return _closedAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+      set {_closedAt = newValue}
+    }
+    /// Returns true if `closedAt` has been explicitly set.
+    public var hasClosedAt: Bool {return self._closedAt != nil}
+    /// Clears the value of `closedAt`. Subsequent reads from it will return its default value.
+    public mutating func clearClosedAt() {self._closedAt = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _closedAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  }
+
+  public init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+public struct Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var paymentRequestUpdates: [Flipcash_Paymentrequest_V1_PaymentRequestUpdate] = []
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
@@ -1139,6 +1348,321 @@ extension Flipcash_Paymentrequest_V1_PaidShare.Creator: SwiftProtobuf.Message, S
   }
 
   public static func ==(lhs: Flipcash_Paymentrequest_V1_PaidShare.Creator, rhs: Flipcash_Paymentrequest_V1_PaidShare.Creator) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Paymentrequest_V1_PaymentRequestUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PaymentRequestUpdate"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}payment_request_id\0\u{2}\u{9}created\0\u{1}updates\0")
+
+  fileprivate class _StorageClass {
+    var _paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId? = nil
+    var _kind: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.OneOf_Kind?
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _paymentRequestID = source._paymentRequestID
+      _kind = source._kind
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularMessageField(value: &_storage._paymentRequestID) }()
+        case 10: try {
+          var v: Flipcash_Paymentrequest_V1_PaymentRequestMetadata?
+          var hadOneofValue = false
+          if let current = _storage._kind {
+            hadOneofValue = true
+            if case .created(let m) = current {v = m}
+          }
+          try decoder.decodeSingularMessageField(value: &v)
+          if let v = v {
+            if hadOneofValue {try decoder.handleConflictingOneOf()}
+            _storage._kind = .created(v)
+          }
+        }()
+        case 11: try {
+          var v: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates?
+          var hadOneofValue = false
+          if let current = _storage._kind {
+            hadOneofValue = true
+            if case .updates(let m) = current {v = m}
+          }
+          try decoder.decodeSingularMessageField(value: &v)
+          if let v = v {
+            if hadOneofValue {try decoder.handleConflictingOneOf()}
+            _storage._kind = .updates(v)
+          }
+        }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      try { if let v = _storage._paymentRequestID {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      } }()
+      switch _storage._kind {
+      case .created?: try {
+        guard case .created(let v)? = _storage._kind else { preconditionFailure() }
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+      }()
+      case .updates?: try {
+        guard case .updates(let v)? = _storage._kind else { preconditionFailure() }
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 11)
+      }()
+      case nil: break
+      }
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate, rhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._paymentRequestID != rhs_storage._paymentRequestID {return false}
+        if _storage._kind != rhs_storage._kind {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Paymentrequest_V1_PaymentRequestUpdate.protoMessageName + ".Updates"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}version\0\u{1}updates\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.version) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.updates) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.version != 0 {
+      try visitor.visitSingularUInt64Field(value: self.version, fieldNumber: 1)
+    }
+    if !self.updates.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.updates, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates, rhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Updates) -> Bool {
+    if lhs.version != rhs.version {return false}
+    if lhs.updates != rhs.updates {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Update: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Paymentrequest_V1_PaymentRequestUpdate.protoMessageName + ".Update"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}share_payment_update\0\u{3}status_update\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try {
+        var v: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .sharePaymentUpdate(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .sharePaymentUpdate(v)
+        }
+      }()
+      case 2: try {
+        var v: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .statusUpdate(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .statusUpdate(v)
+        }
+      }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    switch self.kind {
+    case .sharePaymentUpdate?: try {
+      guard case .sharePaymentUpdate(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    }()
+    case .statusUpdate?: try {
+      guard case .statusUpdate(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case nil: break
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Update, rhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.Update) -> Bool {
+    if lhs.kind != rhs.kind {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Paymentrequest_V1_PaymentRequestUpdate.protoMessageName + ".SharePaymentUpdate"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}share\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._share) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._share {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate, rhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.SharePaymentUpdate) -> Bool {
+    if lhs._share != rhs._share {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Paymentrequest_V1_PaymentRequestUpdate.protoMessageName + ".StatusUpdate"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}status\0\u{3}closed_at\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.status) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._closedAt) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    if self.status != .unknown {
+      try visitor.visitSingularEnumField(value: self.status, fieldNumber: 1)
+    }
+    try { if let v = self._closedAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate, rhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdate.StatusUpdate) -> Bool {
+    if lhs.status != rhs.status {return false}
+    if lhs._closedAt != rhs._closedAt {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".PaymentRequestUpdateBatch"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}payment_request_updates\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.paymentRequestUpdates) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.paymentRequestUpdates.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.paymentRequestUpdates, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch, rhs: Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch) -> Bool {
+    if lhs.paymentRequestUpdates != rhs.paymentRequestUpdates {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

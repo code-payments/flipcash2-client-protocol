@@ -1299,6 +1299,37 @@ public struct Flipcash_Chat_V1_EditChatRequest: Sendable {
   /// Clears the value of `coverPicture`. Subsequent reads from it will return its default value.
   public mutating func clearCoverPicture() {self._coverPicture = nil}
 
+  /// The new rules, in full: every rule the chat is to carry, not only the
+  /// ones that change, as Metadata.rules shows them. Left unchanged when
+  /// unset. Only a public group created with a minimum listener balance
+  /// can have its rules edited; a private group is DENIED, and any other
+  /// group INVALID_RULES.
+  ///
+  /// The server currently accepts only the following changes from the
+  /// group's current rules, and refuses anything else as INVALID_RULES:
+  ///  - The amount of the listener MinimumBalanceRequirement, which must
+  ///    stay set, in the same currency and the same mints.
+  ///  - Adding, removing, or changing the amount of a speaker
+  ///    MinimumBalanceRequirement. If set, it must be in the listener
+  ///    MinimumBalanceRequirement's currency and mints, and its amount must
+  ///    be larger by at least the currency's minimum transfer value.
+  /// Every other rule (e.g. a StaffRequirement or a CreatorRequirement)
+  /// must be included exactly as the group carries it, in any order. Every
+  /// MinimumBalanceRequirement must be at least the currency's minimum
+  /// transfer value (one unit at its last decimal place, e.g. 0.01 USD or
+  /// 1 JPY), as at creation (see StartChatRequest.GroupChatParameters).
+  /// The caller must satisfy the new rules, speaker rules included
+  /// (RULES_NOT_SATISFIED otherwise). Rules equal to the group's current
+  /// ones are a no-op.
+  public var rules: Flipcash_Chat_V1_Rules {
+    get {return _rules ?? Flipcash_Chat_V1_Rules()}
+    set {_rules = newValue}
+  }
+  /// Returns true if `rules` has been explicitly set.
+  public var hasRules: Bool {return self._rules != nil}
+  /// Clears the value of `rules`. Subsequent reads from it will return its default value.
+  public mutating func clearRules() {self._rules = nil}
+
   public var auth: Flipcash_Common_V1_Auth {
     get {return _auth ?? Flipcash_Common_V1_Auth()}
     set {_auth = newValue}
@@ -1390,6 +1421,7 @@ public struct Flipcash_Chat_V1_EditChatRequest: Sendable {
   fileprivate var _profilePicture: Flipcash_Chat_V1_EditChatRequest.ProfilePicture? = nil
   fileprivate var _description_p: Flipcash_Chat_V1_EditChatRequest.Description? = nil
   fileprivate var _coverPicture: Flipcash_Chat_V1_EditChatRequest.CoverPicture? = nil
+  fileprivate var _rules: Flipcash_Chat_V1_Rules? = nil
   fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
 }
 
@@ -1428,6 +1460,8 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
     case profilePictureBlobNotAccepted // = 4
     case coverPictureBlobNotAccepted // = 5
     case descriptionModerated // = 6
+    case invalidRules // = 7
+    case rulesNotSatisfied // = 8
     case UNRECOGNIZED(Int)
 
     public init() {
@@ -1443,6 +1477,8 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
       case 4: self = .profilePictureBlobNotAccepted
       case 5: self = .coverPictureBlobNotAccepted
       case 6: self = .descriptionModerated
+      case 7: self = .invalidRules
+      case 8: self = .rulesNotSatisfied
       default: self = .UNRECOGNIZED(rawValue)
       }
     }
@@ -1456,6 +1492,8 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
       case .profilePictureBlobNotAccepted: return 4
       case .coverPictureBlobNotAccepted: return 5
       case .descriptionModerated: return 6
+      case .invalidRules: return 7
+      case .rulesNotSatisfied: return 8
       case .UNRECOGNIZED(let i): return i
       }
     }
@@ -1469,6 +1507,8 @@ public struct Flipcash_Chat_V1_EditChatResponse: Sendable {
       .profilePictureBlobNotAccepted,
       .coverPictureBlobNotAccepted,
       .descriptionModerated,
+      .invalidRules,
+      .rulesNotSatisfied,
     ]
 
   }
@@ -4686,7 +4726,7 @@ extension Flipcash_Chat_V1_LeaveChatResponse.Result: SwiftProtobuf._ProtoNamePro
 
 extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".EditChatRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}title\0\u{3}profile_picture\0\u{1}description\0\u{3}cover_picture\0\u{2}\u{5}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{1}title\0\u{3}profile_picture\0\u{1}description\0\u{3}cover_picture\0\u{1}rules\0\u{2}\u{4}auth\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -4699,6 +4739,7 @@ extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf
       case 3: try { try decoder.decodeSingularMessageField(value: &self._profilePicture) }()
       case 4: try { try decoder.decodeSingularMessageField(value: &self._description_p) }()
       case 5: try { try decoder.decodeSingularMessageField(value: &self._coverPicture) }()
+      case 6: try { try decoder.decodeSingularMessageField(value: &self._rules) }()
       case 10: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
       default: break
       }
@@ -4725,6 +4766,9 @@ extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf
     try { if let v = self._coverPicture {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
     } }()
+    try { if let v = self._rules {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    } }()
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
     } }()
@@ -4737,6 +4781,7 @@ extension Flipcash_Chat_V1_EditChatRequest: SwiftProtobuf.Message, SwiftProtobuf
     if lhs._profilePicture != rhs._profilePicture {return false}
     if lhs._description_p != rhs._description_p {return false}
     if lhs._coverPicture != rhs._coverPicture {return false}
+    if lhs._rules != rhs._rules {return false}
     if lhs._auth != rhs._auth {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -4916,7 +4961,7 @@ extension Flipcash_Chat_V1_EditChatResponse: SwiftProtobuf.Message, SwiftProtobu
 }
 
 extension Flipcash_Chat_V1_EditChatResponse.Result: SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}TITLE_MODERATED\0\u{1}PROFILE_PICTURE_BLOB_NOT_ACCEPTED\0\u{1}COVER_PICTURE_BLOB_NOT_ACCEPTED\0\u{1}DESCRIPTION_MODERATED\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0OK\0\u{1}DENIED\0\u{1}NOT_FOUND\0\u{1}TITLE_MODERATED\0\u{1}PROFILE_PICTURE_BLOB_NOT_ACCEPTED\0\u{1}COVER_PICTURE_BLOB_NOT_ACCEPTED\0\u{1}DESCRIPTION_MODERATED\0\u{1}INVALID_RULES\0\u{1}RULES_NOT_SATISFIED\0")
 }
 
 extension Flipcash_Chat_V1_MuteChatRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {

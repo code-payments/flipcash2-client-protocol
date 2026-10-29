@@ -130,8 +130,9 @@ extension Flipcash_Paymentrequest_V1_PaymentRequest {
     /// > 
     /// > Anyone who can read the chat in full sees the request, its shares and
     /// > who has paid; someone who can only preview the chat sees the widget but
-    /// > not the request. No event announces a change to a request: clients
-    /// > refetch it to see payments and closes land.
+    /// > not the request. Changes to a request are announced best effort on the
+    /// > chat's event stream (see PaymentRequestUpdate); clients refetch a request
+    /// > to reconcile any they missed.
     /// > 
     /// > In a group that is not private, a split's title and description are
     /// > plaintext and moderated, and the widget is sent as plain WidgetContent.
@@ -328,8 +329,9 @@ extension Flipcash_Paymentrequest_V1_PaymentRequest {
     /// > 
     /// > Anyone who can read the chat in full sees the request, its shares and
     /// > who has paid; someone who can only preview the chat sees the widget but
-    /// > not the request. No event announces a change to a request: clients
-    /// > refetch it to see payments and closes land.
+    /// > not the request. Changes to a request are announced best effort on the
+    /// > chat's event stream (see PaymentRequestUpdate); clients refetch a request
+    /// > to reconcile any they missed.
     /// > 
     /// > In a group that is not private, a split's title and description are
     /// > plaintext and moderated, and the widget is sent as plain WidgetContent.

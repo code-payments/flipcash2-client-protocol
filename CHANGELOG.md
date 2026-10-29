@@ -8,6 +8,67 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.23.0
+
+Synced to [`flipcash2-protobuf-api@6de4f9ad`](https://github.com/code-payments/flipcash2-protobuf-api/commit/6de4f9adfd110a55b56fbfc99a5a466b3da789d1),
+picking up [#160](https://github.com/code-payments/flipcash2-protobuf-api/pull/160),
+[#161](https://github.com/code-payments/flipcash2-protobuf-api/pull/161),
+[#162](https://github.com/code-payments/flipcash2-protobuf-api/pull/162) and
+[#163](https://github.com/code-payments/flipcash2-protobuf-api/pull/163). `activity.v1`,
+`chat.v1`, `event.v1`, `paymentrequest.v1` and `push.v1` moved.
+
+This release makes a public group's minimum balances editable, announces payment request changes
+on the chat event stream, links feed payments to the payment request they paid, and adds a test
+push. Upgrading breaks source in Swift only, not the wire. One enum gained cases, appended at the
+end, so no existing value moved.
+
+### Breaking
+
+- `activity.v1.DirectlySentCryptoNotificationMetadata.boosted_reaction` and
+  `ReceivedCryptoNotificationMetadata.boosted_reaction` (field 3 in both) moved into a new
+  `oneof context`, next to `requested_payment`. Swift loses `hasBoostedReaction` and
+  `clearBoostedReaction` on both; switch on `context` instead. Kotlin keeps `hasBoostedReaction()`
+  and gains `getContextCase()`.
+- `chat.v1.MetadataUpdate`'s `kind` oneof gains `rules_changed` (field 8). An exhaustive `switch`
+  over the Swift oneof, or a `when` over Kotlin's `KindCase` without an `else`, needs a case for
+  it before it compiles.
+
+### Added
+
+- `activity.v1.RequestedPayment`, with `chat_id` and `payment_request_id`, set as
+  `requested_payment` (oneof field 4) on both notification metadata messages above when the
+  payment paid a share of a payment request. It records what the payment was for and is not kept
+  up to date: the request may have closed, and fetching it may be denied.
+- `chat.v1.EditChatRequest.rules` (field 6), the group's rules in full. Only a public group created
+  with a listener minimum balance can be edited, and only its listener and speaker
+  `MinimumBalanceRequirement` amounts may change; the proto docs list the limits.
+- `EditChatResponse.Result` cases `INVALID_RULES = 7` and `RULES_NOT_SATISFIED = 8`, both
+  appended.
+- `chat.v1.MetadataUpdate.RulesChanged`, carrying `new_rules` in full, sent on every rules edit.
+- `event.v1.ChatUpdate.payment_request_updates` (field 10), a
+  `paymentrequest.v1.PaymentRequestUpdateBatch`. Like reaction updates, it is best effort and not
+  part of the gap-detected event log.
+- `paymentrequest.v1.PaymentRequestUpdate`: a request whole when it is created (`created`), then
+  each change as `Updates` at the version it produced, made of `SharePaymentUpdate` and
+  `StatusUpdate`. The proto docs give the apply rules: ignore a version already held, apply the
+  next one, and refetch on a gap or on an update the client cannot apply. Expiry is never
+  announced.
+- `push.v1.Push.SendTestPush`, with `SendTestPushRequest` and `SendTestPushResponse`. It sends a
+  fixed notification to every device the caller registered a token for.
+
+### Changed
+
+- A public group's `Metadata.rules` can now change after creation. A member who no longer
+  satisfies the new listener rules stays a member but cannot speak until they do.
+- Payment request changes are announced in real time. Until now the docs told clients to refetch
+  a request to see payments and closes land; refetching is now only for reconciling a missed
+  update.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC, field or enum case was removed. Apart from the oneof
+move above, no field changed type or number.
+
 ## 0.22.0
 
 Synced to [`flipcash2-protobuf-api@b655df17`](https://github.com/code-payments/flipcash2-protobuf-api/commit/b655df1770f1d588736ee3dcb712d9be5ca2cf41),

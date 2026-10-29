@@ -336,18 +336,33 @@ public struct Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: Senda
     set {destinationIdentifier = .userID(newValue)}
   }
 
-  /// Set when the payment boosted a reaction (see BoostedReaction). A boost
-  /// that paid one person names them in destination_identifier; one that
-  /// paid both the message's sender and the group's creator names neither,
-  /// and payment_amount is the whole boost.
+  /// What the payment was for, when it was made for something the feed can
+  /// link to. Unset for any other payment (a DM or group payment, one handed
+  /// off in person, ...).
+  public var context: Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata.OneOf_Context? = nil
+
+  /// The payment boosted a reaction (see BoostedReaction). A boost that
+  /// paid one person names them in destination_identifier; one that paid
+  /// both the message's sender and the group's creator names neither, and
+  /// payment_amount is the whole boost.
   public var boostedReaction: Flipcash_Activity_V1_BoostedReaction {
-    get {return _boostedReaction ?? Flipcash_Activity_V1_BoostedReaction()}
-    set {_boostedReaction = newValue}
+    get {
+      if case .boostedReaction(let v)? = context {return v}
+      return Flipcash_Activity_V1_BoostedReaction()
+    }
+    set {context = .boostedReaction(newValue)}
   }
-  /// Returns true if `boostedReaction` has been explicitly set.
-  public var hasBoostedReaction: Bool {return self._boostedReaction != nil}
-  /// Clears the value of `boostedReaction`. Subsequent reads from it will return its default value.
-  public mutating func clearBoostedReaction() {self._boostedReaction = nil}
+
+  /// The payment paid the payer's share of a payment request (see
+  /// RequestedPayment). destination_identifier names the request's
+  /// creator, and payment_amount is the share.
+  public var requestedPayment: Flipcash_Activity_V1_RequestedPayment {
+    get {
+      if case .requestedPayment(let v)? = context {return v}
+      return Flipcash_Activity_V1_RequestedPayment()
+    }
+    set {context = .requestedPayment(newValue)}
+  }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -357,9 +372,23 @@ public struct Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: Senda
 
   }
 
-  public init() {}
+  /// What the payment was for, when it was made for something the feed can
+  /// link to. Unset for any other payment (a DM or group payment, one handed
+  /// off in person, ...).
+  public enum OneOf_Context: Equatable, Sendable {
+    /// The payment boosted a reaction (see BoostedReaction). A boost that
+    /// paid one person names them in destination_identifier; one that paid
+    /// both the message's sender and the group's creator names neither, and
+    /// payment_amount is the whole boost.
+    case boostedReaction(Flipcash_Activity_V1_BoostedReaction)
+    /// The payment paid the payer's share of a payment request (see
+    /// RequestedPayment). destination_identifier names the request's
+    /// creator, and payment_amount is the share.
+    case requestedPayment(Flipcash_Activity_V1_RequestedPayment)
 
-  fileprivate var _boostedReaction: Flipcash_Activity_V1_BoostedReaction? = nil
+  }
+
+  public init() {}
 }
 
 public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable {
@@ -385,18 +414,33 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
     set {sourceIdentifier = .userID(newValue)}
   }
 
-  /// Set when the payment was the recipient's share of a boost of a
-  /// reaction (see BoostedReaction), paid to them as the boosted message's
-  /// sender or its group's creator. source_identifier names the payer, and
+  /// What the payment was for, when it was made for something the feed can
+  /// link to. Unset for any other payment (a DM or group payment, one handed
+  /// off in person, ...).
+  public var context: Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata.OneOf_Context? = nil
+
+  /// The payment was the recipient's share of a boost of a reaction (see
+  /// BoostedReaction), paid to them as the boosted message's sender or its
+  /// group's creator. source_identifier names the payer, and
   /// payment_amount is the recipient's share alone.
   public var boostedReaction: Flipcash_Activity_V1_BoostedReaction {
-    get {return _boostedReaction ?? Flipcash_Activity_V1_BoostedReaction()}
-    set {_boostedReaction = newValue}
+    get {
+      if case .boostedReaction(let v)? = context {return v}
+      return Flipcash_Activity_V1_BoostedReaction()
+    }
+    set {context = .boostedReaction(newValue)}
   }
-  /// Returns true if `boostedReaction` has been explicitly set.
-  public var hasBoostedReaction: Bool {return self._boostedReaction != nil}
-  /// Clears the value of `boostedReaction`. Subsequent reads from it will return its default value.
-  public mutating func clearBoostedReaction() {self._boostedReaction = nil}
+
+  /// The payment was a debtor's share of the recipient's payment request
+  /// (see RequestedPayment). source_identifier names the debtor, and
+  /// payment_amount is the share.
+  public var requestedPayment: Flipcash_Activity_V1_RequestedPayment {
+    get {
+      if case .requestedPayment(let v)? = context {return v}
+      return Flipcash_Activity_V1_RequestedPayment()
+    }
+    set {context = .requestedPayment(newValue)}
+  }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -406,9 +450,23 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
 
   }
 
-  public init() {}
+  /// What the payment was for, when it was made for something the feed can
+  /// link to. Unset for any other payment (a DM or group payment, one handed
+  /// off in person, ...).
+  public enum OneOf_Context: Equatable, Sendable {
+    /// The payment was the recipient's share of a boost of a reaction (see
+    /// BoostedReaction), paid to them as the boosted message's sender or its
+    /// group's creator. source_identifier names the payer, and
+    /// payment_amount is the recipient's share alone.
+    case boostedReaction(Flipcash_Activity_V1_BoostedReaction)
+    /// The payment was a debtor's share of the recipient's payment request
+    /// (see RequestedPayment). source_identifier names the debtor, and
+    /// payment_amount is the share.
+    case requestedPayment(Flipcash_Activity_V1_RequestedPayment)
 
-  fileprivate var _boostedReaction: Flipcash_Activity_V1_BoostedReaction? = nil
+  }
+
+  public init() {}
 }
 
 /// The reaction a payment boosted: the payer's reaction with emoji on a
@@ -458,6 +516,44 @@ public struct Flipcash_Activity_V1_BoostedReaction: Sendable {
   fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
   fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
   fileprivate var _emoji: Flipcash_Messaging_V1_Emoji? = nil
+}
+
+/// The payment request a payment paid a share of: a debtor's share, paid to
+/// the request's creator (see intent.v1.ChatMetadata.RequestedPayment). It is
+/// what the payment was for when it was made and is not kept up to date: the
+/// request may since have been closed or expired, and the viewer may no longer
+/// be a member of its group, in which case fetching the request is denied.
+public struct Flipcash_Activity_V1_RequestedPayment: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The group chat the payment request is in.
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The payment request whose share was paid.
+  public var paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId {
+    get {return _paymentRequestID ?? Flipcash_Paymentrequest_V1_PaymentRequestId()}
+    set {_paymentRequestID = newValue}
+  }
+  /// Returns true if `paymentRequestID` has been explicitly set.
+  public var hasPaymentRequestID: Bool {return self._paymentRequestID != nil}
+  /// Clears the value of `paymentRequestID`. Subsequent reads from it will return its default value.
+  public mutating func clearPaymentRequestID() {self._paymentRequestID = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId? = nil
 }
 
 public struct Flipcash_Activity_V1_WithdrewCryptoNotificationMetadata: Sendable {
@@ -916,7 +1012,7 @@ extension Flipcash_Activity_V1_Notification: SwiftProtobuf.Message, SwiftProtobu
 
 extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".DirectlySentCryptoNotificationMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0\u{3}requested_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -950,7 +1046,32 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
           self.destinationIdentifier = .userID(v)
         }
       }()
-      case 3: try { try decoder.decodeSingularMessageField(value: &self._boostedReaction) }()
+      case 3: try {
+        var v: Flipcash_Activity_V1_BoostedReaction?
+        var hadOneofValue = false
+        if let current = self.context {
+          hadOneofValue = true
+          if case .boostedReaction(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.context = .boostedReaction(v)
+        }
+      }()
+      case 4: try {
+        var v: Flipcash_Activity_V1_RequestedPayment?
+        var hadOneofValue = false
+        if let current = self.context {
+          hadOneofValue = true
+          if case .requestedPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.context = .requestedPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -972,15 +1093,23 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
     }()
     case nil: break
     }
-    try { if let v = self._boostedReaction {
+    switch self.context {
+    case .boostedReaction?: try {
+      guard case .boostedReaction(let v)? = self.context else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    } }()
+    }()
+    case .requestedPayment?: try {
+      guard case .requestedPayment(let v)? = self.context else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case nil: break
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata, rhs: Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata) -> Bool {
     if lhs.destinationIdentifier != rhs.destinationIdentifier {return false}
-    if lhs._boostedReaction != rhs._boostedReaction {return false}
+    if lhs.context != rhs.context {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -988,7 +1117,7 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
 
 extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ReceivedCryptoNotificationMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0\u{3}requested_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1022,7 +1151,32 @@ extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf
           self.sourceIdentifier = .userID(v)
         }
       }()
-      case 3: try { try decoder.decodeSingularMessageField(value: &self._boostedReaction) }()
+      case 3: try {
+        var v: Flipcash_Activity_V1_BoostedReaction?
+        var hadOneofValue = false
+        if let current = self.context {
+          hadOneofValue = true
+          if case .boostedReaction(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.context = .boostedReaction(v)
+        }
+      }()
+      case 4: try {
+        var v: Flipcash_Activity_V1_RequestedPayment?
+        var hadOneofValue = false
+        if let current = self.context {
+          hadOneofValue = true
+          if case .requestedPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.context = .requestedPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -1044,15 +1198,23 @@ extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf
     }()
     case nil: break
     }
-    try { if let v = self._boostedReaction {
+    switch self.context {
+    case .boostedReaction?: try {
+      guard case .boostedReaction(let v)? = self.context else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-    } }()
+    }()
+    case .requestedPayment?: try {
+      guard case .requestedPayment(let v)? = self.context else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case nil: break
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata, rhs: Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata) -> Bool {
     if lhs.sourceIdentifier != rhs.sourceIdentifier {return false}
-    if lhs._boostedReaction != rhs._boostedReaction {return false}
+    if lhs.context != rhs.context {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1097,6 +1259,45 @@ extension Flipcash_Activity_V1_BoostedReaction: SwiftProtobuf.Message, SwiftProt
     if lhs._chatID != rhs._chatID {return false}
     if lhs._messageID != rhs._messageID {return false}
     if lhs._emoji != rhs._emoji {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Activity_V1_RequestedPayment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".RequestedPayment"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}payment_request_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._paymentRequestID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._paymentRequestID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Activity_V1_RequestedPayment, rhs: Flipcash_Activity_V1_RequestedPayment) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._paymentRequestID != rhs._paymentRequestID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
