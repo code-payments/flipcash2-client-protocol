@@ -8,6 +8,45 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.24.0
+
+Synced to [`flipcash2-protobuf-api@0e167fa6`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0e167fa6c01edcfb5e617974fb6d2b30f9f55b98),
+picking up [#164](https://github.com/code-payments/flipcash2-protobuf-api/pull/164). Only
+`chat.v1` moved.
+
+This release adds pinned messages to chats. Nothing existing changed on the wire. The one
+source break is a new oneof case, appended like every other addition here.
+
+### Breaking
+
+- `chat.v1.MetadataUpdate`'s `kind` oneof gains `pins_changed` (field 9). An exhaustive `switch`
+  over the Swift oneof, or a `when` over Kotlin's `KindCase` without an `else`, needs a case for
+  it before it compiles. A `when` with an `else` compiles but routes pin events into that
+  branch, so check what it does.
+
+### Added
+
+- `chat.v1.Chat.PinMessage`, `UnpinMessage` and `GetPinnedMessages`, with their request and
+  response messages. `PinMessageResponse.Result` is `OK`, `DENIED`, `NOT_FOUND`,
+  `MESSAGE_NOT_FOUND`, `TOO_MANY_PINS`, `MESSAGE_NOT_ALLOWED` (0–5); the other two results are
+  `OK`, `DENIED`, `NOT_FOUND` (0–2). Pin and unpin are no-ops returning `OK` when nothing would
+  change, and both return the chat's `PinSummary` on `OK`. The server caps a chat's pins (5
+  today) and may raise the cap, so clients must not hardcode it.
+- `chat.v1.Pin` (`message_id`, `pinned_by`, `pinned_at`, `message`) and `chat.v1.PinSummary`
+  (`latest`, `count`, `version`). `version` moves by one on every real pin or unpin and is
+  compared like `RosterSummary.version`: keep the greater.
+- `chat.v1.Metadata.pin_summary` (field 19). It may be unset on feed RPCs such as
+  `GetDmChatFeed` and `GetGroupChatFeed`, and an unset value there must not clear a summary the
+  client already holds.
+- `chat.v1.MetadataUpdate.PinsChanged`, with `pinned` or `unpinned` and the summary after the
+  change.
+- `chat.v1.ViewerState.Permissions.can_pin` (field 4). Today it is true for either member of a
+  DM and for a group's creator while they are a member.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC, field or enum case was removed or changed type.
+
 ## 0.23.0
 
 Synced to [`flipcash2-protobuf-api@6de4f9ad`](https://github.com/code-payments/flipcash2-protobuf-api/commit/6de4f9adfd110a55b56fbfc99a5a466b3da789d1),

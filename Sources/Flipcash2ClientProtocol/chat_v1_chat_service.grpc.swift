@@ -380,6 +380,42 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "GetRestrictedUsers"
             )
         }
+        /// Namespace for "PinMessage" metadata.
+        public enum PinMessage {
+            /// Request type for "PinMessage".
+            public typealias Input = Flipcash_Chat_V1_PinMessageRequest
+            /// Response type for "PinMessage".
+            public typealias Output = Flipcash_Chat_V1_PinMessageResponse
+            /// Descriptor for "PinMessage".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "PinMessage"
+            )
+        }
+        /// Namespace for "UnpinMessage" metadata.
+        public enum UnpinMessage {
+            /// Request type for "UnpinMessage".
+            public typealias Input = Flipcash_Chat_V1_UnpinMessageRequest
+            /// Response type for "UnpinMessage".
+            public typealias Output = Flipcash_Chat_V1_UnpinMessageResponse
+            /// Descriptor for "UnpinMessage".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "UnpinMessage"
+            )
+        }
+        /// Namespace for "GetPinnedMessages" metadata.
+        public enum GetPinnedMessages {
+            /// Request type for "GetPinnedMessages".
+            public typealias Input = Flipcash_Chat_V1_GetPinnedMessagesRequest
+            /// Response type for "GetPinnedMessages".
+            public typealias Output = Flipcash_Chat_V1_GetPinnedMessagesResponse
+            /// Descriptor for "GetPinnedMessages".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "GetPinnedMessages"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.chat.v1.Chat" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetChat.descriptor,
@@ -411,7 +447,10 @@ public enum Flipcash_Chat_V1_Chat {
             UnsilenceUser.descriptor,
             BanUser.descriptor,
             UnbanUser.descriptor,
-            GetRestrictedUsers.descriptor
+            GetRestrictedUsers.descriptor,
+            PinMessage.descriptor,
+            UnpinMessage.descriptor,
+            GetPinnedMessages.descriptor
         ]
     }
 }
@@ -1613,6 +1652,126 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetRestrictedUsersResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetRestrictedUsersResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "PinMessage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > PinMessage pins a message in a chat, making it the chat's most
+        /// > recently pinned message (see Metadata.pin_summary). A message must be in
+        /// > the chat (MESSAGE_NOT_FOUND otherwise) and of a kind that may be pinned:
+        /// > a deleted message and a system message may not, and are refused with
+        /// > MESSAGE_NOT_ALLOWED, as is any kind of content this server does not
+        /// > know to be pinnable. Every other message may be pinned, whatever its
+        /// > content (text, media, a reply, a payment, a widget, encrypted content).
+        /// > 
+        /// > Only a member the server permits to pin in the chat may call it, as
+        /// > reported by ViewerState.Permissions.can_pin; anyone else is DENIED.
+        /// > Pinning a message that is already pinned is a no-op that returns OK and
+        /// > leaves it where it is in the order. The server caps how many messages
+        /// > one chat may have pinned, 5 today, and refuses a pin past it with
+        /// > TOO_MANY_PINS. The cap is the server's and may be raised, so clients
+        /// > must not hardcode it: on TOO_MANY_PINS a client asks the user to unpin
+        /// > a message first, and GetPinnedMessages pages the pins whatever their
+        /// > number.
+        /// > 
+        /// > Every real change reaches the chat's members, including all of the
+        /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+        /// > 
+        /// > The response carries the chat's PinSummary after the call, which the
+        /// > client takes by version as it would any other. A client holding the
+        /// > chat's pins at version v may also apply its own pin to them at once:
+        /// > a summary at v + 1 means exactly one change was made, the pin it asked
+        /// > for (made by this call or an identical one racing it), so the message
+        /// > is now summary.latest; a summary at v means the message was already
+        /// > pinned and nothing changed; a summary further ahead means other changes
+        /// > were made too, which the client learns from the event stream or by
+        /// > refetching its pins with GetPinnedMessages.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_PinMessageRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_PinMessageRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_PinMessageResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func pinMessage<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_PinMessageRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_PinMessageRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_PinMessageResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_PinMessageResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "UnpinMessage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnpinMessage unpins a message in a chat, whoever pinned it. Permitted
+        /// > exactly as PinMessage is. Unpinning a message that is not pinned is a
+        /// > no-op that returns OK.
+        /// > 
+        /// > Every real change reaches the chat's members, including all of the
+        /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+        /// > 
+        /// > The response carries the chat's PinSummary after the call, applied as
+        /// > for PinMessage: a summary at v + 1 means the message was unpinned, one
+        /// > at v that it was not pinned, and one further ahead that other changes
+        /// > were made too.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnpinMessageRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnpinMessageRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnpinMessageResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func unpinMessage<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnpinMessageRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnpinMessageRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnpinMessageResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnpinMessageResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetPinnedMessages" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetPinnedMessages pages a chat's pinned messages, most recently pinned
+        /// > first, each Pin carrying its message.
+        /// > 
+        /// > Allowed to whoever may read the chat's messages under view_mode, as for
+        /// > messaging.v1.Messaging.GetMessages, and redacted the same way; anyone
+        /// > else is DENIED.
+        /// > 
+        /// > Pins change while they are paged. Every page carries the chat's
+        /// > PinSummary as of its read, and the cursor is the last pin returned, so
+        /// > a pin made during the walk lands ahead of it and arrives only as a
+        /// > MetadataUpdate.PinsChanged, and a pin removed during the walk may be
+        /// > absent from a later page. Clients merge pages with the event stream by
+        /// > PinSummary.version, as they do roster pages by RosterSummary.version.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetPinnedMessagesRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetPinnedMessagesRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetPinnedMessagesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getPinnedMessages<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetPinnedMessagesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetPinnedMessagesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetPinnedMessagesResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetPinnedMessagesResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -3145,6 +3304,159 @@ extension Flipcash_Chat_V1_Chat {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "PinMessage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > PinMessage pins a message in a chat, making it the chat's most
+        /// > recently pinned message (see Metadata.pin_summary). A message must be in
+        /// > the chat (MESSAGE_NOT_FOUND otherwise) and of a kind that may be pinned:
+        /// > a deleted message and a system message may not, and are refused with
+        /// > MESSAGE_NOT_ALLOWED, as is any kind of content this server does not
+        /// > know to be pinnable. Every other message may be pinned, whatever its
+        /// > content (text, media, a reply, a payment, a widget, encrypted content).
+        /// > 
+        /// > Only a member the server permits to pin in the chat may call it, as
+        /// > reported by ViewerState.Permissions.can_pin; anyone else is DENIED.
+        /// > Pinning a message that is already pinned is a no-op that returns OK and
+        /// > leaves it where it is in the order. The server caps how many messages
+        /// > one chat may have pinned, 5 today, and refuses a pin past it with
+        /// > TOO_MANY_PINS. The cap is the server's and may be raised, so clients
+        /// > must not hardcode it: on TOO_MANY_PINS a client asks the user to unpin
+        /// > a message first, and GetPinnedMessages pages the pins whatever their
+        /// > number.
+        /// > 
+        /// > Every real change reaches the chat's members, including all of the
+        /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+        /// > 
+        /// > The response carries the chat's PinSummary after the call, which the
+        /// > client takes by version as it would any other. A client holding the
+        /// > chat's pins at version v may also apply its own pin to them at once:
+        /// > a summary at v + 1 means exactly one change was made, the pin it asked
+        /// > for (made by this call or an identical one racing it), so the message
+        /// > is now summary.latest; a summary at v means the message was already
+        /// > pinned and nothing changed; a summary further ahead means other changes
+        /// > were made too, which the client learns from the event stream or by
+        /// > refetching its pins with GetPinnedMessages.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_PinMessageRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_PinMessageRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_PinMessageResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func pinMessage<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_PinMessageRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_PinMessageRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_PinMessageResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_PinMessageResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.PinMessage.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "UnpinMessage" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnpinMessage unpins a message in a chat, whoever pinned it. Permitted
+        /// > exactly as PinMessage is. Unpinning a message that is not pinned is a
+        /// > no-op that returns OK.
+        /// > 
+        /// > Every real change reaches the chat's members, including all of the
+        /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+        /// > 
+        /// > The response carries the chat's PinSummary after the call, applied as
+        /// > for PinMessage: a summary at v + 1 means the message was unpinned, one
+        /// > at v that it was not pinned, and one further ahead that other changes
+        /// > were made too.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnpinMessageRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnpinMessageRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnpinMessageResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func unpinMessage<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnpinMessageRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnpinMessageRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnpinMessageResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnpinMessageResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.UnpinMessage.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "GetPinnedMessages" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetPinnedMessages pages a chat's pinned messages, most recently pinned
+        /// > first, each Pin carrying its message.
+        /// > 
+        /// > Allowed to whoever may read the chat's messages under view_mode, as for
+        /// > messaging.v1.Messaging.GetMessages, and redacted the same way; anyone
+        /// > else is DENIED.
+        /// > 
+        /// > Pins change while they are paged. Every page carries the chat's
+        /// > PinSummary as of its read, and the cursor is the last pin returned, so
+        /// > a pin made during the walk lands ahead of it and arrives only as a
+        /// > MetadataUpdate.PinsChanged, and a pin removed during the walk may be
+        /// > absent from a later page. Clients merge pages with the event stream by
+        /// > PinSummary.version, as they do roster pages by RosterSummary.version.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_GetPinnedMessagesRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_GetPinnedMessagesRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_GetPinnedMessagesResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getPinnedMessages<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetPinnedMessagesRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_GetPinnedMessagesRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_GetPinnedMessagesResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetPinnedMessagesResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.GetPinnedMessages.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -4510,6 +4822,144 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetRestrictedUsersRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetRestrictedUsersResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "PinMessage" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > PinMessage pins a message in a chat, making it the chat's most
+    /// > recently pinned message (see Metadata.pin_summary). A message must be in
+    /// > the chat (MESSAGE_NOT_FOUND otherwise) and of a kind that may be pinned:
+    /// > a deleted message and a system message may not, and are refused with
+    /// > MESSAGE_NOT_ALLOWED, as is any kind of content this server does not
+    /// > know to be pinnable. Every other message may be pinned, whatever its
+    /// > content (text, media, a reply, a payment, a widget, encrypted content).
+    /// > 
+    /// > Only a member the server permits to pin in the chat may call it, as
+    /// > reported by ViewerState.Permissions.can_pin; anyone else is DENIED.
+    /// > Pinning a message that is already pinned is a no-op that returns OK and
+    /// > leaves it where it is in the order. The server caps how many messages
+    /// > one chat may have pinned, 5 today, and refuses a pin past it with
+    /// > TOO_MANY_PINS. The cap is the server's and may be raised, so clients
+    /// > must not hardcode it: on TOO_MANY_PINS a client asks the user to unpin
+    /// > a message first, and GetPinnedMessages pages the pins whatever their
+    /// > number.
+    /// > 
+    /// > Every real change reaches the chat's members, including all of the
+    /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+    /// > 
+    /// > The response carries the chat's PinSummary after the call, which the
+    /// > client takes by version as it would any other. A client holding the
+    /// > chat's pins at version v may also apply its own pin to them at once:
+    /// > a summary at v + 1 means exactly one change was made, the pin it asked
+    /// > for (made by this call or an identical one racing it), so the message
+    /// > is now summary.latest; a summary at v means the message was already
+    /// > pinned and nothing changed; a summary further ahead means other changes
+    /// > were made too, which the client learns from the event stream or by
+    /// > refetching its pins with GetPinnedMessages.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_PinMessageRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func pinMessage<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_PinMessageRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_PinMessageResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.pinMessage(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_PinMessageRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_PinMessageResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnpinMessage" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnpinMessage unpins a message in a chat, whoever pinned it. Permitted
+    /// > exactly as PinMessage is. Unpinning a message that is not pinned is a
+    /// > no-op that returns OK.
+    /// > 
+    /// > Every real change reaches the chat's members, including all of the
+    /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+    /// > 
+    /// > The response carries the chat's PinSummary after the call, applied as
+    /// > for PinMessage: a summary at v + 1 means the message was unpinned, one
+    /// > at v that it was not pinned, and one further ahead that other changes
+    /// > were made too.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_UnpinMessageRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unpinMessage<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnpinMessageRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnpinMessageResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.unpinMessage(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_UnpinMessageRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_UnpinMessageResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetPinnedMessages" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetPinnedMessages pages a chat's pinned messages, most recently pinned
+    /// > first, each Pin carrying its message.
+    /// > 
+    /// > Allowed to whoever may read the chat's messages under view_mode, as for
+    /// > messaging.v1.Messaging.GetMessages, and redacted the same way; anyone
+    /// > else is DENIED.
+    /// > 
+    /// > Pins change while they are paged. Every page carries the chat's
+    /// > PinSummary as of its read, and the cursor is the last pin returned, so
+    /// > a pin made during the walk lands ahead of it and arrives only as a
+    /// > MetadataUpdate.PinsChanged, and a pin removed during the walk may be
+    /// > absent from a later page. Clients merge pages with the event stream by
+    /// > PinSummary.version, as they do roster pages by RosterSummary.version.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_GetPinnedMessagesRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getPinnedMessages<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_GetPinnedMessagesRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetPinnedMessagesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getPinnedMessages(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_GetPinnedMessagesRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_GetPinnedMessagesResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -5997,6 +6447,156 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.getRestrictedUsers(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "PinMessage" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > PinMessage pins a message in a chat, making it the chat's most
+    /// > recently pinned message (see Metadata.pin_summary). A message must be in
+    /// > the chat (MESSAGE_NOT_FOUND otherwise) and of a kind that may be pinned:
+    /// > a deleted message and a system message may not, and are refused with
+    /// > MESSAGE_NOT_ALLOWED, as is any kind of content this server does not
+    /// > know to be pinnable. Every other message may be pinned, whatever its
+    /// > content (text, media, a reply, a payment, a widget, encrypted content).
+    /// > 
+    /// > Only a member the server permits to pin in the chat may call it, as
+    /// > reported by ViewerState.Permissions.can_pin; anyone else is DENIED.
+    /// > Pinning a message that is already pinned is a no-op that returns OK and
+    /// > leaves it where it is in the order. The server caps how many messages
+    /// > one chat may have pinned, 5 today, and refuses a pin past it with
+    /// > TOO_MANY_PINS. The cap is the server's and may be raised, so clients
+    /// > must not hardcode it: on TOO_MANY_PINS a client asks the user to unpin
+    /// > a message first, and GetPinnedMessages pages the pins whatever their
+    /// > number.
+    /// > 
+    /// > Every real change reaches the chat's members, including all of the
+    /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+    /// > 
+    /// > The response carries the chat's PinSummary after the call, which the
+    /// > client takes by version as it would any other. A client holding the
+    /// > chat's pins at version v may also apply its own pin to them at once:
+    /// > a summary at v + 1 means exactly one change was made, the pin it asked
+    /// > for (made by this call or an identical one racing it), so the message
+    /// > is now summary.latest; a summary at v means the message was already
+    /// > pinned and nothing changed; a summary further ahead means other changes
+    /// > were made too, which the client learns from the event stream or by
+    /// > refetching its pins with GetPinnedMessages.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func pinMessage<Result>(
+        _ message: Flipcash_Chat_V1_PinMessageRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_PinMessageResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_PinMessageRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.pinMessage(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnpinMessage" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnpinMessage unpins a message in a chat, whoever pinned it. Permitted
+    /// > exactly as PinMessage is. Unpinning a message that is not pinned is a
+    /// > no-op that returns OK.
+    /// > 
+    /// > Every real change reaches the chat's members, including all of the
+    /// > caller's devices, on the event stream as a MetadataUpdate.PinsChanged.
+    /// > 
+    /// > The response carries the chat's PinSummary after the call, applied as
+    /// > for PinMessage: a summary at v + 1 means the message was unpinned, one
+    /// > at v that it was not pinned, and one further ahead that other changes
+    /// > were made too.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unpinMessage<Result>(
+        _ message: Flipcash_Chat_V1_UnpinMessageRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnpinMessageResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_UnpinMessageRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unpinMessage(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetPinnedMessages" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetPinnedMessages pages a chat's pinned messages, most recently pinned
+    /// > first, each Pin carrying its message.
+    /// > 
+    /// > Allowed to whoever may read the chat's messages under view_mode, as for
+    /// > messaging.v1.Messaging.GetMessages, and redacted the same way; anyone
+    /// > else is DENIED.
+    /// > 
+    /// > Pins change while they are paged. Every page carries the chat's
+    /// > PinSummary as of its read, and the cursor is the last pin returned, so
+    /// > a pin made during the walk lands ahead of it and arrives only as a
+    /// > MetadataUpdate.PinsChanged, and a pin removed during the walk may be
+    /// > absent from a later page. Clients merge pages with the event stream by
+    /// > PinSummary.version, as they do roster pages by RosterSummary.version.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getPinnedMessages<Result>(
+        _ message: Flipcash_Chat_V1_GetPinnedMessagesRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_GetPinnedMessagesResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_GetPinnedMessagesRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getPinnedMessages(
             request: request,
             options: options,
             onResponse: handleResponse
