@@ -371,6 +371,23 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   /// Clears the value of `lobbyUpdates`. Subsequent reads from it will return its default value.
   public mutating func clearLobbyUpdates() {self._lobbyUpdates = nil}
 
+  /// If present, best-effort real-time changes to the chat's payment
+  /// requests: one created, carried whole, and each change after that (a
+  /// share paid, a request completed or closed), carried as what it did.
+  /// Sent to those who can read the chat in full, never to a redacted chat
+  /// preview. Like reaction_updates, they are NOT part of the gap-detected
+  /// event log; clients apply each to their copy by the request's version
+  /// and reconcile any misses by refetching the request (see
+  /// paymentrequest.v1.PaymentRequestUpdate).
+  public var paymentRequestUpdates: Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch {
+    get {return _paymentRequestUpdates ?? Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch()}
+    set {_paymentRequestUpdates = newValue}
+  }
+  /// Returns true if `paymentRequestUpdates` has been explicitly set.
+  public var hasPaymentRequestUpdates: Bool {return self._paymentRequestUpdates != nil}
+  /// Clears the value of `paymentRequestUpdates`. Subsequent reads from it will return its default value.
+  public mutating func clearPaymentRequestUpdates() {self._paymentRequestUpdates = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -382,6 +399,7 @@ public struct Flipcash_Event_V1_ChatUpdate: Sendable {
   fileprivate var _reactionUpdates: Flipcash_Messaging_V1_ReactionUpdateBatch? = nil
   fileprivate var _rosterUpdates: Flipcash_Chat_V1_RosterUpdateBatch? = nil
   fileprivate var _lobbyUpdates: Flipcash_Chat_V1_LobbyUpdateBatch? = nil
+  fileprivate var _paymentRequestUpdates: Flipcash_Paymentrequest_V1_PaymentRequestUpdateBatch? = nil
 }
 
 /// BlobUpdate notifies the recipient in real time that blobs they uploaded have
@@ -827,7 +845,7 @@ extension Flipcash_Event_V1_ClientPong: SwiftProtobuf.Message, SwiftProtobuf._Me
 
 extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{4}\u{2}pointer_updates\0\u{3}is_typing_notifications\0\u{3}metadata_updates\0\u{1}events\0\u{3}reaction_updates\0\u{3}roster_updates\0\u{3}lobby_updates\0\u{c}\u{2}\u{1}")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}chat\0\u{4}\u{2}pointer_updates\0\u{3}is_typing_notifications\0\u{3}metadata_updates\0\u{1}events\0\u{3}reaction_updates\0\u{3}roster_updates\0\u{3}lobby_updates\0\u{3}payment_request_updates\0\u{c}\u{2}\u{1}")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -843,6 +861,7 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
       case 7: try { try decoder.decodeSingularMessageField(value: &self._reactionUpdates) }()
       case 8: try { try decoder.decodeSingularMessageField(value: &self._rosterUpdates) }()
       case 9: try { try decoder.decodeSingularMessageField(value: &self._lobbyUpdates) }()
+      case 10: try { try decoder.decodeSingularMessageField(value: &self._paymentRequestUpdates) }()
       default: break
       }
     }
@@ -877,6 +896,9 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
     try { if let v = self._lobbyUpdates {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 9)
     } }()
+    try { if let v = self._paymentRequestUpdates {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 10)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -889,6 +911,7 @@ extension Flipcash_Event_V1_ChatUpdate: SwiftProtobuf.Message, SwiftProtobuf._Me
     if lhs._reactionUpdates != rhs._reactionUpdates {return false}
     if lhs._rosterUpdates != rhs._rosterUpdates {return false}
     if lhs._lobbyUpdates != rhs._lobbyUpdates {return false}
+    if lhs._paymentRequestUpdates != rhs._paymentRequestUpdates {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

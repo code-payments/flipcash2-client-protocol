@@ -171,7 +171,8 @@ public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   public mutating func clearRosterSummary() {_uniqueStorage()._rosterSummary = nil}
 
   /// Rules governing participation in this chat. Only supported for group
-  /// chats. If not set, the chat has no participation requirements. Never
+  /// chats. If not set, the chat has no participation requirements. A
+  /// public group's minimum balances may change (see Chat.EditChat). Never
   /// set for a private group (see is_private), which admits a user by its
   /// creator's approval or an invite instead.
   public var rules: Flipcash_Chat_V1_Rules {
@@ -813,6 +814,14 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     set {kind = .coverPictureChanged(newValue)}
   }
 
+  public var rulesChanged: Flipcash_Chat_V1_MetadataUpdate.RulesChanged {
+    get {
+      if case .rulesChanged(let v)? = kind {return v}
+      return Flipcash_Chat_V1_MetadataUpdate.RulesChanged()
+    }
+    set {kind = .rulesChanged(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Kind: Equatable, Sendable {
@@ -823,6 +832,7 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     case profilePictureChanged(Flipcash_Chat_V1_MetadataUpdate.ProfilePictureChanged)
     case descriptionChanged(Flipcash_Chat_V1_MetadataUpdate.DescriptionChanged)
     case coverPictureChanged(Flipcash_Chat_V1_MetadataUpdate.CoverPictureChanged)
+    case rulesChanged(Flipcash_Chat_V1_MetadataUpdate.RulesChanged)
 
   }
 
@@ -979,6 +989,32 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     public init() {}
 
     fileprivate var _newCoverPicture: Flipcash_Blob_V1_Media? = nil
+  }
+
+  /// The chat's rules have changed (e.g. its minimum balances, via
+  /// Chat.EditChat). Delivered to the chat's members, including the editor's
+  /// other devices. Best-effort and applied as received; a client that
+  /// suspects a miss refetches the chat via Chat.GetChat.
+  public struct RulesChanged: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The chat's rules in full, replacing Metadata.rules.
+    public var newRules: Flipcash_Chat_V1_Rules {
+      get {return _newRules ?? Flipcash_Chat_V1_Rules()}
+      set {_newRules = newValue}
+    }
+    /// Returns true if `newRules` has been explicitly set.
+    public var hasNewRules: Bool {return self._newRules != nil}
+    /// Clears the value of `newRules`. Subsequent reads from it will return its default value.
+    public mutating func clearNewRules() {self._newRules = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _newRules: Flipcash_Chat_V1_Rules? = nil
   }
 
   public init() {}
@@ -3219,7 +3255,7 @@ extension Flipcash_Chat_V1_HoldingsSummary: SwiftProtobuf.Message, SwiftProtobuf
 
 extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".MetadataUpdate"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0\u{3}title_changed\0\u{3}profile_picture_changed\0\u{3}description_changed\0\u{3}cover_picture_changed\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}full_refresh\0\u{3}last_activity_changed\0\u{3}viewer_state_changed\0\u{3}title_changed\0\u{3}profile_picture_changed\0\u{3}description_changed\0\u{3}cover_picture_changed\0\u{3}rules_changed\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -3318,6 +3354,19 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
           self.kind = .coverPictureChanged(v)
         }
       }()
+      case 8: try {
+        var v: Flipcash_Chat_V1_MetadataUpdate.RulesChanged?
+        var hadOneofValue = false
+        if let current = self.kind {
+          hadOneofValue = true
+          if case .rulesChanged(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.kind = .rulesChanged(v)
+        }
+      }()
       default: break
       }
     }
@@ -3356,6 +3405,10 @@ extension Flipcash_Chat_V1_MetadataUpdate: SwiftProtobuf.Message, SwiftProtobuf.
     case .coverPictureChanged?: try {
       guard case .coverPictureChanged(let v)? = self.kind else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    }()
+    case .rulesChanged?: try {
+      guard case .rulesChanged(let v)? = self.kind else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 8)
     }()
     case nil: break
     }
@@ -3594,6 +3647,40 @@ extension Flipcash_Chat_V1_MetadataUpdate.CoverPictureChanged: SwiftProtobuf.Mes
 
   public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.CoverPictureChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.CoverPictureChanged) -> Bool {
     if lhs._newCoverPicture != rhs._newCoverPicture {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_MetadataUpdate.RulesChanged: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Chat_V1_MetadataUpdate.protoMessageName + ".RulesChanged"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}new_rules\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._newRules) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._newRules {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_MetadataUpdate.RulesChanged, rhs: Flipcash_Chat_V1_MetadataUpdate.RulesChanged) -> Bool {
+    if lhs._newRules != rhs._newRules {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

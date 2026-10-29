@@ -44,10 +44,23 @@ public enum Flipcash_Push_V1_Push {
                 method: "DeleteTokens"
             )
         }
+        /// Namespace for "SendTestPush" metadata.
+        public enum SendTestPush {
+            /// Request type for "SendTestPush".
+            public typealias Input = Flipcash_Push_V1_SendTestPushRequest
+            /// Response type for "SendTestPush".
+            public typealias Output = Flipcash_Push_V1_SendTestPushResponse
+            /// Descriptor for "SendTestPush".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.push.v1.Push"),
+                method: "SendTestPush"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.push.v1.Push" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             AddToken.descriptor,
-            DeleteTokens.descriptor
+            DeleteTokens.descriptor,
+            SendTestPush.descriptor
         ]
     }
 }
@@ -111,6 +124,31 @@ extension Flipcash_Push_V1_Push {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Push_V1_DeleteTokensResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Push_V1_DeleteTokensResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "SendTestPush" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SendTestPush sends a fixed test notification to every device the caller
+        /// > has registered a push token for, so a user can check that notifications
+        /// > reach them. It carries no navigation and does not change the app badge.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Push_V1_SendTestPushRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Push_V1_SendTestPushRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Push_V1_SendTestPushResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func sendTestPush<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Push_V1_SendTestPushRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Push_V1_SendTestPushRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Push_V1_SendTestPushResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Push_V1_SendTestPushResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -197,6 +235,42 @@ extension Flipcash_Push_V1_Push {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "SendTestPush" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > SendTestPush sends a fixed test notification to every device the caller
+        /// > has registered a push token for, so a user can check that notifications
+        /// > reach them. It carries no navigation and does not change the app badge.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Push_V1_SendTestPushRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Push_V1_SendTestPushRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Push_V1_SendTestPushResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func sendTestPush<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Push_V1_SendTestPushRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Push_V1_SendTestPushRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Push_V1_SendTestPushResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Push_V1_SendTestPushResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Push_V1_Push.Method.SendTestPush.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -256,6 +330,37 @@ extension Flipcash_Push_V1_Push.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Push_V1_DeleteTokensRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Push_V1_DeleteTokensResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SendTestPush" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SendTestPush sends a fixed test notification to every device the caller
+    /// > has registered a push token for, so a user can check that notifications
+    /// > reach them. It carries no navigation and does not change the app badge.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Push_V1_SendTestPushRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func sendTestPush<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Push_V1_SendTestPushRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Push_V1_SendTestPushResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.sendTestPush(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Push_V1_SendTestPushRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Push_V1_SendTestPushResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -325,6 +430,41 @@ extension Flipcash_Push_V1_Push.ClientProtocol {
             metadata: metadata
         )
         return try await self.deleteTokens(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "SendTestPush" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > SendTestPush sends a fixed test notification to every device the caller
+    /// > has registered a push token for, so a user can check that notifications
+    /// > reach them. It carries no navigation and does not change the app badge.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func sendTestPush<Result>(
+        _ message: Flipcash_Push_V1_SendTestPushRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Push_V1_SendTestPushResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Push_V1_SendTestPushRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.sendTestPush(
             request: request,
             options: options,
             onResponse: handleResponse
