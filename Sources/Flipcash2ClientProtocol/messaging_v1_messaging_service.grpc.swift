@@ -176,6 +176,18 @@ public enum Flipcash_Messaging_V1_Messaging {
                 method: "NotifyIsTyping"
             )
         }
+        /// Namespace for "GetCashMessageReturnStatus" metadata.
+        public enum GetCashMessageReturnStatus {
+            /// Request type for "GetCashMessageReturnStatus".
+            public typealias Input = Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest
+            /// Response type for "GetCashMessageReturnStatus".
+            public typealias Output = Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse
+            /// Descriptor for "GetCashMessageReturnStatus".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.messaging.v1.Messaging"),
+                method: "GetCashMessageReturnStatus"
+            )
+        }
         /// Descriptors for all methods in the "flipcash.messaging.v1.Messaging" service.
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             GetMessage.descriptor,
@@ -190,7 +202,8 @@ public enum Flipcash_Messaging_V1_Messaging {
             GetReactionSummary.descriptor,
             GetReactionSummaries.descriptor,
             AdvancePointer.descriptor,
-            NotifyIsTyping.descriptor
+            NotifyIsTyping.descriptor,
+            GetCashMessageReturnStatus.descriptor
         ]
     }
 }
@@ -562,6 +575,33 @@ extension Flipcash_Messaging_V1_Messaging {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Messaging_V1_NotifyIsTypingResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Messaging_V1_NotifyIsTypingResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "GetCashMessageReturnStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetCashMessageReturnStatus reports whether the payment of a cash message
+        /// > carrying a return offer (CashContent.Return.offer) can still be
+        /// > returned, and gives the message's single_receiver the intent ID the
+        /// > return must use (see intent.v1.ChatMetadata.ReturnPayment). Answered for
+        /// > the chat's members alone.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func getCashMessageReturnStatus<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
     }
 
@@ -1075,6 +1115,44 @@ extension Flipcash_Messaging_V1_Messaging {
                 onResponse: handleResponse
             )
         }
+
+        /// Call the "GetCashMessageReturnStatus" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > GetCashMessageReturnStatus reports whether the payment of a cash message
+        /// > carrying a return offer (CashContent.Return.offer) can still be
+        /// > returned, and gives the message's single_receiver the intent ID the
+        /// > return must use (see intent.v1.ChatMetadata.ReturnPayment). Answered for
+        /// > the chat's members alone.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func getCashMessageReturnStatus<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Messaging_V1_Messaging.Method.GetCashMessageReturnStatus.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
     }
 }
 
@@ -1506,6 +1584,39 @@ extension Flipcash_Messaging_V1_Messaging.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Messaging_V1_NotifyIsTypingRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Messaging_V1_NotifyIsTypingResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetCashMessageReturnStatus" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetCashMessageReturnStatus reports whether the payment of a cash message
+    /// > carrying a return offer (CashContent.Return.offer) can still be
+    /// > returned, and gives the message's single_receiver the intent ID the
+    /// > return must use (see intent.v1.ChatMetadata.ReturnPayment). Answered for
+    /// > the chat's members alone.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getCashMessageReturnStatus<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.getCashMessageReturnStatus(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -1991,6 +2102,43 @@ extension Flipcash_Messaging_V1_Messaging.ClientProtocol {
             metadata: metadata
         )
         return try await self.notifyIsTyping(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "GetCashMessageReturnStatus" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > GetCashMessageReturnStatus reports whether the payment of a cash message
+    /// > carrying a return offer (CashContent.Return.offer) can still be
+    /// > returned, and gives the message's single_receiver the intent ID the
+    /// > return must use (see intent.v1.ChatMetadata.ReturnPayment). Answered for
+    /// > the chat's members alone.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func getCashMessageReturnStatus<Result>(
+        _ message: Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Messaging_V1_GetCashMessageReturnStatusResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Messaging_V1_GetCashMessageReturnStatusRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.getCashMessageReturnStatus(
             request: request,
             options: options,
             onResponse: handleResponse

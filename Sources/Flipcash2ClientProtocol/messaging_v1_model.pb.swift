@@ -544,6 +544,19 @@ public struct Flipcash_Messaging_V1_CashContent: Sendable {
   /// Clears the value of `paymentRequestID`. Subsequent reads from it will return its default value.
   public mutating func clearPaymentRequestID() {self._paymentRequestID = nil}
 
+  /// How this payment takes part in a return: it may be offered for
+  /// returning, return the payment in another message, or both. Unset on a
+  /// cash message that does neither. Set by the server when the message is
+  /// sent and never changed after.
+  public var paymentReturn: Flipcash_Messaging_V1_CashContent.Return {
+    get {return _paymentReturn ?? Flipcash_Messaging_V1_CashContent.Return()}
+    set {_paymentReturn = newValue}
+  }
+  /// Returns true if `paymentReturn` has been explicitly set.
+  public var hasPaymentReturn: Bool {return self._paymentReturn != nil}
+  /// Clears the value of `paymentReturn`. Subsequent reads from it will return its default value.
+  public mutating func clearPaymentReturn() {self._paymentReturn = nil}
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// Who received the cash. Always set in a group chat. In a DM,
@@ -643,11 +656,92 @@ public struct Flipcash_Messaging_V1_CashContent: Sendable {
     fileprivate var _receiver: Flipcash_Common_V1_UserId? = nil
   }
 
+  /// A payment's part in a return. Its fields are independent: a payment
+  /// may return another and itself be offered for returning.
+  public struct Return: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Set when this payment may be returned, once, by its single_receiver
+    /// to the message's sender. Today only the cash message of the payment
+    /// that opened a DM carries one. Never changed after the message is
+    /// sent, including once the payment has been returned: whether it can
+    /// still be returned, and the intent ID the return must use, come from
+    /// GetCashMessageReturnStatus.
+    public var offer: Flipcash_Messaging_V1_CashContent.Return.Offer {
+      get {return _offer ?? Flipcash_Messaging_V1_CashContent.Return.Offer()}
+      set {_offer = newValue}
+    }
+    /// Returns true if `offer` has been explicitly set.
+    public var hasOffer: Bool {return self._offer != nil}
+    /// Clears the value of `offer`. Subsequent reads from it will return its default value.
+    public mutating func clearOffer() {self._offer = nil}
+
+    /// Set when this payment returns the payment in another message: its
+    /// sender is that message's single_receiver and its single_receiver
+    /// is that message's sender. A client that sees it may stop offering
+    /// a return on that message without asking GetCashMessageReturnStatus.
+    public var returnOf: Flipcash_Messaging_V1_CashContent.Return.ReturnOf {
+      get {return _returnOf ?? Flipcash_Messaging_V1_CashContent.Return.ReturnOf()}
+      set {_returnOf = newValue}
+    }
+    /// Returns true if `returnOf` has been explicitly set.
+    public var hasReturnOf: Bool {return self._returnOf != nil}
+    /// Clears the value of `returnOf`. Subsequent reads from it will return its default value.
+    public mutating func clearReturnOf() {self._returnOf = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    /// An offer to return a payment: the same fiat amount as total_amount,
+    /// in its currency and its mint (see
+    /// intent.v1.ChatMetadata.ReturnPayment). Empty for now: its presence
+    /// is the offer.
+    public struct Offer: Sendable {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      public init() {}
+    }
+
+    /// The payment a return returns
+    public struct ReturnOf: Sendable {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      /// The message whose payment this one returns
+      public var messageID: Flipcash_Messaging_V1_MessageId {
+        get {return _messageID ?? Flipcash_Messaging_V1_MessageId()}
+        set {_messageID = newValue}
+      }
+      /// Returns true if `messageID` has been explicitly set.
+      public var hasMessageID: Bool {return self._messageID != nil}
+      /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
+      public mutating func clearMessageID() {self._messageID = nil}
+
+      public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      public init() {}
+
+      fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
+    }
+
+    public init() {}
+
+    fileprivate var _offer: Flipcash_Messaging_V1_CashContent.Return.Offer? = nil
+    fileprivate var _returnOf: Flipcash_Messaging_V1_CashContent.Return.ReturnOf? = nil
+  }
+
   public init() {}
 
   fileprivate var _intentID: Flipcash_Common_V1_IntentId? = nil
   fileprivate var _totalAmount: Flipcash_Common_V1_CryptoPaymentAmount? = nil
   fileprivate var _paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId? = nil
+  fileprivate var _paymentReturn: Flipcash_Messaging_V1_CashContent.Return? = nil
 }
 
 /// Reply content
@@ -2389,7 +2483,7 @@ extension Flipcash_Messaging_V1_LinkPreview: SwiftProtobuf.Message, SwiftProtobu
 
 extension Flipcash_Messaging_V1_CashContent: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".CashContent"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}intent_id\0\u{3}total_amount\0\u{3}single_receiver\0\u{1}verb\0\u{3}multi_receiver\0\u{3}payment_request_id\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}intent_id\0\u{3}total_amount\0\u{3}single_receiver\0\u{1}verb\0\u{3}multi_receiver\0\u{3}payment_request_id\0\u{3}payment_return\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -2427,6 +2521,7 @@ extension Flipcash_Messaging_V1_CashContent: SwiftProtobuf.Message, SwiftProtobu
         }
       }()
       case 6: try { try decoder.decodeSingularMessageField(value: &self._paymentRequestID) }()
+      case 7: try { try decoder.decodeSingularMessageField(value: &self._paymentReturn) }()
       default: break
       }
     }
@@ -2455,6 +2550,9 @@ extension Flipcash_Messaging_V1_CashContent: SwiftProtobuf.Message, SwiftProtobu
     try { if let v = self._paymentRequestID {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     } }()
+    try { if let v = self._paymentReturn {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -2464,6 +2562,7 @@ extension Flipcash_Messaging_V1_CashContent: SwiftProtobuf.Message, SwiftProtobu
     if lhs.recipient != rhs.recipient {return false}
     if lhs.verb != rhs.verb {return false}
     if lhs._paymentRequestID != rhs._paymentRequestID {return false}
+    if lhs._paymentReturn != rhs._paymentReturn {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2542,6 +2641,98 @@ extension Flipcash_Messaging_V1_CashContent.Payment: SwiftProtobuf.Message, Swif
     if lhs._receiver != rhs._receiver {return false}
     if lhs.nativeAmount != rhs.nativeAmount {return false}
     if lhs.quarks != rhs.quarks {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_CashContent.Return: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Messaging_V1_CashContent.protoMessageName + ".Return"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}offer\0\u{3}return_of\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._offer) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._returnOf) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._offer {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._returnOf {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_CashContent.Return, rhs: Flipcash_Messaging_V1_CashContent.Return) -> Bool {
+    if lhs._offer != rhs._offer {return false}
+    if lhs._returnOf != rhs._returnOf {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_CashContent.Return.Offer: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Messaging_V1_CashContent.Return.protoMessageName + ".Offer"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap()
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    // Load everything into unknown fields
+    while try decoder.nextFieldNumber() != nil {}
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_CashContent.Return.Offer, rhs: Flipcash_Messaging_V1_CashContent.Return.Offer) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Messaging_V1_CashContent.Return.ReturnOf: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Messaging_V1_CashContent.Return.protoMessageName + ".ReturnOf"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._messageID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Messaging_V1_CashContent.Return.ReturnOf, rhs: Flipcash_Messaging_V1_CashContent.Return.ReturnOf) -> Bool {
+    if lhs._messageID != rhs._messageID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
