@@ -8,6 +8,49 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.25.0
+
+Synced to [`flipcash2-protobuf-api@53316c0e`](https://github.com/code-payments/flipcash2-protobuf-api/commit/53316c0ea38df0af5c28e9a164b093c1724eb270),
+picking up [#165](https://github.com/code-payments/flipcash2-protobuf-api/pull/165).
+`activity.v1`, `intent.v1` and `messaging.v1` moved.
+
+This release lets the receiver of a DM's opening payment send it back. Nothing existing changed
+on the wire. The source breaks are three new oneof cases, each appended after the existing ones.
+
+### Breaking
+
+- `activity.v1.DirectlySentCryptoNotificationMetadata` and `ReceivedCryptoNotificationMetadata`
+  each gain `returned_payment` (field 5) in their oneof, and `intent.v1.ChatMetadata`'s oneof
+  gains `return_payment` (field 7). An exhaustive `switch` over the Swift oneof, or a `when` over
+  Kotlin's `*Case` without an `else`, needs a case for each before it compiles. Code that reads
+  these oneofs through `has*()` checks compiles unchanged and drops the new case silently.
+
+### Added
+
+- `messaging.v1.Messaging.GetCashMessageReturnStatus`, with its request and response.
+  `Result` is `OK`, `DENIED`, `NOT_FOUND` (0–2) and `Status` is `UNKNOWN`, `AVAILABLE`,
+  `RETURNED` (0–2). `RETURNED` never changes again, so a client can stop polling once it sees
+  it. `payment_intent_id` is set only on `OK`, and only for the message's `single_receiver`.
+- `messaging.v1.CashContent.payment_return` (field 7), of type `CashContent.Return` with
+  independent `offer` and `return_of`. `Return.Offer` is empty: its presence is the offer.
+  Today only the cash message that opened a DM carries one. A message with `return_of` set
+  returns the payment of the message it names, so a client that sees it can stop offering a
+  return on that message.
+- `intent.v1.ChatMetadata.ReturnPayment` (`message_id`). The return is a `SendPublicPayment`
+  from the original message's `single_receiver` back to its sender, in the same DM, for the
+  same currency, mint and native amount. **Its intent ID must be the server-issued
+  `payment_intent_id`** from `GetCashMessageReturnStatus`, not one the client generates. The
+  server refuses any other ID, which is what keeps a payment returnable once across retries
+  and devices. Treat that ID as private until the payment is made: anyone who uses it first
+  blocks the return.
+- `activity.v1.ReturnedPayment` (`chat_id`, `message_id`), naming the DM and the cash message
+  whose payment was returned. The server doesn't update it afterwards, so the message may since
+  have been deleted.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC, field or enum case was removed or changed type.
+
 ## 0.24.0
 
 Synced to [`flipcash2-protobuf-api@0e167fa6`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0e167fa6c01edcfb5e617974fb6d2b30f9f55b98),
