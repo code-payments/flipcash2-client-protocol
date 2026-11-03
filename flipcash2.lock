@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 0e167fa6c01edcfb5e617974fb6d2b30f9f55b98
-subject: Add support for pinning messages in a chat (#164)
+commit: 53316c0ea38df0af5c28e9a164b093c1724eb270
+subject: Support send back flows for DM initialization fee (#165)

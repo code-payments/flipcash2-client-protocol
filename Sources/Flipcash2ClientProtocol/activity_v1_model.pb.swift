@@ -364,6 +364,17 @@ public struct Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: Senda
     set {context = .requestedPayment(newValue)}
   }
 
+  /// The payment returned a payment the recipient made to the payer in
+  /// their DM (see ReturnedPayment). destination_identifier names the
+  /// recipient, and payment_amount is the return.
+  public var returnedPayment: Flipcash_Activity_V1_ReturnedPayment {
+    get {
+      if case .returnedPayment(let v)? = context {return v}
+      return Flipcash_Activity_V1_ReturnedPayment()
+    }
+    set {context = .returnedPayment(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_DestinationIdentifier: Equatable, Sendable {
@@ -385,6 +396,10 @@ public struct Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: Senda
     /// RequestedPayment). destination_identifier names the request's
     /// creator, and payment_amount is the share.
     case requestedPayment(Flipcash_Activity_V1_RequestedPayment)
+    /// The payment returned a payment the recipient made to the payer in
+    /// their DM (see ReturnedPayment). destination_identifier names the
+    /// recipient, and payment_amount is the return.
+    case returnedPayment(Flipcash_Activity_V1_ReturnedPayment)
 
   }
 
@@ -442,6 +457,17 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
     set {context = .requestedPayment(newValue)}
   }
 
+  /// The payment returned a payment the recipient made to the payer in
+  /// their DM (see ReturnedPayment). source_identifier names the payer,
+  /// and payment_amount is the return.
+  public var returnedPayment: Flipcash_Activity_V1_ReturnedPayment {
+    get {
+      if case .returnedPayment(let v)? = context {return v}
+      return Flipcash_Activity_V1_ReturnedPayment()
+    }
+    set {context = .returnedPayment(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_SourceIdentifier: Equatable, Sendable {
@@ -463,6 +489,10 @@ public struct Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: Sendable 
     /// (see RequestedPayment). source_identifier names the debtor, and
     /// payment_amount is the share.
     case requestedPayment(Flipcash_Activity_V1_RequestedPayment)
+    /// The payment returned a payment the recipient made to the payer in
+    /// their DM (see ReturnedPayment). source_identifier names the payer,
+    /// and payment_amount is the return.
+    case returnedPayment(Flipcash_Activity_V1_ReturnedPayment)
 
   }
 
@@ -554,6 +584,44 @@ public struct Flipcash_Activity_V1_RequestedPayment: Sendable {
 
   fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
   fileprivate var _paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId? = nil
+}
+
+/// The payment a return payment returned: the cash message, in a DM, of a
+/// payment its receiver paid back to its sender (see
+/// intent.v1.ChatMetadata.ReturnPayment and messaging.v1.CashContent.Return).
+/// It is what the payment was for when it was made and is not kept up to
+/// date: the message may since have been deleted.
+public struct Flipcash_Activity_V1_ReturnedPayment: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// The DM the returned payment's cash message is in.
+  public var chatID: Flipcash_Common_V1_ChatId {
+    get {return _chatID ?? Flipcash_Common_V1_ChatId()}
+    set {_chatID = newValue}
+  }
+  /// Returns true if `chatID` has been explicitly set.
+  public var hasChatID: Bool {return self._chatID != nil}
+  /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
+  public mutating func clearChatID() {self._chatID = nil}
+
+  /// The cash message whose payment was returned.
+  public var messageID: Flipcash_Messaging_V1_MessageId {
+    get {return _messageID ?? Flipcash_Messaging_V1_MessageId()}
+    set {_messageID = newValue}
+  }
+  /// Returns true if `messageID` has been explicitly set.
+  public var hasMessageID: Bool {return self._messageID != nil}
+  /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
+  public mutating func clearMessageID() {self._messageID = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
+  fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
 }
 
 public struct Flipcash_Activity_V1_WithdrewCryptoNotificationMetadata: Sendable {
@@ -1012,7 +1080,7 @@ extension Flipcash_Activity_V1_Notification: SwiftProtobuf.Message, SwiftProtobu
 
 extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".DirectlySentCryptoNotificationMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0\u{3}requested_payment\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0\u{3}requested_payment\0\u{3}returned_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1072,6 +1140,19 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
           self.context = .requestedPayment(v)
         }
       }()
+      case 5: try {
+        var v: Flipcash_Activity_V1_ReturnedPayment?
+        var hadOneofValue = false
+        if let current = self.context {
+          hadOneofValue = true
+          if case .returnedPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.context = .returnedPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -1102,6 +1183,10 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
       guard case .requestedPayment(let v)? = self.context else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
     }()
+    case .returnedPayment?: try {
+      guard case .returnedPayment(let v)? = self.context else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+    }()
     case nil: break
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -1117,7 +1202,7 @@ extension Flipcash_Activity_V1_DirectlySentCryptoNotificationMetadata: SwiftProt
 
 extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ReceivedCryptoNotificationMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0\u{3}requested_payment\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}phone\0\u{3}user_id\0\u{3}boosted_reaction\0\u{3}requested_payment\0\u{3}returned_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1177,6 +1262,19 @@ extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf
           self.context = .requestedPayment(v)
         }
       }()
+      case 5: try {
+        var v: Flipcash_Activity_V1_ReturnedPayment?
+        var hadOneofValue = false
+        if let current = self.context {
+          hadOneofValue = true
+          if case .returnedPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.context = .returnedPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -1206,6 +1304,10 @@ extension Flipcash_Activity_V1_ReceivedCryptoNotificationMetadata: SwiftProtobuf
     case .requestedPayment?: try {
       guard case .requestedPayment(let v)? = self.context else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
+    case .returnedPayment?: try {
+      guard case .returnedPayment(let v)? = self.context else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
     }()
     case nil: break
     }
@@ -1298,6 +1400,45 @@ extension Flipcash_Activity_V1_RequestedPayment: SwiftProtobuf.Message, SwiftPro
   public static func ==(lhs: Flipcash_Activity_V1_RequestedPayment, rhs: Flipcash_Activity_V1_RequestedPayment) -> Bool {
     if lhs._chatID != rhs._chatID {return false}
     if lhs._paymentRequestID != rhs._paymentRequestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Activity_V1_ReturnedPayment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReturnedPayment"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}message_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._chatID) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._chatID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._messageID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Activity_V1_ReturnedPayment, rhs: Flipcash_Activity_V1_ReturnedPayment) -> Bool {
+    if lhs._chatID != rhs._chatID {return false}
+    if lhs._messageID != rhs._messageID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

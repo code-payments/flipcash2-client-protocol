@@ -143,6 +143,14 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     set {type = .requestedPayment(newValue)}
   }
 
+  public var returnPayment: Flipcash_Intent_V1_ChatMetadata.ReturnPayment {
+    get {
+      if case .returnPayment(let v)? = type {return v}
+      return Flipcash_Intent_V1_ChatMetadata.ReturnPayment()
+    }
+    set {type = .returnPayment(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
@@ -151,6 +159,7 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     case groupPayment(Flipcash_Intent_V1_ChatMetadata.GroupPayment)
     case reactionBoost(Flipcash_Intent_V1_ChatMetadata.ReactionBoost)
     case requestedPayment(Flipcash_Intent_V1_ChatMetadata.RequestedPayment)
+    case returnPayment(Flipcash_Intent_V1_ChatMetadata.ReturnPayment)
 
   }
 
@@ -397,6 +406,56 @@ public struct Flipcash_Intent_V1_ChatMetadata: Sendable {
     fileprivate var _paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId? = nil
   }
 
+  /// For returning a payment offered for returning: a cash message whose
+  /// messaging.v1.CashContent.payment_return carries an offer. The payment is
+  /// a SendPublicPayment, never a multi payment, from the cash message's
+  /// single_receiver back to its sender, and returns its payment exactly:
+  ///
+  ///   - The chat_id must be the DM the cash message is in.
+  ///   - The payment's one destination must be the message sender's owner
+  ///     account, and the payer must be its single_receiver.
+  ///   - The payment's currency and mint must be total_amount's, and its
+  ///     native amount (its exchange data's native_amount) must be
+  ///     total_amount's native_amount to within half the currency's smallest
+  ///     unit.
+  ///   - The payment must not have been returned already.
+  ///   - The intent's ID must be the one the server generated for the
+  ///     offer, which messaging.v1.GetCashMessageReturnStatus gives the
+  ///     single_receiver alone
+  ///     (GetCashMessageReturnStatusResponse.payment_intent_id). An intent
+  ///     ID is used at most once, so this is what makes a payment
+  ///     returnable at most once.
+  ///   - Neither the payer nor the payee may be the Flipcash team account.
+  ///
+  /// An offer does not expire. Once the payment is made the server posts one
+  /// messaging.v1.CashContent message into the DM as the payer, with the
+  /// original's sender as its single_receiver and the original message in its
+  /// payment_return.return_of, and messaging.v1.GetCashMessageReturnStatus
+  /// reports the payment RETURNED. The original message is not changed. The
+  /// payment is shown as SENT, and in the activity feed as a send, like any
+  /// other DM payment.
+  public struct ReturnPayment: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The message whose payment is returned.
+    public var messageID: Flipcash_Messaging_V1_MessageId {
+      get {return _messageID ?? Flipcash_Messaging_V1_MessageId()}
+      set {_messageID = newValue}
+    }
+    /// Returns true if `messageID` has been explicitly set.
+    public var hasMessageID: Bool {return self._messageID != nil}
+    /// Clears the value of `messageID`. Subsequent reads from it will return its default value.
+    public mutating func clearMessageID() {self._messageID = nil}
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
+
+    fileprivate var _messageID: Flipcash_Messaging_V1_MessageId? = nil
+  }
+
   public init() {}
 
   fileprivate var _chatID: Flipcash_Common_V1_ChatId? = nil
@@ -458,7 +517,7 @@ extension Flipcash_Intent_V1_AppMetadata: SwiftProtobuf.Message, SwiftProtobuf._
 
 extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ChatMetadata"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0\u{3}reaction_boost\0\u{3}requested_payment\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}contact_dm_payment\0\u{3}dm_payment\0\u{3}group_payment\0\u{3}reaction_boost\0\u{3}requested_payment\0\u{3}return_payment\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -532,6 +591,19 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
           self.type = .requestedPayment(v)
         }
       }()
+      case 7: try {
+        var v: Flipcash_Intent_V1_ChatMetadata.ReturnPayment?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .returnPayment(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .returnPayment(v)
+        }
+      }()
       default: break
       }
     }
@@ -565,6 +637,10 @@ extension Flipcash_Intent_V1_ChatMetadata: SwiftProtobuf.Message, SwiftProtobuf.
     case .requestedPayment?: try {
       guard case .requestedPayment(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
+    }()
+    case .returnPayment?: try {
+      guard case .returnPayment(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
     }()
     case nil: break
     }
@@ -755,6 +831,40 @@ extension Flipcash_Intent_V1_ChatMetadata.RequestedPayment: SwiftProtobuf.Messag
 
   public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.RequestedPayment, rhs: Flipcash_Intent_V1_ChatMetadata.RequestedPayment) -> Bool {
     if lhs._paymentRequestID != rhs._paymentRequestID {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Intent_V1_ChatMetadata.ReturnPayment: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Intent_V1_ChatMetadata.protoMessageName + ".ReturnPayment"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}message_id\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._messageID) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._messageID {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Intent_V1_ChatMetadata.ReturnPayment, rhs: Flipcash_Intent_V1_ChatMetadata.ReturnPayment) -> Bool {
+    if lhs._messageID != rhs._messageID {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

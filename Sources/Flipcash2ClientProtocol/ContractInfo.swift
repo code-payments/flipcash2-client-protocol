@@ -2,7 +2,7 @@
 
 public enum Flipcash2ContractInfo {
     public static let version = "0.24.0-dev"
-    public static let protoCommit = "0e167fa6c01edcfb5e617974fb6d2b30f9f55b98"
+    public static let protoCommit = "53316c0ea38df0af5c28e9a164b093c1724eb270"
 
     public static var isLocal: Bool { protoCommit == localSentinel }
 
