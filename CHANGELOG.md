@@ -8,6 +8,29 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.26.0
+
+No contract change: the messages and services are the same as 0.25.0. This release adds a second
+artifact and moves the existing one's toolchain.
+
+### Added
+
+- `com.flipcash:flipcash2-client-protocol-wire`, the same messages as Wire 7.1.2 classes for
+  Kotlin Multiplatform (jvm, android, js for Node, iosArm64, iosSimulatorArm64), in
+  `com.codeinc.flipcash.wire.*`. It has messages and protovalidate validators only, no gRPC stubs. Its
+  `ByteCompatibilityTest` checks that Wire and protobuf-java encode a message with every field set
+  to the same bytes, and decode each other's output.
+
+### Changed
+
+- `com.flipcash:flipcash2-client-protocol` now `api`s `dev.bmcreations:protovalidate-runtime` 0.2.0
+  (was 0.1.2) and is built with Kotlin 2.3.21 (was 2.2.20). A consumer that pins an older
+  protovalidate-runtime resolves to 0.2.0 on upgrade.
+
+### Unchanged
+
+Nothing was renumbered. No service, RPC, field or enum case was added, removed or changed type.
+
 ## 0.25.0
 
 Synced to [`flipcash2-protobuf-api@53316c0e`](https://github.com/code-payments/flipcash2-protobuf-api/commit/53316c0ea38df0af5c28e9a164b093c1724eb270),
