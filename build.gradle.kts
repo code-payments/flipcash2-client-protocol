@@ -5,9 +5,10 @@ import dev.bmcreations.protovalidate.gradle.ProtoVariant
 import org.apache.tools.ant.taskdefs.condition.Os
 
 plugins {
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.3.21"
     id("com.google.protobuf") version "0.10.0"
-    id("dev.bmcreations.protovalidate") version "0.1.2"
+    // Version pinned in scripts/toolchain.env, applied by settings.gradle.kts.
+    id("dev.bmcreations.protovalidate")
     id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
@@ -23,6 +24,9 @@ val grpcVersion = "1.83.1"
 // tested and differs only in line wrapping (344 lines, no API change) -- safe to adopt,
 // but do it as its own commit so the diff stays readable.
 val grpcKotlinVersion = "1.4.1"
+
+@Suppress("UNCHECKED_CAST")
+val toolchain = gradle.extra["toolchain"] as Map<String, String>
 
 // Publishing coordinates only. The generated code keeps its com.codeinc.flipcash.gen.*
 // java_package -- that is the namespace the app imports, and it is set in the protos.
@@ -48,7 +52,7 @@ dependencies {
     // gets coroutines from elsewhere in its graph; a standalone artifact has to declare it.
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     // protoc-gen-validate-kt output needs this on the consumer classpath, so it is `api`.
-    api("dev.bmcreations:protovalidate-runtime:0.1.2")
+    api("dev.bmcreations:protovalidate-runtime:${toolchain.getValue("PROTOVALIDATE_KT_VERSION")}")
     compileOnly("javax.annotation:javax.annotation-api:1.3.2")
 }
 
