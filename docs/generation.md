@@ -50,6 +50,44 @@ belongs in its own commit.
 Generated Kotlin is not committed. It is a build input to a published JAR, so the
 reviewable-diff argument that applies to the Swift below does not apply to it.
 
+## Kotlin Multiplatform (Wire)
+
+`wire/` publishes `com.flipcash:flipcash2-client-protocol-wire`: the same `proto/`, generated as
+[Wire](https://github.com/square/wire) messages in `commonMain`, with protovalidate-kt
+validators in its Wire mode. Targets are jvm, android, js (nodejs), iosArm64 and
+iosSimulatorArm64. The protobuf-java artifact above is unchanged by it; the two are separate
+Gradle projects in one build.
+
+| Generator | Version | Output |
+|---|---|---|
+| Wire Gradle plugin | 7.1.2 (`WIRE_VERSION`) | Kotlin messages, `rpcRole = "none"`, applied and declared options off |
+| protoc-gen-validate-kt | 0.2.0 (`PROTOVALIDATE_KT_VERSION`) | `validate()` with `target = WIRE`, PGV mode |
+
+Things that differ from the protobuf-java side:
+
+- **Package.** Wire and the validators both take their package from `java_package`, which the
+  upstream protos set to `com.codeinc.flipcash.gen.*`, the protobuf-java namespace. Android
+  carries both artifacts while it moves service by service, so the Wire classes live in
+  `com.codeinc.flipcash.wire.*`. The `wireProtos` task copies `proto/` into
+  `wire/build/wire-protos/` with `java_package` rewritten and fails if any `.gen.` survives;
+  `proto/` itself is never touched.
+- **No services.** Each platform brings its own transport, so only messages are generated.
+- **No options.** Emitting applied options would generate `validate.proto`'s extension types
+  into the artifact. `validate.proto` is on Wire's proto path only, from the protovalidate
+  plugin's JAR.
+- **No contract info.** `Flipcash2ContractInfo` is in the protobuf-java artifact only.
+- **Kotlin version.** Wire 7.1.2's iOS klibs were built by Kotlin 2.3.21, and older compilers
+  refuse them. The whole build shares one Kotlin Gradle plugin, so the root is on 2.3.21 too.
+- **Android SDK.** The android target needs one, so `./gradlew build` in a fresh clone fails
+  without `ANDROID_HOME` or `sdk.dir` in `local.properties`. In the apps' composite build
+  (`protoLocalRoot`), this build does not inherit the app's `sdk.dir`: a consumer that depends on
+  the Wire artifact needs `ANDROID_HOME` set. One that only uses the protobuf-java artifact
+  does not.
+
+`jvmTest` holds the byte-compatibility tests: the same message built with protobuf-java and Wire
+encodes to identical bytes, and each decodes the other's. `commonTest` runs `validate()` on jvm
+and Node. iOS targets compile and link on macOS only; on Linux, Kotlin skips them.
+
 ## Swift
 
 `Sources/Flipcash2ClientProtocol/` is committed, because SPM ships plain source: for the Swift
@@ -96,5 +134,7 @@ codegen runs against a new contract or toolchain version.
   missing POM field or an unbuildable sources jar here rather than on the Central upload, where
   the failure costs a burnt version number. It also writes per-generator file counts to the job
   summary.
+  The Wire module rides on the same `build` and `publishToMavenLocal`. CI runs on Linux, so it
+  covers jvm, android and js; the iOS klibs are first built by `publish.yml` on macOS.
 - **Swift**: `swift build`, then regenerate and `git diff --quiet -- Sources`. The toolchain
   cache key is `scripts/toolchain.env`, so a bump rebuilds the plugins and nothing else does.
