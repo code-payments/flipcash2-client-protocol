@@ -5,7 +5,7 @@ import dev.bmcreations.protovalidate.gradle.ProtoVariant
 import org.apache.tools.ant.taskdefs.condition.Os
 
 plugins {
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.3.21"
     id("com.google.protobuf") version "0.10.0"
     id("dev.bmcreations.protovalidate") version "0.1.2"
     id("com.vanniktech.maven.publish") version "0.37.0"
