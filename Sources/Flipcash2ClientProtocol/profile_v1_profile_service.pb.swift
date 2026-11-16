@@ -70,25 +70,28 @@ public struct Flipcash_Profile_V1_GetProfileRequest: Sendable {
   fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
 }
 
-public struct Flipcash_Profile_V1_GetProfileResponse: Sendable {
+public struct Flipcash_Profile_V1_GetProfileResponse: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  public var result: Flipcash_Profile_V1_GetProfileResponse.Result = .ok
+  public var result: Flipcash_Profile_V1_GetProfileResponse.Result {
+    get {return _storage._result}
+    set {_uniqueStorage()._result = newValue}
+  }
 
   /// UserProfile, if found.
   ///
   /// Some fields may or may not be set, depending on the scope of request
   /// in the future.
   public var userProfile: Flipcash_Profile_V1_UserProfile {
-    get {return _userProfile ?? Flipcash_Profile_V1_UserProfile()}
-    set {_userProfile = newValue}
+    get {return _storage._userProfile ?? Flipcash_Profile_V1_UserProfile()}
+    set {_uniqueStorage()._userProfile = newValue}
   }
   /// Returns true if `userProfile` has been explicitly set.
-  public var hasUserProfile: Bool {return self._userProfile != nil}
+  public var hasUserProfile: Bool {return _storage._userProfile != nil}
   /// Clears the value of `userProfile`. Subsequent reads from it will return its default value.
-  public mutating func clearUserProfile() {self._userProfile = nil}
+  public mutating func clearUserProfile() {_uniqueStorage()._userProfile = nil}
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -128,7 +131,7 @@ public struct Flipcash_Profile_V1_GetProfileResponse: Sendable {
 
   public init() {}
 
-  fileprivate var _userProfile: Flipcash_Profile_V1_UserProfile? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 public struct Flipcash_Profile_V1_SetDisplayNameRequest: Sendable {
@@ -1106,36 +1109,74 @@ extension Flipcash_Profile_V1_GetProfileResponse: SwiftProtobuf.Message, SwiftPr
   public static let protoMessageName: String = _protobuf_package + ".GetProfileResponse"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}result\0\u{3}user_profile\0")
 
+  fileprivate class _StorageClass {
+    var _result: Flipcash_Profile_V1_GetProfileResponse.Result = .ok
+    var _userProfile: Flipcash_Profile_V1_UserProfile? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _result = source._result
+      _userProfile = source._userProfile
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularEnumField(value: &self.result) }()
-      case 2: try { try decoder.decodeSingularMessageField(value: &self._userProfile) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularEnumField(value: &_storage._result) }()
+        case 2: try { try decoder.decodeSingularMessageField(value: &_storage._userProfile) }()
+        default: break
+        }
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if self.result != .ok {
-      try visitor.visitSingularEnumField(value: self.result, fieldNumber: 1)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if _storage._result != .ok {
+        try visitor.visitSingularEnumField(value: _storage._result, fieldNumber: 1)
+      }
+      try { if let v = _storage._userProfile {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      } }()
     }
-    try { if let v = self._userProfile {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Profile_V1_GetProfileResponse, rhs: Flipcash_Profile_V1_GetProfileResponse) -> Bool {
-    if lhs.result != rhs.result {return false}
-    if lhs._userProfile != rhs._userProfile {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._result != rhs_storage._result {return false}
+        if _storage._userProfile != rhs_storage._userProfile {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

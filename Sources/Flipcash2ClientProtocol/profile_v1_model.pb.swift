@@ -73,7 +73,8 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   public mutating func clearPhoneNumber() {self._phoneNumber = nil}
 
   /// Email address linked to this user. This is private and will only be returned
-  /// when the requesting user asks for their own profile
+  /// when the requesting user asks for their own profile. It may be unverified
+  /// (see is_email_address_verified).
   public var emailAddress: Flipcash_Common_V1_EmailAddress {
     get {return _emailAddress ?? Flipcash_Common_V1_EmailAddress()}
     set {_emailAddress = newValue}
@@ -82,6 +83,13 @@ public struct Flipcash_Profile_V1_UserProfile: Sendable {
   public var hasEmailAddress: Bool {return self._emailAddress != nil}
   /// Clears the value of `emailAddress`. Subsequent reads from it will return its default value.
   public mutating func clearEmailAddress() {self._emailAddress = nil}
+
+  /// Whether email_address was verified with a code (EmailVerification
+  /// CheckVerificationCode), rather than linked unverified (EmailVerification
+  /// LinkUnverified). This is private and will only be returned when the
+  /// requesting user asks for their own profile; false otherwise, and false
+  /// when the user has no email address linked.
+  public var isEmailAddressVerified: Bool = false
 
   /// The user's profile picture, as the set of renditions it is stored as —
   /// typically a DISPLAY for the profile view and a THUMBNAIL for avatars in
@@ -307,7 +315,7 @@ fileprivate let _protobuf_package = "flipcash.profile.v1"
 
 extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserProfile"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}display_name\0\u{3}social_profiles\0\u{3}phone_number\0\u{3}email_address\0\u{3}profile_picture\0\u{3}join_ts\0\u{3}flipcard_customization\0\u{1}username\0\u{3}user_id\0\u{3}min_dm_chat_init_fee\0\u{3}is_username_auto_assigned\0\u{1}bio\0\u{3}cover_picture\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}display_name\0\u{3}social_profiles\0\u{3}phone_number\0\u{3}email_address\0\u{3}profile_picture\0\u{3}join_ts\0\u{3}flipcard_customization\0\u{1}username\0\u{3}user_id\0\u{3}min_dm_chat_init_fee\0\u{3}is_username_auto_assigned\0\u{1}bio\0\u{3}cover_picture\0\u{3}is_email_address_verified\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -328,6 +336,7 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
       case 11: try { try decoder.decodeSingularBoolField(value: &self.isUsernameAutoAssigned) }()
       case 12: try { try decoder.decodeSingularStringField(value: &self.bio) }()
       case 13: try { try decoder.decodeSingularMessageField(value: &self._coverPicture) }()
+      case 14: try { try decoder.decodeSingularBoolField(value: &self.isEmailAddressVerified) }()
       default: break
       }
     }
@@ -377,6 +386,9 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     try { if let v = self._coverPicture {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 13)
     } }()
+    if self.isEmailAddressVerified != false {
+      try visitor.visitSingularBoolField(value: self.isEmailAddressVerified, fieldNumber: 14)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -388,6 +400,7 @@ extension Flipcash_Profile_V1_UserProfile: SwiftProtobuf.Message, SwiftProtobuf.
     if lhs.socialProfiles != rhs.socialProfiles {return false}
     if lhs._phoneNumber != rhs._phoneNumber {return false}
     if lhs._emailAddress != rhs._emailAddress {return false}
+    if lhs.isEmailAddressVerified != rhs.isEmailAddressVerified {return false}
     if lhs._profilePicture != rhs._profilePicture {return false}
     if lhs._joinTs != rhs._joinTs {return false}
     if lhs._flipcardCustomization != rhs._flipcardCustomization {return false}

@@ -518,6 +518,20 @@ public struct Flipcash_Account_V1_UserFlags: @unchecked Sendable {
   /// Clears the value of `messageDeleteWindow`. Subsequent reads from it will return its default value.
   public mutating func clearMessageDeleteWindow() {_uniqueStorage()._messageDeleteWindow = nil}
 
+  /// USDF amount, in quarks, that must be purchased when launching a new currency
+  /// using the new v2 flow
+  public var newCurrencyV2PurchaseAmount: UInt64 {
+    get {return _storage._newCurrencyV2PurchaseAmount}
+    set {_uniqueStorage()._newCurrencyV2PurchaseAmount = newValue}
+  }
+
+  /// USDF amount, in quarks, that must be paid in a fee when launching a new currency
+  /// using the new v2 flow
+  public var newCurrencyV2FeeAmount: UInt64 {
+    get {return _storage._newCurrencyV2FeeAmount}
+    set {_uniqueStorage()._newCurrencyV2FeeAmount = newValue}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OnRampProvider: SwiftProtobuf.Enum, Swift.CaseIterable {
@@ -998,7 +1012,7 @@ extension Flipcash_Account_V1_GetUnauthenticatedUserFlagsResponse.Result: SwiftP
 
 extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".UserFlags"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}is_registered_account\0\u{3}is_staff\0\u{3}requires_iap_for_registration\0\u{3}supported_on_ramp_providers\0\u{3}preferred_on_ramp_provider\0\u{3}min_build_number\0\u{3}bill_exchange_data_timeout\0\u{3}new_currency_purchase_amount\0\u{3}new_currency_fee_amount\0\u{3}withdrawal_fee_amount\0\u{3}preferred_on_ramp_usdc_liquidity_pool\0\u{3}enable_phone_number_send\0\u{3}minimum_holder_value\0\u{3}require_coinbase_email_verification\0\u{3}send_presets\0\u{3}username_min_balance\0\u{3}message_edit_window\0\u{3}message_delete_window\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}is_registered_account\0\u{3}is_staff\0\u{3}requires_iap_for_registration\0\u{3}supported_on_ramp_providers\0\u{3}preferred_on_ramp_provider\0\u{3}min_build_number\0\u{3}bill_exchange_data_timeout\0\u{3}new_currency_purchase_amount\0\u{3}new_currency_fee_amount\0\u{3}withdrawal_fee_amount\0\u{3}preferred_on_ramp_usdc_liquidity_pool\0\u{3}enable_phone_number_send\0\u{3}minimum_holder_value\0\u{3}require_coinbase_email_verification\0\u{3}send_presets\0\u{3}username_min_balance\0\u{3}message_edit_window\0\u{3}message_delete_window\0\u{3}new_currency_v2_purchase_amount\0\u{3}new_currency_v2_fee_amount\0")
 
   fileprivate class _StorageClass {
     var _isRegisteredAccount: Bool = false
@@ -1019,6 +1033,8 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
     var _usernameMinBalance: UInt64 = 0
     var _messageEditWindow: SwiftProtobuf.Google_Protobuf_Duration? = nil
     var _messageDeleteWindow: SwiftProtobuf.Google_Protobuf_Duration? = nil
+    var _newCurrencyV2PurchaseAmount: UInt64 = 0
+    var _newCurrencyV2FeeAmount: UInt64 = 0
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1047,6 +1063,8 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
       _usernameMinBalance = source._usernameMinBalance
       _messageEditWindow = source._messageEditWindow
       _messageDeleteWindow = source._messageDeleteWindow
+      _newCurrencyV2PurchaseAmount = source._newCurrencyV2PurchaseAmount
+      _newCurrencyV2FeeAmount = source._newCurrencyV2FeeAmount
     }
   }
 
@@ -1083,6 +1101,8 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
         case 16: try { try decoder.decodeSingularUInt64Field(value: &_storage._usernameMinBalance) }()
         case 17: try { try decoder.decodeSingularMessageField(value: &_storage._messageEditWindow) }()
         case 18: try { try decoder.decodeSingularMessageField(value: &_storage._messageDeleteWindow) }()
+        case 19: try { try decoder.decodeSingularUInt64Field(value: &_storage._newCurrencyV2PurchaseAmount) }()
+        case 20: try { try decoder.decodeSingularUInt64Field(value: &_storage._newCurrencyV2FeeAmount) }()
         default: break
         }
       }
@@ -1149,6 +1169,12 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
       try { if let v = _storage._messageDeleteWindow {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
       } }()
+      if _storage._newCurrencyV2PurchaseAmount != 0 {
+        try visitor.visitSingularUInt64Field(value: _storage._newCurrencyV2PurchaseAmount, fieldNumber: 19)
+      }
+      if _storage._newCurrencyV2FeeAmount != 0 {
+        try visitor.visitSingularUInt64Field(value: _storage._newCurrencyV2FeeAmount, fieldNumber: 20)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1176,6 +1202,8 @@ extension Flipcash_Account_V1_UserFlags: SwiftProtobuf.Message, SwiftProtobuf._M
         if _storage._usernameMinBalance != rhs_storage._usernameMinBalance {return false}
         if _storage._messageEditWindow != rhs_storage._messageEditWindow {return false}
         if _storage._messageDeleteWindow != rhs_storage._messageDeleteWindow {return false}
+        if _storage._newCurrencyV2PurchaseAmount != rhs_storage._newCurrencyV2PurchaseAmount {return false}
+        if _storage._newCurrencyV2FeeAmount != rhs_storage._newCurrencyV2FeeAmount {return false}
         return true
       }
       if !storagesAreEqual {return false}

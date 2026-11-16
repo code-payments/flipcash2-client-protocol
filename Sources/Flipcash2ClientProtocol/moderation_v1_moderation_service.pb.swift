@@ -38,6 +38,15 @@ public struct Flipcash_Moderation_V1_ModerateTextRequest: Sendable {
   /// Clears the value of `auth`. Subsequent reads from it will return its default value.
   public mutating func clearAuth() {self._auth = nil}
 
+  /// What the text is for, which decides the checks it is moderated under and
+  /// is bound into the attestation. Text over the kind's maximum length (32
+  /// bytes for a currency name, 8 for a symbol) is refused as invalid, since
+  /// it could never be used as that kind.
+  ///
+  /// UNKNOWN_CONTENT_KIND is for legacy clients and will be refused once they
+  /// are gone; new clients must always set a kind.
+  public var kind: Flipcash_Moderation_V1_ContentKind = .unknownContentKind
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -130,6 +139,13 @@ public struct Flipcash_Moderation_V1_ModerateImageRequest: Sendable {
   /// Clears the value of `auth`. Subsequent reads from it will return its default value.
   public mutating func clearAuth() {self._auth = nil}
 
+  /// What the image is for, which decides the checks it is moderated under and
+  /// is bound into the attestation.
+  ///
+  /// UNKNOWN_CONTENT_KIND is for legacy clients and will be refused once they
+  /// are gone; new clients must always set a kind.
+  public var kind: Flipcash_Moderation_V1_ContentKind = .unknownContentKind
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -211,7 +227,7 @@ fileprivate let _protobuf_package = "flipcash.moderation.v1"
 
 extension Flipcash_Moderation_V1_ModerateTextRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ModerateTextRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{1}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}text\0\u{1}auth\0\u{1}kind\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -221,6 +237,7 @@ extension Flipcash_Moderation_V1_ModerateTextRequest: SwiftProtobuf.Message, Swi
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.text) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
       default: break
       }
     }
@@ -237,12 +254,16 @@ extension Flipcash_Moderation_V1_ModerateTextRequest: SwiftProtobuf.Message, Swi
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    if self.kind != .unknownContentKind {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Moderation_V1_ModerateTextRequest, rhs: Flipcash_Moderation_V1_ModerateTextRequest) -> Bool {
     if lhs.text != rhs.text {return false}
     if lhs._auth != rhs._auth {return false}
+    if lhs.kind != rhs.kind {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -303,7 +324,7 @@ extension Flipcash_Moderation_V1_ModerateTextResponse.Result: SwiftProtobuf._Pro
 
 extension Flipcash_Moderation_V1_ModerateImageRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ModerateImageRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}image_data\0\u{1}auth\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}image_data\0\u{1}auth\0\u{1}kind\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -313,6 +334,7 @@ extension Flipcash_Moderation_V1_ModerateImageRequest: SwiftProtobuf.Message, Sw
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularBytesField(value: &self.imageData) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._auth) }()
+      case 3: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
       default: break
       }
     }
@@ -329,12 +351,16 @@ extension Flipcash_Moderation_V1_ModerateImageRequest: SwiftProtobuf.Message, Sw
     try { if let v = self._auth {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
     } }()
+    if self.kind != .unknownContentKind {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 3)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Moderation_V1_ModerateImageRequest, rhs: Flipcash_Moderation_V1_ModerateImageRequest) -> Bool {
     if lhs.imageData != rhs.imageData {return false}
     if lhs._auth != rhs._auth {return false}
+    if lhs.kind != rhs.kind {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
