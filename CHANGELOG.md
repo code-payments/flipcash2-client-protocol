@@ -11,7 +11,9 @@ syncs the contract, while the diff is still in front of you.
 ## 0.27.0
 
 Synced to [`flipcash2-protobuf-api@0d1bf2cb`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0d1bf2cb56962c6ac1cad42d890d9b85650286c3),
-picking up code-payments/flipcash2-protobuf-api#166, #167, #168, #169 (docs only) and #170.
+picking up [#166](https://github.com/code-payments/flipcash2-protobuf-api/pull/166), [#167](https://github.com/code-payments/flipcash2-protobuf-api/pull/167),
+[#168](https://github.com/code-payments/flipcash2-protobuf-api/pull/168), [#169](https://github.com/code-payments/flipcash2-protobuf-api/pull/169) (docs only) and
+[#170](https://github.com/code-payments/flipcash2-protobuf-api/pull/170).
 
 Everything is additive, so the upgrade compiles without changes. One addition comes with a deadline:
 moderation requests now name a content kind, and the server will stop accepting requests without one
@@ -19,7 +21,7 @@ once legacy clients are gone.
 
 ### Added
 
-- **Moderation content kind** (#167):
+- **Moderation content kind** (code-payments/flipcash2-protobuf-api#167):
   - New enum `moderation.v1.ContentKind`: `UNKNOWN_CONTENT_KIND`, `CURRENCY_NAME`,
     `CURRENCY_SYMBOL`, `CURRENCY_DESCRIPTION` and `CURRENCY_ICON`.
   - `kind` on `ModerateTextRequest` (field 3) and `ModerateImageRequest` (field 3). Text accepts the
@@ -30,7 +32,8 @@ once legacy clients are gone.
     attestations are accepted for any kind during a transition period, then for none, so new clients
     must always set a kind.
   - `kind` is part of the signed request, so set it before signing.
-- **`EmailVerification.LinkUnverified`** (#170): links an email address without sending a code.
+- **`EmailVerification.LinkUnverified`** (code-payments/flipcash2-protobuf-api#170): links an email address without
+  sending a code.
   - A different address replaces any linked before, including a verified one, and is linked as
     unverified.
   - An unverified address satisfies nothing that requires a verified one, such as `GetJwt`'s
@@ -40,10 +43,10 @@ once legacy clients are gone.
   code rather than linked through `LinkUnverified`. It is returned only on the user's own profile.
   With `LinkUnverified` in use, a present `email_address` no longer means verified.
 - **`UserFlags.new_currency_v2_purchase_amount` (field 19) and `new_currency_v2_fee_amount` (field
-  20)** (#166): the USDF amounts, in quarks, to purchase and to pay as a fee when launching a
-  currency through the v2 flow.
-- **`kyc.coinbase.v1.Kyc`** (#168), a new service that verifies a user's identity with Coinbase for
-  a product. `PRODUCT_OFFRAMP` is the only product so far.
+  20)** (code-payments/flipcash2-protobuf-api#166): the USDF amounts, in quarks, to purchase and to pay as a fee
+  when launching a currency through the v2 flow.
+- **`kyc.coinbase.v1.Kyc`** (code-payments/flipcash2-protobuf-api#168), a new service that verifies a user's
+  identity with Coinbase for a product. `PRODUCT_OFFRAMP` is the only product so far.
   - `GetKycState`, `StartKyc` and `SubmitKyc`, each returning a `KycState`. Its `status` moves
     through `NOT_STARTED`, `ACTION_REQUIRED`, `IN_REVIEW`, `VERIFIED` and `BLOCKED`.
   - The state lists `Requirement`s: an `Individual` field, `TermsOfService` to accept, or a
