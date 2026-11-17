@@ -44,6 +44,18 @@ public enum Flipcash_Email_V1_EmailVerification {
                 method: "CheckVerificationCode"
             )
         }
+        /// Namespace for "LinkUnverified" metadata.
+        public enum LinkUnverified {
+            /// Request type for "LinkUnverified".
+            public typealias Input = Flipcash_Email_V1_LinkUnverifiedRequest
+            /// Response type for "LinkUnverified".
+            public typealias Output = Flipcash_Email_V1_LinkUnverifiedResponse
+            /// Descriptor for "LinkUnverified".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.email.v1.EmailVerification"),
+                method: "LinkUnverified"
+            )
+        }
         /// Namespace for "Unlink" metadata.
         public enum Unlink {
             /// Request type for "Unlink".
@@ -60,6 +72,7 @@ public enum Flipcash_Email_V1_EmailVerification {
         public static let descriptors: [GRPCCore.MethodDescriptor] = [
             SendVerificationCode.descriptor,
             CheckVerificationCode.descriptor,
+            LinkUnverified.descriptor,
             Unlink.descriptor
         ]
     }
@@ -110,7 +123,9 @@ extension Flipcash_Email_V1_EmailVerification {
         /// > Source IDL Documentation:
         /// >
         /// > CheckVerificationCode validates a verification code. On success, the email
-        /// > address is linked to the user. Any previous links are overwritten.
+        /// > address is linked to the user as verified, replacing any address linked
+        /// > before, verified or not. An address linked unverified (LinkUnverified)
+        /// > becomes verified this way.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Email_V1_CheckVerificationCodeRequest` message.
@@ -127,6 +142,36 @@ extension Flipcash_Email_V1_EmailVerification {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Email_V1_CheckVerificationCodeResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Email_V1_CheckVerificationCodeResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "LinkUnverified" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > LinkUnverified links an email address to the user without verifying it.
+        /// > No email is sent. A different address replaces any address linked before,
+        /// > including a verified one, and is linked as unverified. Linking the address
+        /// > already linked leaves it as it was, so a verified address stays verified.
+        /// > 
+        /// > An address is not unique to a user: linking one another user holds leaves
+        /// > theirs linked. An unverified address satisfies nothing that requires a
+        /// > verified one (e.g. ThirdParty GetJwt's EMAIL_VERIFICATION_REQUIRED).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Email_V1_LinkUnverifiedRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Email_V1_LinkUnverifiedRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Email_V1_LinkUnverifiedResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func linkUnverified<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Email_V1_LinkUnverifiedRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Email_V1_LinkUnverifiedRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Email_V1_LinkUnverifiedResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Email_V1_LinkUnverifiedResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "Unlink" method.
@@ -210,7 +255,9 @@ extension Flipcash_Email_V1_EmailVerification {
         /// > Source IDL Documentation:
         /// >
         /// > CheckVerificationCode validates a verification code. On success, the email
-        /// > address is linked to the user. Any previous links are overwritten.
+        /// > address is linked to the user as verified, replacing any address linked
+        /// > before, verified or not. An address linked unverified (LinkUnverified)
+        /// > becomes verified this way.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Email_V1_CheckVerificationCodeRequest` message.
@@ -233,6 +280,47 @@ extension Flipcash_Email_V1_EmailVerification {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Email_V1_EmailVerification.Method.CheckVerificationCode.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "LinkUnverified" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > LinkUnverified links an email address to the user without verifying it.
+        /// > No email is sent. A different address replaces any address linked before,
+        /// > including a verified one, and is linked as unverified. Linking the address
+        /// > already linked leaves it as it was, so a verified address stays verified.
+        /// > 
+        /// > An address is not unique to a user: linking one another user holds leaves
+        /// > theirs linked. An unverified address satisfies nothing that requires a
+        /// > verified one (e.g. ThirdParty GetJwt's EMAIL_VERIFICATION_REQUIRED).
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Email_V1_LinkUnverifiedRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Email_V1_LinkUnverifiedRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Email_V1_LinkUnverifiedResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func linkUnverified<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Email_V1_LinkUnverifiedRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Email_V1_LinkUnverifiedRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Email_V1_LinkUnverifiedResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Email_V1_LinkUnverifiedResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Email_V1_EmailVerification.Method.LinkUnverified.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -315,7 +403,9 @@ extension Flipcash_Email_V1_EmailVerification.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > CheckVerificationCode validates a verification code. On success, the email
-    /// > address is linked to the user. Any previous links are overwritten.
+    /// > address is linked to the user as verified, replacing any address linked
+    /// > before, verified or not. An address linked unverified (LinkUnverified)
+    /// > becomes verified this way.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Email_V1_CheckVerificationCodeRequest` message.
@@ -335,6 +425,42 @@ extension Flipcash_Email_V1_EmailVerification.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Email_V1_CheckVerificationCodeRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Email_V1_CheckVerificationCodeResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "LinkUnverified" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > LinkUnverified links an email address to the user without verifying it.
+    /// > No email is sent. A different address replaces any address linked before,
+    /// > including a verified one, and is linked as unverified. Linking the address
+    /// > already linked leaves it as it was, so a verified address stays verified.
+    /// > 
+    /// > An address is not unique to a user: linking one another user holds leaves
+    /// > theirs linked. An unverified address satisfies nothing that requires a
+    /// > verified one (e.g. ThirdParty GetJwt's EMAIL_VERIFICATION_REQUIRED).
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Email_V1_LinkUnverifiedRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func linkUnverified<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Email_V1_LinkUnverifiedRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Email_V1_LinkUnverifiedResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.linkUnverified(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Email_V1_LinkUnverifiedRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Email_V1_LinkUnverifiedResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -413,7 +539,9 @@ extension Flipcash_Email_V1_EmailVerification.ClientProtocol {
     /// > Source IDL Documentation:
     /// >
     /// > CheckVerificationCode validates a verification code. On success, the email
-    /// > address is linked to the user. Any previous links are overwritten.
+    /// > address is linked to the user as verified, replacing any address linked
+    /// > before, verified or not. An address linked unverified (LinkUnverified)
+    /// > becomes verified this way.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -436,6 +564,46 @@ extension Flipcash_Email_V1_EmailVerification.ClientProtocol {
             metadata: metadata
         )
         return try await self.checkVerificationCode(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "LinkUnverified" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > LinkUnverified links an email address to the user without verifying it.
+    /// > No email is sent. A different address replaces any address linked before,
+    /// > including a verified one, and is linked as unverified. Linking the address
+    /// > already linked leaves it as it was, so a verified address stays verified.
+    /// > 
+    /// > An address is not unique to a user: linking one another user holds leaves
+    /// > theirs linked. An unverified address satisfies nothing that requires a
+    /// > verified one (e.g. ThirdParty GetJwt's EMAIL_VERIFICATION_REQUIRED).
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func linkUnverified<Result>(
+        _ message: Flipcash_Email_V1_LinkUnverifiedRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Email_V1_LinkUnverifiedResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Email_V1_LinkUnverifiedRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.linkUnverified(
             request: request,
             options: options,
             onResponse: handleResponse

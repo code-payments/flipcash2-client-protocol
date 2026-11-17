@@ -8,6 +8,66 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.27.0
+
+Synced to [`flipcash2-protobuf-api@0d1bf2cb`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0d1bf2cb56962c6ac1cad42d890d9b85650286c3),
+picking up [#166](https://github.com/code-payments/flipcash2-protobuf-api/pull/166), [#167](https://github.com/code-payments/flipcash2-protobuf-api/pull/167),
+[#168](https://github.com/code-payments/flipcash2-protobuf-api/pull/168), [#169](https://github.com/code-payments/flipcash2-protobuf-api/pull/169) (docs only) and
+[#170](https://github.com/code-payments/flipcash2-protobuf-api/pull/170).
+
+Everything is additive, so the upgrade compiles without changes. One addition comes with a deadline:
+moderation requests now name a content kind, and the server will stop accepting requests without one
+once legacy clients are gone.
+
+### Added
+
+- **Moderation content kind** (code-payments/flipcash2-protobuf-api#167):
+  - New enum `moderation.v1.ContentKind`: `UNKNOWN_CONTENT_KIND`, `CURRENCY_NAME`,
+    `CURRENCY_SYMBOL`, `CURRENCY_DESCRIPTION` and `CURRENCY_ICON`.
+  - `kind` on `ModerateTextRequest` (field 3) and `ModerateImageRequest` (field 3). Text accepts the
+    name, symbol and description kinds, and images accept `CURRENCY_ICON`.
+  - `ModerationAttestation.kind` (field 6). An attestation is valid only for the kind it names.
+  - Text over the kind's maximum length (32 bytes for a name, 8 for a symbol) is refused as invalid.
+  - `UNKNOWN_CONTENT_KIND`, which is what an unset `kind` sends, is for legacy clients. Its
+    attestations are accepted for any kind during a transition period, then for none, so new clients
+    must always set a kind.
+  - `kind` is part of the signed request, so set it before signing.
+- **`EmailVerification.LinkUnverified`** (code-payments/flipcash2-protobuf-api#170): links an email address without
+  sending a code.
+  - A different address replaces any linked before, including a verified one, and is linked as
+    unverified.
+  - An unverified address satisfies nothing that requires a verified one, such as `GetJwt`'s
+    `EMAIL_VERIFICATION_REQUIRED`.
+  - Returns `OK` or `DENIED`.
+- **`UserProfile.is_email_address_verified`** (field 14): whether the linked email was verified with a
+  code rather than linked through `LinkUnverified`. It is returned only on the user's own profile.
+  With `LinkUnverified` in use, a present `email_address` no longer means verified.
+- **`UserFlags.new_currency_v2_purchase_amount` (field 19) and `new_currency_v2_fee_amount` (field
+  20)** (code-payments/flipcash2-protobuf-api#166): the USDF amounts, in quarks, to purchase and to pay as a fee
+  when launching a currency through the v2 flow.
+- **`kyc.coinbase.v1.Kyc`** (code-payments/flipcash2-protobuf-api#168), a new service that verifies a user's
+  identity with Coinbase for a product. `PRODUCT_OFFRAMP` is the only product so far.
+  - `GetKycState`, `StartKyc` and `SubmitKyc`, each returning a `KycState`. Its `status` moves
+    through `NOT_STARTED`, `ACTION_REQUIRED`, `IN_REVIEW`, `VERIFIED` and `BLOCKED`.
+  - The state lists `Requirement`s: an `Individual` field, `TermsOfService` to accept, or a
+    `TaxForm` (`TAX_FORM_US_W9`) to attest to.
+  - `SubmitKyc` takes an `Individual` (legal name, date of birth, address, SSN, email, phone number,
+    purpose of account and source of funds), `TermsOfServiceAcceptance`s and `TaxAttestation`s.
+  - Its `Result` adds `INVALID_SUBMISSION`, `NOT_STARTED` and `BLOCKED` to `OK` and `DENIED`.
+  - There is no push for state changes; the client polls `GetKycState` while the status is
+    `IN_REVIEW`. Coinbase verifies US residents only.
+
+### Changed
+
+- Swift: `Flipcash_Profile_V1_GetProfileResponse` now keeps its fields in heap storage and is
+  `@unchecked Sendable`. swift-protobuf made the switch because `UserProfile` grew. Its API is the
+  same.
+
+### Unchanged
+
+Nothing was renumbered, and nothing existing changed type or meaning. No service, RPC, message or
+enum case was removed.
+
 ## 0.26.0
 
 No contract change: the messages and services are the same as 0.25.0. This release adds a second

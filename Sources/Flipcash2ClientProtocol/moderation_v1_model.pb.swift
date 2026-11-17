@@ -21,6 +21,67 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
+/// ContentKind is what a piece of moderated content is for. The server moderates
+/// each kind under the checks that fit it, and binds the kind into the
+/// attestation (ModerationAttestation.kind).
+public enum Flipcash_Moderation_V1_ContentKind: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+
+  /// Legacy: the request named no kind. Moderated under the checks every kind
+  /// once shared, which treat any text short enough to be a currency name as
+  /// one.
+  case unknownContentKind // = 0
+
+  /// A currency's name (text).
+  case currencyName // = 1
+
+  /// A currency's symbol (text).
+  case currencySymbol // = 2
+
+  /// A currency's description (text).
+  case currencyDescription // = 3
+
+  /// A currency's icon (image).
+  case currencyIcon // = 4
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .unknownContentKind
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .unknownContentKind
+    case 1: self = .currencyName
+    case 2: self = .currencySymbol
+    case 3: self = .currencyDescription
+    case 4: self = .currencyIcon
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .unknownContentKind: return 0
+    case .currencyName: return 1
+    case .currencySymbol: return 2
+    case .currencyDescription: return 3
+    case .currencyIcon: return 4
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Flipcash_Moderation_V1_ContentKind] = [
+    .unknownContentKind,
+    .currencyName,
+    .currencySymbol,
+    .currencyDescription,
+    .currencyIcon,
+  ]
+
+}
+
 public enum Flipcash_Moderation_V1_FlaggedCategory: SwiftProtobuf.Enum, Swift.CaseIterable {
   public typealias RawValue = Int
   case none // = 0
@@ -123,6 +184,16 @@ public struct Flipcash_Moderation_V1_ModerationAttestation: Sendable {
   /// Clears the value of `signature`. Subsequent reads from it will return its default value.
   public mutating func clearSignature() {self._signature = nil}
 
+  /// What the content was moderated as. An attestation is valid only for the
+  /// kind it names: a verifier checks it against the kind the content is used
+  /// as (e.g. a currency's name), so content moderated under one kind's checks
+  /// cannot be used where another kind's are required.
+  ///
+  /// UNKNOWN_CONTENT_KIND for content moderated by a request that named no
+  /// kind, under the checks every kind once shared. Accepted for any kind for
+  /// a transition period, after which it is accepted for none.
+  public var kind: Flipcash_Moderation_V1_ContentKind = .unknownContentKind
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
@@ -137,13 +208,17 @@ public struct Flipcash_Moderation_V1_ModerationAttestation: Sendable {
 
 fileprivate let _protobuf_package = "flipcash.moderation.v1"
 
+extension Flipcash_Moderation_V1_ContentKind: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN_CONTENT_KIND\0\u{1}CURRENCY_NAME\0\u{1}CURRENCY_SYMBOL\0\u{1}CURRENCY_DESCRIPTION\0\u{1}CURRENCY_ICON\0")
+}
+
 extension Flipcash_Moderation_V1_FlaggedCategory: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0NONE\0\u{1}OTHER\0\u{1}NSFW\0\u{1}IMPERSONATION\0\u{1}MISLEADING\0\u{1}SPAM\0")
 }
 
 extension Flipcash_Moderation_V1_ModerationAttestation: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ModerationAttestation"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}content_hash\0\u{1}timestamp\0\u{3}user_id\0\u{1}attestor\0\u{1}signature\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}content_hash\0\u{1}timestamp\0\u{3}user_id\0\u{1}attestor\0\u{1}signature\0\u{1}kind\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -156,6 +231,7 @@ extension Flipcash_Moderation_V1_ModerationAttestation: SwiftProtobuf.Message, S
       case 3: try { try decoder.decodeSingularMessageField(value: &self._userID) }()
       case 4: try { try decoder.decodeSingularMessageField(value: &self._attestor) }()
       case 5: try { try decoder.decodeSingularMessageField(value: &self._signature) }()
+      case 6: try { try decoder.decodeSingularEnumField(value: &self.kind) }()
       default: break
       }
     }
@@ -181,6 +257,9 @@ extension Flipcash_Moderation_V1_ModerationAttestation: SwiftProtobuf.Message, S
     try { if let v = self._signature {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
     } }()
+    if self.kind != .unknownContentKind {
+      try visitor.visitSingularEnumField(value: self.kind, fieldNumber: 6)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -190,6 +269,7 @@ extension Flipcash_Moderation_V1_ModerationAttestation: SwiftProtobuf.Message, S
     if lhs._userID != rhs._userID {return false}
     if lhs._attestor != rhs._attestor {return false}
     if lhs._signature != rhs._signature {return false}
+    if lhs.kind != rhs.kind {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
