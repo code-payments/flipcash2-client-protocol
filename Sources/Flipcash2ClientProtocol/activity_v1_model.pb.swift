@@ -548,8 +548,9 @@ public struct Flipcash_Activity_V1_BoostedReaction: Sendable {
   fileprivate var _emoji: Flipcash_Messaging_V1_Emoji? = nil
 }
 
-/// The payment request a payment paid a share of: a debtor's share, paid to
-/// the request's creator (see intent.v1.ChatMetadata.RequestedPayment). It is
+/// The payment request a payment paid into: a debtor's share of a split, or a
+/// member's contribution to a collection, paid to the request's creator (see
+/// intent.v1.ChatMetadata.RequestedPayment). It is
 /// what the payment was for when it was made and is not kept up to date: the
 /// request may since have been closed or expired, and the viewer may no longer
 /// be a member of its group, in which case fetching the request is denied.
@@ -568,7 +569,7 @@ public struct Flipcash_Activity_V1_RequestedPayment: Sendable {
   /// Clears the value of `chatID`. Subsequent reads from it will return its default value.
   public mutating func clearChatID() {self._chatID = nil}
 
-  /// The payment request whose share was paid.
+  /// The payment request paid into.
   public var paymentRequestID: Flipcash_Paymentrequest_V1_PaymentRequestId {
     get {return _paymentRequestID ?? Flipcash_Paymentrequest_V1_PaymentRequestId()}
     set {_paymentRequestID = newValue}
