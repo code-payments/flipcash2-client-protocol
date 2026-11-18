@@ -8,6 +8,79 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.28.0
+
+Synced to [`flipcash2-protobuf-api@4bdb5739`](https://github.com/code-payments/flipcash2-protobuf-api/commit/4bdb573973c5a74d63f1a894e0083fb9c932478d),
+picking up [#171](https://github.com/code-payments/flipcash2-protobuf-api/pull/171).
+
+The upgrade may not compile unchanged. `paymentrequest.v1.PaidShare` is renamed to `Paid`, and new
+oneof cases and an enum value break any `switch` or `when` over them that has no default. The wire
+format is compatible. Some existing behaviour also changed in ways a client that only renders splits
+will still see.
+
+### Breaking
+
+- **`paymentrequest.v1.PaidShare` is now `paymentrequest.v1.Paid`.** Its fields and `Share.paid`
+  (field 3) are unchanged, so the wire format is compatible, but every reference to the generated
+  `PaidShare` type has to be renamed. `Paid` is also what `Payer.status` holds once a payer has paid.
+- **Exhaustive switches over these break:** `GroupChatPaymentRequest.type` (new `collection`),
+  `PaymentRequestUpdate.Update.kind` (new `payer_update` and `payer_summary_update`) and
+  `CreatePaymentRequestResponse.Result` (new `INVALID_AMOUNT`). Swift's generated enums are where this
+  bites: the iOS app had three such switches. Kotlin code that reads the oneof through `has…()` or
+  has an `else` branch compiles unchanged.
+
+### Added
+
+- **Collections**, a second request type next to `Split`: a fixed amount collected once from each
+  member of the group, with no cap on how many contribute.
+  - `GroupChatPaymentRequest.collection` (field 3), a new `Collection` message: optional `text`,
+    `currency`, optional `ends_at`, and a required `payment_amount` oneof whose only arm today is
+    `FixedAmount fixed` (field 5).
+  - A client renders a request type it does not know as unsupported.
+- **Payers**, one view of who owes what across both request types.
+  - New `Payer`: `user_id`, `native_amount_due`, `native_amount_paid`, and a `status` oneof of
+    `Unpaid` or `Paid`.
+  - New `PayerSummary`: `payer_count`, `paid_count`, `native_amount_due`, `native_amount_paid`.
+  - `PaymentRequestMetadata.payer_summary` (field 7).
+  - `GetPaymentRequestResponse.caller_payer` (field 4): the caller's own `Payer`, when they have a
+    part in the request.
+- **`PaymentRequest.GetPaymentIntentId`**: the intent ID the caller's payment into a request must use.
+  Results are `OK`, `DENIED`, `NOT_FOUND`, `NOT_OPEN`, `NOT_A_PAYER` and `ALREADY_PAID`. It is the
+  only source of a collection's intent ID, and clients call it when the user starts to pay.
+- **`PaymentRequest.GetPayers`**: pages a request's payers by `Section` (`UNPAID` or `PAID`), up to
+  100 per page, with `paging_token`, `has_more` and the request's `version`. Results are `OK`,
+  `DENIED` and `NOT_FOUND`.
+- **`PaymentRequestUpdate`** gains `payer_update` (field 3, a `Payer`) and `payer_summary_update`
+  (field 4, a `PayerSummary`).
+- **`CreatePaymentRequestResponse.Result.INVALID_AMOUNT = 9`**, appended after `TEXT_MODERATED`.
+
+### Changed
+
+- **Payments are now announced.** A payment into a request posts a `PaymentRequestUpdate`. Before,
+  no event announced it and clients had to refetch the request.
+- **A request may have no `ends_at`**, which only a collection can have today. Such a request never
+  expires, so a client that treats an `OPEN` request past its `ends_at` as `EXPIRED` must treat a
+  missing one as never expiring.
+- **`GetChatPaymentRequests` no longer lists every request.** An `OPEN` request with no `ends_at` is
+  in neither section: it is reached only from its widget message until it is closed, and then it is
+  listed in `RESOLVED`.
+- **`GetPaymentRequestResponse.payment_intent_id` is legacy.** It is still set for an unpaid share of a
+  split and never set for a collection. New clients should call `GetPaymentIntentId`.
+- **Request text is optional.** `Split.text` is no longer required, and `PaymentRequestText.title`
+  lost its minimum length. A request with no title or description leaves `text` unset.
+- **`messaging.v1.CashContent.payment_request_id`** is now also set on the cash message posted for a
+  contribution to a collection.
+- Swift: swift-protobuf moved heap storage between messages as their sizes changed.
+  `Flipcash_Paymentrequest_V1_PaymentRequestMetadata` now keeps its fields in heap storage and is
+  `@unchecked Sendable`. `PaymentRequestUpdate`, `CreatePaymentRequestResponse`,
+  `GetPaymentRequestResponse`, `ClosePaymentRequestResponse` and `MarkPaidResponse` no longer do and
+  are plain `Sendable`. Their APIs are the same.
+
+### Unchanged
+
+Nothing was renumbered. `INVALID_AMOUNT` is appended to the end of its enum, and every new field
+takes a new number. No service, RPC, message or enum case was removed.
+
 ## 0.27.0
 
 Synced to [`flipcash2-protobuf-api@0d1bf2cb`](https://github.com/code-payments/flipcash2-protobuf-api/commit/0d1bf2cb56962c6ac1cad42d890d9b85650286c3),
