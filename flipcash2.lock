@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 0d1bf2cb56962c6ac1cad42d890d9b85650286c3
-subject: Add LinkUnverified to EmailVerification service (#170)
+commit: 4bdb573973c5a74d63f1a894e0083fb9c932478d
+subject: Extend payment requests with a way to collect a fixed amount from an unbounded number of people (#171)
