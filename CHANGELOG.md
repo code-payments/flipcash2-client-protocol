@@ -8,6 +8,56 @@ called out explicitly even when nothing else did.
 release notes, so a version with no entry here does not release. Write the entry in the same PR that
 syncs the contract, while the diff is still in front of you.
 
+## 0.29.0
+
+Synced to [`flipcash2-protobuf-api@a17c9abe`](https://github.com/code-payments/flipcash2-protobuf-api/commit/a17c9abeaaab038619c94b3e046a405c711ea46a),
+picking up [#172](https://github.com/code-payments/flipcash2-protobuf-api/pull/172).
+
+Adds per-user chat archiving to the Chat service. The wire format is compatible and nothing was
+renumbered, but two new oneof cases on the event stream break exhaustive switches. A client that
+never archives sees no behaviour change.
+
+### Breaking
+
+- **Exhaustive switches over the event stream's oneofs break:** `StreamEventsRequest.type` (new
+  `follow_archive`, field 3) and `StreamEventsResponse.type` (new `follow_archive_ack`, field 4).
+  Swift's generated enums are where this bites. Kotlin code with an `else` branch compiles
+  unchanged, and will silently drop the ack.
+
+### Added
+
+- **`ArchiveChat` and `UnarchiveChat`**, for DMs and groups. Both return `Result { OK, DENIED,
+  NOT_FOUND }` and the caller's `ViewerState` after the write. `UnarchiveChatResponse` also returns
+  the chat's `Metadata` (field 3). Either call on a chat already in that state is a no-op that
+  returns the current state.
+- **`ViewerState.Settings.archive`** (field 2), a new `ArchiveState { archived_at }`. Present if and
+  only if the viewer archived the chat, independent of mute, and versioned with the rest of
+  `ViewerState`. Other devices learn of changes through `MetadataUpdate.ViewerStateChanged`.
+- **`ChatFolder { INBOX = 0, ARCHIVED = 1 }`**, and a `folder` field on `GetDmChatFeedRequest`
+  (field 3) and `GetGroupChatFeedRequest` (field 2). Unset is `INBOX`. A paging token is only valid
+  for the folder it was minted for.
+- **`StreamEventsRequest.FollowArchive { follow, seq }`** and
+  **`StreamEventsResponse.FollowArchiveAck { seq }`**. A user stream doesn't carry archived groups'
+  updates unless it follows the archive. Each stream starts not following, so a client still in the
+  archive after reconnecting sends `FollowArchive` again after `Params`. Read the `ARCHIVED` group
+  feed only after the ack.
+
+### What an archive does on the server
+
+These are behaviours rather than shapes, and they differ from mute:
+
+- **No push is sent for an archived chat**, flagged or not, and it moves no badge. A client can't
+  let mentions or replies through, because those pushes never arrive.
+- **Feeds return only the requested folder.** A client that syncs only `INBOX` no longer sees its
+  archived chats in that read. Code that prunes local chats missing from a full feed read will
+  delete them.
+- **An archived group is quiet on the stream** apart from updates addressed to the viewer, such as
+  their own `ViewerStateChanged` and `MemberLeft`, unless the stream follows the archive. Nothing
+  it missed is replayed: after `UnarchiveChat`, catch up on messages through
+  `messaging.v1.Messaging.GetDelta`. Archived DMs stream as before.
+- **Leaving a chat or being banned ends the archive**, and a return starts in `INBOX`. Only
+  `UnarchiveChat` ends it otherwise. No message, mention or payment moves a chat back.
+
 ## 0.28.0
 
 Synced to [`flipcash2-protobuf-api@4bdb5739`](https://github.com/code-payments/flipcash2-protobuf-api/commit/4bdb573973c5a74d63f1a894e0083fb9c932478d),
