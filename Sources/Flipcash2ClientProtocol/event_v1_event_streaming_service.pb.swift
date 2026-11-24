@@ -43,11 +43,20 @@ public struct Flipcash_Event_V1_StreamEventsRequest: Sendable {
     set {type = .pong(newValue)}
   }
 
+  public var followArchive: Flipcash_Event_V1_StreamEventsRequest.FollowArchive {
+    get {
+      if case .followArchive(let v)? = type {return v}
+      return Flipcash_Event_V1_StreamEventsRequest.FollowArchive()
+    }
+    set {type = .followArchive(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
     case params(Flipcash_Event_V1_StreamEventsRequest.Params)
     case pong(Flipcash_Event_V1_ClientPong)
+    case followArchive(Flipcash_Event_V1_StreamEventsRequest.FollowArchive)
 
   }
 
@@ -107,6 +116,59 @@ public struct Flipcash_Event_V1_StreamEventsRequest: Sendable {
 
     fileprivate var _auth: Flipcash_Common_V1_Auth? = nil
     fileprivate var _ts: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
+  }
+
+  /// FollowArchive tells a user stream whether to carry the updates of the
+  /// group chats the user has archived (see chat.v1.Chat.ArchiveChat). A
+  /// stream opens not following them. The client turns following on while
+  /// the user is looking at their archive, i.e. the ARCHIVED folder of
+  /// chat.v1.Chat.GetGroupChatFeed or any archived group however it was
+  /// opened, and off when they leave it; moving between the folder and an
+  /// archived group keeps it on. Archived DMs are carried whatever the
+  /// setting, as every DM is.
+  ///
+  /// While following, the stream carries every archived group's updates as
+  /// it does an INBOX group's: a group archived meanwhile stays carried, and
+  /// one unarchived is carried whatever the setting. While not following, a
+  /// group archived meanwhile stops being carried, apart from what is
+  /// addressed to the user personally (see StreamEvents).
+  ///
+  /// The setting is the stream's own: the user's other streams, on this
+  /// device or another, are unaffected, and a new stream starts not
+  /// following, so a client still in the archive when it reconnects sends
+  /// FollowArchive again right after Params.
+  ///
+  /// The server answers every FollowArchive with a
+  /// StreamEventsResponse.FollowArchiveAck carrying its seq, in order, once
+  /// the stream does what was asked: after one turning following on, the
+  /// stream carries the archived groups' updates from the ack on, so the
+  /// client reads the ARCHIVED folder only after the ack (see
+  /// chat.v1.Chat.GetGroupChatFeed). After one turning it off the stream may
+  /// keep carrying them for a short while, and the client ignores what it
+  /// has no use for. Turning on a stream already following, or off one not
+  /// following, changes nothing and is still answered. Only a user stream
+  /// follows an archive: a preview stream ignores FollowArchive and sends no
+  /// ack.
+  public struct FollowArchive: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// Whether the stream follows the user's archive from now on.
+    public var follow: Bool = false
+
+    /// Chosen by the client and echoed in the ack, so a client that turns
+    /// following on and off in quick succession can tell which request an
+    /// ack answers. A client increases it with every FollowArchive it
+    /// sends on a stream, so the ack carrying the highest seq is the one
+    /// answering its latest request and any lower one is stale. The server
+    /// neither checks nor relies on it: requests take effect in the order
+    /// they are sent, whatever their seq.
+    public var seq: UInt64 = 0
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
   }
 
   /// ChatPreviewParams targets a stream at a preview of a single group chat:
@@ -221,13 +283,37 @@ public struct Flipcash_Event_V1_StreamEventsResponse: Sendable {
     set {type = .events(newValue)}
   }
 
+  public var followArchiveAck: Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck {
+    get {
+      if case .followArchiveAck(let v)? = type {return v}
+      return Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck()
+    }
+    set {type = .followArchiveAck(newValue)}
+  }
+
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public enum OneOf_Type: Equatable, Sendable {
     case ping(Flipcash_Event_V1_ServerPing)
     case error(Flipcash_Event_V1_StreamEventsResponse.StreamError)
     case events(Flipcash_Event_V1_EventBatch)
+    case followArchiveAck(Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck)
 
+  }
+
+  /// FollowArchiveAck answers a StreamEventsRequest.FollowArchive, sent once
+  /// the stream does what it asked.
+  public struct FollowArchiveAck: Sendable {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The seq of the FollowArchive this answers.
+    public var seq: UInt64 = 0
+
+    public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    public init() {}
   }
 
   public struct StreamError: Sendable {
@@ -373,7 +459,7 @@ fileprivate let _protobuf_package = "flipcash.event.v1"
 
 extension Flipcash_Event_V1_StreamEventsRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".StreamEventsRequest"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}params\0\u{1}pong\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}params\0\u{1}pong\0\u{3}follow_archive\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -407,6 +493,19 @@ extension Flipcash_Event_V1_StreamEventsRequest: SwiftProtobuf.Message, SwiftPro
           self.type = .pong(v)
         }
       }()
+      case 3: try {
+        var v: Flipcash_Event_V1_StreamEventsRequest.FollowArchive?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .followArchive(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .followArchive(v)
+        }
+      }()
       default: break
       }
     }
@@ -425,6 +524,10 @@ extension Flipcash_Event_V1_StreamEventsRequest: SwiftProtobuf.Message, SwiftPro
     case .pong?: try {
       guard case .pong(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    }()
+    case .followArchive?: try {
+      guard case .followArchive(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     }()
     case nil: break
     }
@@ -494,6 +597,41 @@ extension Flipcash_Event_V1_StreamEventsRequest.Params: SwiftProtobuf.Message, S
   }
 }
 
+extension Flipcash_Event_V1_StreamEventsRequest.FollowArchive: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Event_V1_StreamEventsRequest.protoMessageName + ".FollowArchive"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}follow\0\u{1}seq\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBoolField(value: &self.follow) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.seq) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.follow != false {
+      try visitor.visitSingularBoolField(value: self.follow, fieldNumber: 1)
+    }
+    if self.seq != 0 {
+      try visitor.visitSingularUInt64Field(value: self.seq, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Event_V1_StreamEventsRequest.FollowArchive, rhs: Flipcash_Event_V1_StreamEventsRequest.FollowArchive) -> Bool {
+    if lhs.follow != rhs.follow {return false}
+    if lhs.seq != rhs.seq {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Event_V1_StreamEventsRequest.protoMessageName + ".ChatPreviewParams"
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}chat_id\0\u{3}view_mode\0")
@@ -535,7 +673,7 @@ extension Flipcash_Event_V1_StreamEventsRequest.ChatPreviewParams: SwiftProtobuf
 
 extension Flipcash_Event_V1_StreamEventsResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".StreamEventsResponse"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}ping\0\u{1}error\0\u{1}events\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}ping\0\u{1}error\0\u{1}events\0\u{3}follow_archive_ack\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -582,6 +720,19 @@ extension Flipcash_Event_V1_StreamEventsResponse: SwiftProtobuf.Message, SwiftPr
           self.type = .events(v)
         }
       }()
+      case 4: try {
+        var v: Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck?
+        var hadOneofValue = false
+        if let current = self.type {
+          hadOneofValue = true
+          if case .followArchiveAck(let m) = current {v = m}
+        }
+        try decoder.decodeSingularMessageField(value: &v)
+        if let v = v {
+          if hadOneofValue {try decoder.handleConflictingOneOf()}
+          self.type = .followArchiveAck(v)
+        }
+      }()
       default: break
       }
     }
@@ -605,6 +756,10 @@ extension Flipcash_Event_V1_StreamEventsResponse: SwiftProtobuf.Message, SwiftPr
       guard case .events(let v)? = self.type else { preconditionFailure() }
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     }()
+    case .followArchiveAck?: try {
+      guard case .followArchiveAck(let v)? = self.type else { preconditionFailure() }
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }()
     case nil: break
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -612,6 +767,36 @@ extension Flipcash_Event_V1_StreamEventsResponse: SwiftProtobuf.Message, SwiftPr
 
   public static func ==(lhs: Flipcash_Event_V1_StreamEventsResponse, rhs: Flipcash_Event_V1_StreamEventsResponse) -> Bool {
     if lhs.type != rhs.type {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = Flipcash_Event_V1_StreamEventsResponse.protoMessageName + ".FollowArchiveAck"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}seq\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.seq) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.seq != 0 {
+      try visitor.visitSingularUInt64Field(value: self.seq, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck, rhs: Flipcash_Event_V1_StreamEventsResponse.FollowArchiveAck) -> Bool {
+    if lhs.seq != rhs.seq {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

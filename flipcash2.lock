@@ -1,4 +1,4 @@
 # Pinned upstream contract. Regenerate with scripts/sync-protos.sh <sha>.
 upstream: code-payments/flipcash2-protobuf-api
-commit: 4bdb573973c5a74d63f1a894e0083fb9c932478d
-subject: Extend payment requests with a way to collect a fixed amount from an unbounded number of people (#171)
+commit: a17c9abeaaab038619c94b3e046a405c711ea46a
+subject: Add chat archiving to the Chat service (#172)
