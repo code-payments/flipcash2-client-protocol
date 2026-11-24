@@ -164,6 +164,30 @@ public enum Flipcash_Chat_V1_Chat {
                 method: "UnmuteChat"
             )
         }
+        /// Namespace for "ArchiveChat" metadata.
+        public enum ArchiveChat {
+            /// Request type for "ArchiveChat".
+            public typealias Input = Flipcash_Chat_V1_ArchiveChatRequest
+            /// Response type for "ArchiveChat".
+            public typealias Output = Flipcash_Chat_V1_ArchiveChatResponse
+            /// Descriptor for "ArchiveChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "ArchiveChat"
+            )
+        }
+        /// Namespace for "UnarchiveChat" metadata.
+        public enum UnarchiveChat {
+            /// Request type for "UnarchiveChat".
+            public typealias Input = Flipcash_Chat_V1_UnarchiveChatRequest
+            /// Response type for "UnarchiveChat".
+            public typealias Output = Flipcash_Chat_V1_UnarchiveChatResponse
+            /// Descriptor for "UnarchiveChat".
+            public static let descriptor = GRPCCore.MethodDescriptor(
+                service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "flipcash.chat.v1.Chat"),
+                method: "UnarchiveChat"
+            )
+        }
         /// Namespace for "EnterLobby" metadata.
         public enum EnterLobby {
             /// Request type for "EnterLobby".
@@ -430,6 +454,8 @@ public enum Flipcash_Chat_V1_Chat {
             EditChat.descriptor,
             MuteChat.descriptor,
             UnmuteChat.descriptor,
+            ArchiveChat.descriptor,
+            UnarchiveChat.descriptor,
             EnterLobby.descriptor,
             LeaveLobby.descriptor,
             GetLobbyMembers.descriptor,
@@ -533,6 +559,17 @@ extension Flipcash_Chat_V1_Chat {
         /// > Read together, pagination guarantees the set (every chat exactly once)
         /// > and the stream guarantees freshness and ordering. The local last_activity
         /// > sort is maintained by the client from the stream after the initial read.
+        /// > 
+        /// > The request's folder selects which of the caller's chats are listed:
+        /// > INBOX, the default, those they have not archived, and ARCHIVED those
+        /// > they have (see ArchiveChat). The event stream carries archived DMs as
+        /// > it does any other, so the contract above holds for both folders. A
+        /// > chat the caller archives or unarchives moves between folders on the
+        /// > write, as its viewer_state.settings.archive says; a read under way
+        /// > when it moves may briefly list it in the folder it left, and the
+        /// > client files it by its archive state, which it learns from the
+        /// > ArchiveChat or UnarchiveChat response or from
+        /// > MetadataUpdate.ViewerStateChanged.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetDmChatFeedRequest` message.
@@ -577,6 +614,18 @@ extension Flipcash_Chat_V1_Chat {
         /// > being read. Every page is served only for groups the caller is still a
         /// > member of at the time of that page; a group the caller left between
         /// > pages is dropped, and its removal arrives on the stream.
+        /// > 
+        /// > The request's folder selects INBOX or ARCHIVED groups as
+        /// > GetDmChatFeed's does, and the contract above is the INBOX folder's.
+        /// > The event stream carries archived groups' updates only while it
+        /// > follows the user's archive (see
+        /// > event.v1.StreamEventsRequest.FollowArchive), so for ARCHIVED, step 1
+        /// > also turns following on, and the first call waits for the stream's
+        /// > FollowArchiveAck. The contract then holds for as long as the stream
+        /// > follows; a client that stops following and comes back to the archive
+        /// > later reads the folder again. A group archived or unarchived between
+        /// > pages is dropped from the pages of the folder it left once the server
+        /// > sees the move.
         /// > 
         /// > The feed is meant for list views, so a chat's cover_picture may be
         /// > omitted from it (see Metadata). Fetch it with GetChat when the client
@@ -853,6 +902,10 @@ extension Flipcash_Chat_V1_Chat {
         /// > KeyEnvelope), so returning means being admitted from the lobby or
         /// > joining with an invite again. The creator's envelope is kept, since no
         /// > one else could give them another.
+        /// > 
+        /// > Leaving also ends the caller's archive of the chat, if any (see
+        /// > ArchiveChat), as being banned does: a return starts in the INBOX
+        /// > folder.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -976,6 +1029,90 @@ extension Flipcash_Chat_V1_Chat {
             deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnmuteChatResponse>,
             options: GRPCCore.CallOptions,
             onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnmuteChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "ArchiveChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > ArchiveChat archives a chat, a DM or a group, for the caller.
+        /// > 
+        /// > Only a member may archive, and they stay a member. An archived chat is
+        /// > listed in the caller's ARCHIVED folder of GetDmChatFeed or
+        /// > GetGroupChatFeed instead of their INBOX, and is quiet for them:
+        /// >  - No push is sent to them for anything in it, flagged or not, and it
+        /// >    moves no badge. This is unlike a mute, whose pushes are still sent.
+        /// >  - For a group, their event streams carry only what is addressed to
+        /// >    them personally, such as MetadataUpdate.ViewerStateChanged (any
+        /// >    change to their own state there, the archive and its removal
+        /// >    included) and the RosterUpdate.MemberLeft of their own departure,
+        /// >    except a stream following their archive while they look at it (see
+        /// >    event.v1.StreamEventsRequest.FollowArchive), which carries the
+        /// >    group's updates as before. An archived DM's updates are streamed as
+        /// >    before.
+        /// > Everything else about the chat is unchanged: GetChat, the messaging
+        /// > RPCs and everything a member may do in it work as before, and nobody
+        /// > else can tell it is archived.
+        /// > 
+        /// > Only UnarchiveChat ends an archive while the caller is a member.
+        /// > Nothing that happens in the chat (a message, a payment, a reaction, a
+        /// > mention) and nothing the caller does there (reading, sending) moves it
+        /// > back to the INBOX. Leaving the chat or being banned from it ends the
+        /// > archive with the membership, and a return starts in the INBOX.
+        /// > 
+        /// > Archiving an archived chat is a no-op that returns the current state.
+        /// > Every real change reaches the caller's other devices as a
+        /// > MetadataUpdate.ViewerStateChanged on the event stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_ArchiveChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_ArchiveChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_ArchiveChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func archiveChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_ArchiveChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_ArchiveChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_ArchiveChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_ArchiveChatResponse>) async throws -> Result
+        ) async throws -> Result where Result: Sendable
+
+        /// Call the "UnarchiveChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnarchiveChat moves a chat the caller archived back to their INBOX
+        /// > folder. From then on it is a chat like any other: pushes are sent for
+        /// > it, subject to any mute, and for a group every event stream carries
+        /// > its updates again. Nothing a stream did not carry while the group was
+        /// > archived is replayed: the response carries the chat's metadata as of
+        /// > the unarchive, and the client catches up on its messages from the
+        /// > latest event sequence it holds (see messaging.v1.Messaging.GetDelta).
+        /// > 
+        /// > Only a member may unarchive. Unarchiving a chat that is not archived is
+        /// > a no-op that returns the current state. Every real change reaches the
+        /// > caller's other devices as a MetadataUpdate.ViewerStateChanged on the
+        /// > event stream, after which they catch up on a group the same way.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnarchiveChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnarchiveChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnarchiveChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        func unarchiveChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnarchiveChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnarchiveChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnarchiveChatResponse>,
+            options: GRPCCore.CallOptions,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnarchiveChatResponse>) async throws -> Result
         ) async throws -> Result where Result: Sendable
 
         /// Call the "EnterLobby" method.
@@ -1865,6 +2002,17 @@ extension Flipcash_Chat_V1_Chat {
         /// > Read together, pagination guarantees the set (every chat exactly once)
         /// > and the stream guarantees freshness and ordering. The local last_activity
         /// > sort is maintained by the client from the stream after the initial read.
+        /// > 
+        /// > The request's folder selects which of the caller's chats are listed:
+        /// > INBOX, the default, those they have not archived, and ARCHIVED those
+        /// > they have (see ArchiveChat). The event stream carries archived DMs as
+        /// > it does any other, so the contract above holds for both folders. A
+        /// > chat the caller archives or unarchives moves between folders on the
+        /// > write, as its viewer_state.settings.archive says; a read under way
+        /// > when it moves may briefly list it in the folder it left, and the
+        /// > client files it by its archive state, which it learns from the
+        /// > ArchiveChat or UnarchiveChat response or from
+        /// > MetadataUpdate.ViewerStateChanged.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_GetDmChatFeedRequest` message.
@@ -1920,6 +2068,18 @@ extension Flipcash_Chat_V1_Chat {
         /// > being read. Every page is served only for groups the caller is still a
         /// > member of at the time of that page; a group the caller left between
         /// > pages is dropped, and its removal arrives on the stream.
+        /// > 
+        /// > The request's folder selects INBOX or ARCHIVED groups as
+        /// > GetDmChatFeed's does, and the contract above is the INBOX folder's.
+        /// > The event stream carries archived groups' updates only while it
+        /// > follows the user's archive (see
+        /// > event.v1.StreamEventsRequest.FollowArchive), so for ARCHIVED, step 1
+        /// > also turns following on, and the first call waits for the stream's
+        /// > FollowArchiveAck. The contract then holds for as long as the stream
+        /// > follows; a client that stops following and comes back to the archive
+        /// > later reads the folder again. A group archived or unarchived between
+        /// > pages is dropped from the pages of the folder it left once the server
+        /// > sees the move.
         /// > 
         /// > The feed is meant for list views, so a chat's cover_picture may be
         /// > omitted from it (see Metadata). Fetch it with GetChat when the client
@@ -2262,6 +2422,10 @@ extension Flipcash_Chat_V1_Chat {
         /// > KeyEnvelope), so returning means being admitted from the lobby or
         /// > joining with an invite again. The creator's envelope is kept, since no
         /// > one else could give them another.
+        /// > 
+        /// > Leaving also ends the caller's archive of the chat, if any (see
+        /// > ArchiveChat), as being banned does: a return starts in the INBOX
+        /// > folder.
         ///
         /// - Parameters:
         ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -2424,6 +2588,112 @@ extension Flipcash_Chat_V1_Chat {
             try await self.client.unary(
                 request: request,
                 descriptor: Flipcash_Chat_V1_Chat.Method.UnmuteChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "ArchiveChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > ArchiveChat archives a chat, a DM or a group, for the caller.
+        /// > 
+        /// > Only a member may archive, and they stay a member. An archived chat is
+        /// > listed in the caller's ARCHIVED folder of GetDmChatFeed or
+        /// > GetGroupChatFeed instead of their INBOX, and is quiet for them:
+        /// >  - No push is sent to them for anything in it, flagged or not, and it
+        /// >    moves no badge. This is unlike a mute, whose pushes are still sent.
+        /// >  - For a group, their event streams carry only what is addressed to
+        /// >    them personally, such as MetadataUpdate.ViewerStateChanged (any
+        /// >    change to their own state there, the archive and its removal
+        /// >    included) and the RosterUpdate.MemberLeft of their own departure,
+        /// >    except a stream following their archive while they look at it (see
+        /// >    event.v1.StreamEventsRequest.FollowArchive), which carries the
+        /// >    group's updates as before. An archived DM's updates are streamed as
+        /// >    before.
+        /// > Everything else about the chat is unchanged: GetChat, the messaging
+        /// > RPCs and everything a member may do in it work as before, and nobody
+        /// > else can tell it is archived.
+        /// > 
+        /// > Only UnarchiveChat ends an archive while the caller is a member.
+        /// > Nothing that happens in the chat (a message, a payment, a reaction, a
+        /// > mention) and nothing the caller does there (reading, sending) moves it
+        /// > back to the INBOX. Leaving the chat or being banned from it ends the
+        /// > archive with the membership, and a return starts in the INBOX.
+        /// > 
+        /// > Archiving an archived chat is a no-op that returns the current state.
+        /// > Every real change reaches the caller's other devices as a
+        /// > MetadataUpdate.ViewerStateChanged on the event stream.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_ArchiveChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_ArchiveChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_ArchiveChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func archiveChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_ArchiveChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_ArchiveChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_ArchiveChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_ArchiveChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.ArchiveChat.descriptor,
+                serializer: serializer,
+                deserializer: deserializer,
+                options: options,
+                onResponse: handleResponse
+            )
+        }
+
+        /// Call the "UnarchiveChat" method.
+        ///
+        /// > Source IDL Documentation:
+        /// >
+        /// > UnarchiveChat moves a chat the caller archived back to their INBOX
+        /// > folder. From then on it is a chat like any other: pushes are sent for
+        /// > it, subject to any mute, and for a group every event stream carries
+        /// > its updates again. Nothing a stream did not carry while the group was
+        /// > archived is replayed: the response carries the chat's metadata as of
+        /// > the unarchive, and the client catches up on its messages from the
+        /// > latest event sequence it holds (see messaging.v1.Messaging.GetDelta).
+        /// > 
+        /// > Only a member may unarchive. Unarchiving a chat that is not archived is
+        /// > a no-op that returns the current state. Every real change reaches the
+        /// > caller's other devices as a MetadataUpdate.ViewerStateChanged on the
+        /// > event stream, after which they catch up on a group the same way.
+        ///
+        /// - Parameters:
+        ///   - request: A request containing a single `Flipcash_Chat_V1_UnarchiveChatRequest` message.
+        ///   - serializer: A serializer for `Flipcash_Chat_V1_UnarchiveChatRequest` messages.
+        ///   - deserializer: A deserializer for `Flipcash_Chat_V1_UnarchiveChatResponse` messages.
+        ///   - options: Options to apply to this RPC.
+        ///   - handleResponse: A closure which handles the response, the result of which is
+        ///       returned to the caller. Returning from the closure will cancel the RPC if it
+        ///       hasn't already finished.
+        /// - Returns: The result of `handleResponse`.
+        public func unarchiveChat<Result>(
+            request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnarchiveChatRequest>,
+            serializer: some GRPCCore.MessageSerializer<Flipcash_Chat_V1_UnarchiveChatRequest>,
+            deserializer: some GRPCCore.MessageDeserializer<Flipcash_Chat_V1_UnarchiveChatResponse>,
+            options: GRPCCore.CallOptions = .defaults,
+            onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnarchiveChatResponse>) async throws -> Result = { response in
+                try response.message
+            }
+        ) async throws -> Result where Result: Sendable {
+            try await self.client.unary(
+                request: request,
+                descriptor: Flipcash_Chat_V1_Chat.Method.UnarchiveChat.descriptor,
                 serializer: serializer,
                 deserializer: deserializer,
                 options: options,
@@ -3532,6 +3802,17 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Read together, pagination guarantees the set (every chat exactly once)
     /// > and the stream guarantees freshness and ordering. The local last_activity
     /// > sort is maintained by the client from the stream after the initial read.
+    /// > 
+    /// > The request's folder selects which of the caller's chats are listed:
+    /// > INBOX, the default, those they have not archived, and ARCHIVED those
+    /// > they have (see ArchiveChat). The event stream carries archived DMs as
+    /// > it does any other, so the contract above holds for both folders. A
+    /// > chat the caller archives or unarchives moves between folders on the
+    /// > write, as its viewer_state.settings.archive says; a read under way
+    /// > when it moves may briefly list it in the folder it left, and the
+    /// > client files it by its archive state, which it learns from the
+    /// > ArchiveChat or UnarchiveChat response or from
+    /// > MetadataUpdate.ViewerStateChanged.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_GetDmChatFeedRequest` message.
@@ -3582,6 +3863,18 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > being read. Every page is served only for groups the caller is still a
     /// > member of at the time of that page; a group the caller left between
     /// > pages is dropped, and its removal arrives on the stream.
+    /// > 
+    /// > The request's folder selects INBOX or ARCHIVED groups as
+    /// > GetDmChatFeed's does, and the contract above is the INBOX folder's.
+    /// > The event stream carries archived groups' updates only while it
+    /// > follows the user's archive (see
+    /// > event.v1.StreamEventsRequest.FollowArchive), so for ARCHIVED, step 1
+    /// > also turns following on, and the first call waits for the stream's
+    /// > FollowArchiveAck. The contract then holds for as long as the stream
+    /// > follows; a client that stops following and comes back to the archive
+    /// > later reads the folder again. A group archived or unarchived between
+    /// > pages is dropped from the pages of the folder it left once the server
+    /// > sees the move.
     /// > 
     /// > The feed is meant for list views, so a chat's cover_picture may be
     /// > omitted from it (see Metadata). Fetch it with GetChat when the client
@@ -3894,6 +4187,10 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > KeyEnvelope), so returning means being admitted from the lobby or
     /// > joining with an invite again. The creator's envelope is kept, since no
     /// > one else could give them another.
+    /// > 
+    /// > Leaving also ends the caller's archive of the chat, if any (see
+    /// > ArchiveChat), as being banned does: a return starts in the INBOX
+    /// > folder.
     ///
     /// - Parameters:
     ///   - request: A request containing a single `Flipcash_Chat_V1_LeaveChatRequest` message.
@@ -4038,6 +4335,102 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             request: request,
             serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_UnmuteChatRequest>(),
             deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_UnmuteChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ArchiveChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > ArchiveChat archives a chat, a DM or a group, for the caller.
+    /// > 
+    /// > Only a member may archive, and they stay a member. An archived chat is
+    /// > listed in the caller's ARCHIVED folder of GetDmChatFeed or
+    /// > GetGroupChatFeed instead of their INBOX, and is quiet for them:
+    /// >  - No push is sent to them for anything in it, flagged or not, and it
+    /// >    moves no badge. This is unlike a mute, whose pushes are still sent.
+    /// >  - For a group, their event streams carry only what is addressed to
+    /// >    them personally, such as MetadataUpdate.ViewerStateChanged (any
+    /// >    change to their own state there, the archive and its removal
+    /// >    included) and the RosterUpdate.MemberLeft of their own departure,
+    /// >    except a stream following their archive while they look at it (see
+    /// >    event.v1.StreamEventsRequest.FollowArchive), which carries the
+    /// >    group's updates as before. An archived DM's updates are streamed as
+    /// >    before.
+    /// > Everything else about the chat is unchanged: GetChat, the messaging
+    /// > RPCs and everything a member may do in it work as before, and nobody
+    /// > else can tell it is archived.
+    /// > 
+    /// > Only UnarchiveChat ends an archive while the caller is a member.
+    /// > Nothing that happens in the chat (a message, a payment, a reaction, a
+    /// > mention) and nothing the caller does there (reading, sending) moves it
+    /// > back to the INBOX. Leaving the chat or being banned from it ends the
+    /// > archive with the membership, and a return starts in the INBOX.
+    /// > 
+    /// > Archiving an archived chat is a no-op that returns the current state.
+    /// > Every real change reaches the caller's other devices as a
+    /// > MetadataUpdate.ViewerStateChanged on the event stream.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_ArchiveChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func archiveChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_ArchiveChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_ArchiveChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.archiveChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_ArchiveChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_ArchiveChatResponse>(),
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnarchiveChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnarchiveChat moves a chat the caller archived back to their INBOX
+    /// > folder. From then on it is a chat like any other: pushes are sent for
+    /// > it, subject to any mute, and for a group every event stream carries
+    /// > its updates again. Nothing a stream did not carry while the group was
+    /// > archived is replayed: the response carries the chat's metadata as of
+    /// > the unarchive, and the client catches up on its messages from the
+    /// > latest event sequence it holds (see messaging.v1.Messaging.GetDelta).
+    /// > 
+    /// > Only a member may unarchive. Unarchiving a chat that is not archived is
+    /// > a no-op that returns the current state. Every real change reaches the
+    /// > caller's other devices as a MetadataUpdate.ViewerStateChanged on the
+    /// > event stream, after which they catch up on a group the same way.
+    ///
+    /// - Parameters:
+    ///   - request: A request containing a single `Flipcash_Chat_V1_UnarchiveChatRequest` message.
+    ///   - options: Options to apply to this RPC.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unarchiveChat<Result>(
+        request: GRPCCore.ClientRequest<Flipcash_Chat_V1_UnarchiveChatRequest>,
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnarchiveChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        try await self.unarchiveChat(
+            request: request,
+            serializer: GRPCProtobuf.ProtobufSerializer<Flipcash_Chat_V1_UnarchiveChatRequest>(),
+            deserializer: GRPCProtobuf.ProtobufDeserializer<Flipcash_Chat_V1_UnarchiveChatResponse>(),
             options: options,
             onResponse: handleResponse
         )
@@ -5042,6 +5435,17 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > Read together, pagination guarantees the set (every chat exactly once)
     /// > and the stream guarantees freshness and ordering. The local last_activity
     /// > sort is maintained by the client from the stream after the initial read.
+    /// > 
+    /// > The request's folder selects which of the caller's chats are listed:
+    /// > INBOX, the default, those they have not archived, and ARCHIVED those
+    /// > they have (see ArchiveChat). The event stream carries archived DMs as
+    /// > it does any other, so the contract above holds for both folders. A
+    /// > chat the caller archives or unarchives moves between folders on the
+    /// > write, as its viewer_state.settings.archive says; a read under way
+    /// > when it moves may briefly list it in the folder it left, and the
+    /// > client files it by its archive state, which it learns from the
+    /// > ArchiveChat or UnarchiveChat response or from
+    /// > MetadataUpdate.ViewerStateChanged.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -5096,6 +5500,18 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > being read. Every page is served only for groups the caller is still a
     /// > member of at the time of that page; a group the caller left between
     /// > pages is dropped, and its removal arrives on the stream.
+    /// > 
+    /// > The request's folder selects INBOX or ARCHIVED groups as
+    /// > GetDmChatFeed's does, and the contract above is the INBOX folder's.
+    /// > The event stream carries archived groups' updates only while it
+    /// > follows the user's archive (see
+    /// > event.v1.StreamEventsRequest.FollowArchive), so for ARCHIVED, step 1
+    /// > also turns following on, and the first call waits for the stream's
+    /// > FollowArchiveAck. The contract then holds for as long as the stream
+    /// > follows; a client that stops following and comes back to the archive
+    /// > later reads the folder again. A group archived or unarchived between
+    /// > pages is dropped from the pages of the folder it left once the server
+    /// > sees the move.
     /// > 
     /// > The feed is meant for list views, so a chat's cover_picture may be
     /// > omitted from it (see Metadata). Fetch it with GetChat when the client
@@ -5432,6 +5848,10 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
     /// > KeyEnvelope), so returning means being admitted from the lobby or
     /// > joining with an invite again. The creator's envelope is kept, since no
     /// > one else could give them another.
+    /// > 
+    /// > Leaving also ends the caller's archive of the chat, if any (see
+    /// > ArchiveChat), as being banned does: a return starts in the INBOX
+    /// > folder.
     ///
     /// - Parameters:
     ///   - message: request message to send.
@@ -5591,6 +6011,110 @@ extension Flipcash_Chat_V1_Chat.ClientProtocol {
             metadata: metadata
         )
         return try await self.unmuteChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "ArchiveChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > ArchiveChat archives a chat, a DM or a group, for the caller.
+    /// > 
+    /// > Only a member may archive, and they stay a member. An archived chat is
+    /// > listed in the caller's ARCHIVED folder of GetDmChatFeed or
+    /// > GetGroupChatFeed instead of their INBOX, and is quiet for them:
+    /// >  - No push is sent to them for anything in it, flagged or not, and it
+    /// >    moves no badge. This is unlike a mute, whose pushes are still sent.
+    /// >  - For a group, their event streams carry only what is addressed to
+    /// >    them personally, such as MetadataUpdate.ViewerStateChanged (any
+    /// >    change to their own state there, the archive and its removal
+    /// >    included) and the RosterUpdate.MemberLeft of their own departure,
+    /// >    except a stream following their archive while they look at it (see
+    /// >    event.v1.StreamEventsRequest.FollowArchive), which carries the
+    /// >    group's updates as before. An archived DM's updates are streamed as
+    /// >    before.
+    /// > Everything else about the chat is unchanged: GetChat, the messaging
+    /// > RPCs and everything a member may do in it work as before, and nobody
+    /// > else can tell it is archived.
+    /// > 
+    /// > Only UnarchiveChat ends an archive while the caller is a member.
+    /// > Nothing that happens in the chat (a message, a payment, a reaction, a
+    /// > mention) and nothing the caller does there (reading, sending) moves it
+    /// > back to the INBOX. Leaving the chat or being banned from it ends the
+    /// > archive with the membership, and a return starts in the INBOX.
+    /// > 
+    /// > Archiving an archived chat is a no-op that returns the current state.
+    /// > Every real change reaches the caller's other devices as a
+    /// > MetadataUpdate.ViewerStateChanged on the event stream.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func archiveChat<Result>(
+        _ message: Flipcash_Chat_V1_ArchiveChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_ArchiveChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_ArchiveChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.archiveChat(
+            request: request,
+            options: options,
+            onResponse: handleResponse
+        )
+    }
+
+    /// Call the "UnarchiveChat" method.
+    ///
+    /// > Source IDL Documentation:
+    /// >
+    /// > UnarchiveChat moves a chat the caller archived back to their INBOX
+    /// > folder. From then on it is a chat like any other: pushes are sent for
+    /// > it, subject to any mute, and for a group every event stream carries
+    /// > its updates again. Nothing a stream did not carry while the group was
+    /// > archived is replayed: the response carries the chat's metadata as of
+    /// > the unarchive, and the client catches up on its messages from the
+    /// > latest event sequence it holds (see messaging.v1.Messaging.GetDelta).
+    /// > 
+    /// > Only a member may unarchive. Unarchiving a chat that is not archived is
+    /// > a no-op that returns the current state. Every real change reaches the
+    /// > caller's other devices as a MetadataUpdate.ViewerStateChanged on the
+    /// > event stream, after which they catch up on a group the same way.
+    ///
+    /// - Parameters:
+    ///   - message: request message to send.
+    ///   - metadata: Additional metadata to send, defaults to empty.
+    ///   - options: Options to apply to this RPC, defaults to `.defaults`.
+    ///   - handleResponse: A closure which handles the response, the result of which is
+    ///       returned to the caller. Returning from the closure will cancel the RPC if it
+    ///       hasn't already finished.
+    /// - Returns: The result of `handleResponse`.
+    public func unarchiveChat<Result>(
+        _ message: Flipcash_Chat_V1_UnarchiveChatRequest,
+        metadata: GRPCCore.Metadata = [:],
+        options: GRPCCore.CallOptions = .defaults,
+        onResponse handleResponse: @Sendable @escaping (GRPCCore.ClientResponse<Flipcash_Chat_V1_UnarchiveChatResponse>) async throws -> Result = { response in
+            try response.message
+        }
+    ) async throws -> Result where Result: Sendable {
+        let request = GRPCCore.ClientRequest<Flipcash_Chat_V1_UnarchiveChatRequest>(
+            message: message,
+            metadata: metadata
+        )
+        return try await self.unarchiveChat(
             request: request,
             options: options,
             onResponse: handleResponse

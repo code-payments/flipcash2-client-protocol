@@ -63,6 +63,44 @@ public enum Flipcash_Chat_V1_ChatType: SwiftProtobuf.Enum, Swift.CaseIterable {
 
 }
 
+/// ChatFolder is which of a user's two lists of their chats a chat is in, as
+/// GetDmChatFeed and GetGroupChatFeed read them. Every chat a user is a member
+/// of is in exactly one: ARCHIVED while they have archived it (see
+/// ViewerState.Settings.archive), INBOX otherwise.
+public enum Flipcash_Chat_V1_ChatFolder: SwiftProtobuf.Enum, Swift.CaseIterable {
+  public typealias RawValue = Int
+  case inbox // = 0
+  case archived // = 1
+  case UNRECOGNIZED(Int)
+
+  public init() {
+    self = .inbox
+  }
+
+  public init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .inbox
+    case 1: self = .archived
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  public var rawValue: Int {
+    switch self {
+    case .inbox: return 0
+    case .archived: return 1
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  public static let allCases: [Flipcash_Chat_V1_ChatFolder] = [
+    .inbox,
+    .archived,
+  ]
+
+}
+
 public struct Flipcash_Chat_V1_Metadata: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -1029,7 +1067,11 @@ public struct Flipcash_Chat_V1_MetadataUpdate: Sendable {
     fileprivate var _newLastActivity: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
   }
 
-  /// The receiving user's own state for the chat has changed
+  /// The receiving user's own state for the chat has changed. Delivered for
+  /// a group the user has archived even on a stream not following their
+  /// archive, unlike the group's other updates (see Chat.ArchiveChat), so
+  /// their devices learn of the archive, its removal and every other change
+  /// to their state there.
   public struct ViewerStateChanged: Sendable {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -1475,11 +1517,25 @@ public struct Flipcash_Chat_V1_ViewerState: Sendable {
     /// Clears the value of `mute`. Subsequent reads from it will return its default value.
     public mutating func clearMute() {self._mute = nil}
 
+    /// Present if and only if the viewer has archived the chat (see
+    /// Chat.ArchiveChat), which decides the ChatFolder it is listed in.
+    /// Independent of mute: archiving or unarchiving leaves a mute as it
+    /// is.
+    public var archive: Flipcash_Chat_V1_ArchiveState {
+      get {return _archive ?? Flipcash_Chat_V1_ArchiveState()}
+      set {_archive = newValue}
+    }
+    /// Returns true if `archive` has been explicitly set.
+    public var hasArchive: Bool {return self._archive != nil}
+    /// Clears the value of `archive`. Subsequent reads from it will return its default value.
+    public mutating func clearArchive() {self._archive = nil}
+
     public var unknownFields = SwiftProtobuf.UnknownStorage()
 
     public init() {}
 
     fileprivate var _mute: Flipcash_Chat_V1_MuteState? = nil
+    fileprivate var _archive: Flipcash_Chat_V1_ArchiveState? = nil
   }
 
   /// Permissions are the actions the viewer may take in the chat. Each flag
@@ -1759,6 +1815,36 @@ public struct Flipcash_Chat_V1_MuteState: Sendable {
   }
 
   public init() {}
+}
+
+/// ArchiveState is the viewer's archive of a chat (see Chat.ArchiveChat). An
+/// archived chat is listed only in the viewer's ARCHIVED ChatFolder and is
+/// quiet for them: no push is sent to them for it, it moves no badge, and
+/// for a group their event streams carry only what is addressed to them
+/// personally, except while a stream follows their archive (see
+/// Chat.ArchiveChat). They remain a member in every other respect. An
+/// archive lasts until the viewer unarchives the chat (see
+/// Chat.UnarchiveChat) or their membership ends.
+public struct Flipcash_Chat_V1_ArchiveState: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  /// When the viewer archived the chat.
+  public var archivedAt: SwiftProtobuf.Google_Protobuf_Timestamp {
+    get {return _archivedAt ?? SwiftProtobuf.Google_Protobuf_Timestamp()}
+    set {_archivedAt = newValue}
+  }
+  /// Returns true if `archivedAt` has been explicitly set.
+  public var hasArchivedAt: Bool {return self._archivedAt != nil}
+  /// Clears the value of `archivedAt`. Subsequent reads from it will return its default value.
+  public mutating func clearArchivedAt() {self._archivedAt = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _archivedAt: SwiftProtobuf.Google_Protobuf_Timestamp? = nil
 }
 
 /// IdempotencyKey lets a client safely retry a request that creates something.
@@ -2631,6 +2717,10 @@ fileprivate let _protobuf_package = "flipcash.chat.v1"
 
 extension Flipcash_Chat_V1_ChatType: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0UNKNOWN\0\u{1}CONTACT_DM\0\u{1}DM\0\u{1}GROUP\0")
+}
+
+extension Flipcash_Chat_V1_ChatFolder: SwiftProtobuf._ProtoNameProviding {
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0INBOX\0\u{1}ARCHIVED\0")
 }
 
 extension Flipcash_Chat_V1_Metadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -4433,7 +4523,7 @@ extension Flipcash_Chat_V1_ViewerState: SwiftProtobuf.Message, SwiftProtobuf._Me
 
 extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = Flipcash_Chat_V1_ViewerState.protoMessageName + ".Settings"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}mute\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}mute\0\u{1}archive\0")
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -4442,6 +4532,7 @@ extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftPro
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularMessageField(value: &self._mute) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._archive) }()
       default: break
       }
     }
@@ -4455,11 +4546,15 @@ extension Flipcash_Chat_V1_ViewerState.Settings: SwiftProtobuf.Message, SwiftPro
     try { if let v = self._mute {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
     } }()
+    try { if let v = self._archive {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_ViewerState.Settings, rhs: Flipcash_Chat_V1_ViewerState.Settings) -> Bool {
     if lhs._mute != rhs._mute {return false}
+    if lhs._archive != rhs._archive {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -4875,6 +4970,40 @@ extension Flipcash_Chat_V1_MuteState.Forever: SwiftProtobuf.Message, SwiftProtob
   }
 
   public static func ==(lhs: Flipcash_Chat_V1_MuteState.Forever, rhs: Flipcash_Chat_V1_MuteState.Forever) -> Bool {
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Flipcash_Chat_V1_ArchiveState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ArchiveState"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}archived_at\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._archivedAt) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._archivedAt {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: Flipcash_Chat_V1_ArchiveState, rhs: Flipcash_Chat_V1_ArchiveState) -> Bool {
+    if lhs._archivedAt != rhs._archivedAt {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
